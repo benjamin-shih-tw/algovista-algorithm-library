@@ -1,0 +1,161 @@
+import { motion } from 'framer-motion'
+import type { AlgorithmLesson, Frame } from './algorithms'
+import type { VisualModel } from './lessonMeta'
+import { clipSegmentToNodeRadii } from './visualGeometry'
+
+type Props = { lesson: AlgorithmLesson; frame: Frame }
+const phaseOf = (frame: Frame) => Number(frame.state?.phase ?? 0)
+const modelOf = (lesson: AlgorithmLesson) => lesson.visualModel as VisualModel
+const Badge = ({ children }: { children: React.ReactNode }) => <div className="scene-badge">{children}</div>
+
+const IntervalScene = ({ lesson, frame }: Props) => {
+  const phase = phaseOf(frame)
+  const model = modelOf(lesson)
+  const intervals = [[1,4],[2,6],[4,7],[6,9],[8,11],[10,13]]
+  const selected = model === 'interval-covering' ? [1,2,4] : model === 'interval-merging' ? [0,1,2,3] : [0,3,5]
+  return <div className="scene intent-scene timeline-scene"><Badge>INTERVAL TIMELINE · {lesson.zhTitle}</Badge>
+    <div className="timeline-axis">{Array.from({length:14},(_,i)=><span key={i}>{i}</span>)}</div>
+    <div className="timeline-rows">{intervals.map(([left,right],index)=><motion.div key={index} className={selected.includes(index)&&index<=phase*2+1?'chosen':''} style={{'--start':left,'--span':right-left} as React.CSSProperties} animate={{opacity:index<=phase*2+1?1:.24,x:index<=phase*2+1?0:12}}><i/><b>[{left}, {right}]</b></motion.div>)}</div>
+    <motion.div className="timeline-cursor" animate={{left:`${18+phase*28}%`}}/><footer>{model === 'interval-covering'?'延伸目前可覆蓋的最右端':model === 'interval-merging'?'重疊就合併成同一段':model === 'job-timeline'?'依截止時間安排工作':'選最早結束且不衝突的區間'}</footer>
+  </div>
+}
+
+const MatrixScene = ({ lesson, frame, label = '2D STATE' }: Props & { label?: string }) => {
+  const phase = phaseOf(frame), focus = [5,10,15][phase]
+  return <div className="scene intent-scene matrix-scene"><Badge>{label} · {lesson.zhTitle}</Badge><div className="intent-matrix">{Array.from({length:25},(_,i)=><motion.div key={i} className={`${i<=focus?'filled':''} ${i===focus?'focus':''}`} animate={{opacity:i<=focus?1:.22}}><small>{Math.floor(i/5)},{i%5}</small><b>{(i*7+3)%19}</b></motion.div>)}</div><div className="matrix-guides"><i/><i/><span>{lesson.visualModel === 'prefix-2d' ? '四個角值相加減回答矩形' : '目前列／欄是唯一被更新的狀態'}</span></div></div>
+}
+
+const BucketScene = ({ lesson, frame }: Props) => {
+  const phase=phaseOf(frame), heights=[3,6,2,5,4,7,2,4]
+  return <div className="scene intent-scene bucket-scene"><Badge>VALUE FREQUENCY · {lesson.zhTitle}</Badge><div>{heights.map((height,i)=><motion.section key={i} animate={{opacity:i<=phase*3+1?1:.2}}><motion.i animate={{height:height*24}}/><b>{height}</b><small>{i}</small></motion.section>)}</div><footer>值 → 桶 → 依桶順序輸出</footer></div>
+}
+
+const SplitScene = ({ lesson, frame }: Props) => {
+  const phase=phaseOf(frame)
+  return <div className="scene intent-scene split-scene"><Badge>TWO HALF ENUMERATION · {lesson.zhTitle}</Badge><div className="split-box"><span>LEFT HALF</span>{[0,3,5,8,11,14].map((v,i)=><motion.i key={v} animate={{opacity:i<=phase*2+1?1:.18}}>{v}</motion.i>)}</div><strong>+</strong><div className="split-box"><span>RIGHT HALF</span>{[0,2,6,7,9,13].map((v,i)=><motion.i key={v} animate={{opacity:i<=phase*2+1?1:.18}}>{v}</motion.i>)}</div><motion.div className="split-match" animate={{width:`${25+phase*25}%`}}>排序後雙指標配對</motion.div></div>
+}
+
+const ChoiceScene = ({ lesson, frame }: Props) => {
+  const phase=phaseOf(frame), ratios=[9,7,6,4,2]
+  return <div className="scene intent-scene choice-scene"><Badge>VALUE / COST ORDER · {lesson.zhTitle}</Badge><div>{ratios.map((ratio,i)=><motion.section key={ratio} className={i<=phase?'chosen':''} animate={{x:i<=phase?18:0}}><span>item {i+1}</span><i style={{width:`${ratio*9}%`}}/><b>{ratio}.0</b></motion.section>)}</div><footer><span>CAPACITY</span><i style={{width:`${35+phase*25}%`}}/></footer></div>
+}
+
+export function ArrayAdaptiveScene(props: Props) {
+  const model=modelOf(props.lesson)
+  if(['interval-scheduling','interval-covering','interval-merging','job-timeline'].includes(model)) return <IntervalScene {...props}/>
+  if(model==='prefix-2d'||model==='parallel-search') return <MatrixScene {...props} label={model==='parallel-search'?'QUERIES × ANSWER ROUNDS':'2D PREFIX PLANE'}/>
+  if(model==='counting-buckets') return <BucketScene {...props}/>
+  if(model==='meet-in-middle') return <SplitScene {...props}/>
+  if(model==='fractional-choice') return <ChoiceScene {...props}/>
+  return null
+}
+
+export function LinearAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='heap-merge') return <div className="scene intent-scene merge-heap-scene"><Badge>TAKE TWO MINIMUMS · {lesson.zhTitle}</Badge><div className="merge-leaves">{[2,3,5,7,9].map((v,i)=><motion.i key={v} animate={{opacity:i<2+phase?1:.25,y:i<2+phase?-8:0}}>{v}</motion.i>)}</div><svg viewBox="0 0 1000 260"><path d="M240 40 Q350 120 470 170 M380 40 Q410 120 470 170 M470 170 Q560 215 650 170 M610 40 Q620 120 650 170"/><text x="470" y="182">5</text><text x="650" y="182">14</text></svg><footer>每次合併目前權重最小的兩棵樹</footer></div>
+  if(model==='histogram-stack') return <div className="scene intent-scene histogram-scene"><Badge>MONOTONIC BOUNDARIES · {lesson.zhTitle}</Badge><div>{[3,6,4,8,7,5,2,6].map((h,i)=><motion.i key={i} className={i>=phase&&i<=6-phase?'active':''} animate={{height:h*30}}><small>{h}</small></motion.i>)}</div><motion.section animate={{left:`${16+phase*9}%`,width:`${58-phase*14}%`,height:60+phase*30}}/><footer>高度 × 左右第一個更矮位置</footer></div>
+  if(model==='expression-stack') return <div className="scene intent-scene expression-scene"><Badge>TOKENS → OPERATOR STACK → OUTPUT</Badge><div className="expression-tokens">{['3','+','4','×','(','2','−','1',')'].map((x,i)=><motion.i key={i} className={i<=phase*3?'read':''}>{x}</motion.i>)}</div><div className="expression-pipes"><section><span>OPERATOR STACK</span>{['(','×','+'].slice(phase).map(x=><b key={x}>{x}</b>)}</section><strong>→</strong><section><span>POSTFIX / VALUE</span>{['3','4','2','1','−','×','+'].slice(0,3+phase*2).map((x,i)=><b key={`${x}${i}`}>{x}</b>)}</section></div></div>
+  if(model==='monotonic-stack'||model==='monotonic-queue') return <div className="scene intent-scene monotonic-scene"><Badge>{model==='monotonic-stack'?'MONOTONIC STACK':'MONOTONIC DEQUE'} · REMOVE DOMINATED</Badge><div>{[2,7,4,9,5,11].map((v,i)=><motion.section key={i} className={i===phase*2?'active':''} animate={{y:i<phase*2?18:0,opacity:i<phase?0.2:1}}><small>{i}</small><b>{v}</b></motion.section>)}</div><svg viewBox="0 0 800 100"><motion.path d="M40 75 L180 25 L320 56 L460 12 L600 48 L740 5" animate={{pathLength:(phase+1)/3}}/></svg></div>
+  return null
+}
+
+const graphNodes=[[120,215,'A'],[300,90,'B'],[300,340,'C'],[520,90,'D'],[520,340,'E'],[780,215,'F']] as const
+const graphEdges=[[0,1],[0,2],[1,3],[1,4],[2,4],[3,5],[4,5]] as const
+
+const GenericGraphModel = ({lesson,frame,mode}:{lesson:AlgorithmLesson;frame:Frame;mode:string}) => {
+  const phase=phaseOf(frame)
+  const directed=mode==='dag-order'||mode==='dag-dp'||mode==='two-sat'
+  return <div className={`scene intent-scene graph-model ${mode}`}><Badge>{mode.replaceAll('-',' ').toUpperCase()} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430"><defs><marker id={`arrow-${lesson.id}`} markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L0 6 L7 3Z"/></marker></defs>{graphEdges.map(([a,b],i)=>{const from=graphNodes[a],to=graphNodes[b],edge=clipSegmentToNodeRadii(from[0],from[1],to[0],to[1],34,directed?42:34);return <motion.line key={i} {...edge} className={i<=phase*2?'lit':''} markerEnd={directed?`url(#arrow-${lesson.id})`:undefined}/>})}{graphNodes.map(([x,y,label],i)=><motion.g key={label} animate={{scale:i===phase*2?1.13:1}} style={{transformOrigin:`${x}px ${y}px`}}><circle cx={x} cy={y} r="31" className={`${i<=phase*2?'accepted':''} ${i===phase*2?'active':''}`}/><text x={x} y={y+5}>{mode==='two-sat'?(i%2?'¬':'')+['x','x','y','y','z','z'][i]:label}</text>{mode==='lowlink'&&<text className="graph-note" x={x} y={y+52}>tin {i+1} · low {Math.max(1,i-phase)}</text>}</motion.g>)}</svg></div>
+}
+
+export function GraphAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='grid-traversal') return <div className="scene intent-scene grid-graph-scene"><Badge>GRID CELLS AS GRAPH NODES · {lesson.zhTitle}</Badge><div>{Array.from({length:48},(_,i)=>{const wall=[5,6,13,21,29,37,38].includes(i),visited=!wall&&i<=10+phase*13;return <motion.i key={i} className={`${wall?'wall':''} ${visited?'visited':''} ${i===10+phase*13?'frontier':''}`} animate={{opacity:wall?.35:visited?1:.2}}/>})}</div><footer>四方向鄰居 · Frontier 逐格擴張</footer></div>
+  if(model==='all-pairs-matrix') return <MatrixScene lesson={lesson} frame={frame} label="DISTANCE MATRIX · INTERMEDIATE k"/>
+  if(model==='disjoint-sets'||model==='dynamic-connectivity') return <div className="scene intent-scene set-scene"><Badge>{model==='dynamic-connectivity'?'TIME SEGMENTS + ROLLBACK':'DISJOINT SET FOREST'} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[150,90,80],[150,90,210],[450,90,380],[450,90,520],[730,90,650],[730,90,790]].map(([x1,y1,x2],i)=><motion.line key={i} x1={x1} y1={y1} x2={x2} y2="260" animate={{opacity:i<=phase*2+1?1:.18}}/>)}{[[150,90,'R₁'],[80,260,'1'],[210,260,'2'],[450,90,'R₂'],[380,260,'3'],[520,260,'4'],[730,90,'R₃'],[650,260,'5'],[790,260,'6']].map(([x,y,v],i)=><motion.g key={String(v)} animate={{x:phase===2&&i>5?-120:0}}><circle cx={Number(x)} cy={Number(y)} r="30" className={i%3===0?'active':''}/><text x={Number(x)} y={Number(y)+5}>{v}</text></motion.g>)}</svg><footer>{model==='dynamic-connectivity'?'進入時間區間時 union，離開時 rollback':'find root → union by size → path compression'}</footer></div>
+  if(model==='scc-clusters') return <div className="scene intent-scene cluster-scene"><Badge>STRONGLY CONNECTED CLUSTERS · {lesson.zhTitle}</Badge>{[[26,45],[51,30],[73,57]].map(([x,y],i)=><motion.section key={i} style={{left:`${x}%`,top:`${y}%`}} className={i<=phase?'active':''}><span>SCC {i+1}</span>{Array.from({length:i+2},(_,j)=><i key={j}>{String.fromCharCode(65+i*2+j)}</i>)}</motion.section>)}<svg viewBox="0 0 1000 430"><motion.path d="M320 190 C400 100 470 110 520 145 M610 190 C690 210 720 230 755 250" animate={{pathLength:(phase+1)/3}}/></svg></div>
+  if(model==='functional-graph') return <div className="scene intent-scene functional-scene"><Badge>ONE OUTGOING EDGE PER NODE · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430"><path d="M370 105 L560 105 L650 250 L465 330 L315 235 Z"/><path d="M80 215 L315 235 M820 300 L650 250"/>{[[370,105,'1'],[560,105,'2'],[650,250,'3'],[465,330,'4'],[315,235,'5'],[80,215,'6'],[820,300,'7']].map(([x,y,v],i)=><motion.g key={String(v)} animate={{scale:i===phase*2?1.15:1}}><circle cx={Number(x)} cy={Number(y)} r="28"/><text x={Number(x)} y={Number(y)+5}>{v}</text></motion.g>)}</svg><footer>入樹距離 + 環位置 + 倍增跳躍</footer></div>
+  if(['dag-order','dag-dp','two-sat','lowlink','mst-growth','euler-trail'].includes(model)) return <GenericGraphModel lesson={lesson} frame={frame} mode={model}/>
+  return null
+}
+
+export function TreeAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='tree-centroid') return <div className="scene intent-scene centroid-scene"><Badge>BALANCED SUBTREE SPLIT · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[170,270,370].map((r,i)=><motion.circle key={r} cx="450" cy="220" r={r/2} animate={{opacity:i<=phase?.45:.1}}/>)}<motion.circle cx="450" cy="220" r="36" className="center" animate={{scale:1+phase*.08}}/><text x="450" y="226">C</text>{[[450,70],[260,160],[640,160],[250,320],[650,325]].map(([x,y],i)=><g key={i}><line x1="450" y1="220" x2={x} y2={y}/><circle cx={x} cy={y} r="22"/></g>)}</svg><footer>移除 C 後，每個分量大小 ≤ n / 2</footer></div>
+  if(model==='tree-decomposition'||model==='tree-path') return <div className="scene intent-scene chain-scene"><Badge>{model==='tree-path'?'ANCESTOR JUMPS + PATH':'HEAVY CHAINS → ARRAY SEGMENTS'} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,55,300,150],[450,55,620,150],[300,150,210,270],[300,150,370,270],[620,150,550,270],[620,150,720,270],[210,270,150,370]].map(([x1,y1,x2,y2],i)=><motion.line key={i} x1={x1} y1={y1} x2={x2} y2={y2} className={i<=phase*2?'heavy':''}/>)}{[[450,55,'A'],[300,150,'B'],[620,150,'C'],[210,270,'D'],[370,270,'E'],[550,270,'F'],[720,270,'G'],[150,370,'H']].map(([x,y,v],i)=><g key={String(v)}><circle cx={Number(x)} cy={Number(y)} r="25" className={i<=phase*2?'active':''}/><text x={Number(x)} y={Number(y)+5}>{v}</text></g>)}</svg><footer>{model==='tree-path'?'兩端向上跳到 LCA，組合兩段路徑':'同一重鏈連續編號，跨鏈時跳到 chain head'}</footer></div>
+  if(model==='tree-merging') return <div className="scene intent-scene bag-tree-scene"><Badge>SUBTREE BAGS · SMALL INTO LARGE</Badge>{[['A',['r','b','g','y']],['B',['r','g']],['C',['b','y','p']]].map(([name,items],i)=><motion.section key={String(name)} className={i===phase?'active':''} animate={{x:phase===2&&i>0?(i===1?160:-160):0}}><b>{name}</b><div>{(items as string[]).map(x=><i key={x}>{x}</i>)}</div></motion.section>)}</div>
+  if(model==='tree-encoding') return <div className="scene intent-scene prufer-scene"><Badge>REMOVE SMALLEST LEAF → OUTPUT PARENT</Badge><div className="prufer-tree">{[1,2,3,4,5,6].map((v,i)=><motion.i key={v} className={i<phase*2?'removed':''}>{v}</motion.i>)}</div><strong>→</strong><div className="prufer-code">{[2,2,4,4].map((v,i)=><motion.i key={i} animate={{opacity:i<=phase?1:.18}}>{v}</motion.i>)}</div></div>
+  if(model==='reconstruction-tree') return <div className="scene intent-scene reconstruction-scene"><Badge>KRUSKAL MERGE HISTORY · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[170,350,280,245],[390,350,280,245],[280,245,450,130],[570,350,650,245],[730,350,650,245],[650,245,450,130]].map((a,i)=><motion.line key={i} x1={a[0]} y1={a[1]} x2={a[2]} y2={a[3]} animate={{opacity:i<=phase*2+1?1:.15}}/>)}{[[170,350,'1'],[390,350,'2'],[570,350,'3'],[730,350,'4'],[280,245,'w=3'],[650,245,'w=5'],[450,130,'w=8']].map(([x,y,v])=><g key={String(v)}><rect x={Number(x)-34} y={Number(y)-22} width="68" height="44" rx="12"/><text x={Number(x)} y={Number(y)+5}>{v}</text></g>)}</svg></div>
+  return null
+}
+
+export function RangeAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='fenwick-2d'||model==='segment-tree-2d') return <MatrixScene lesson={lesson} frame={frame} label={model==='fenwick-2d'?'2D LOWBIT RECTANGLES':'NESTED X/Y INTERVALS'}/>
+  if(model==='dynamic-segment-tree') return <div className="scene intent-scene dynamic-segment-scene"><Badge>CREATE ONLY VISITED COORDINATE PATHS · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,70,260,175],[450,70,650,175],[260,175,155,305],[260,175,355,305],[650,175,745,305]].map((a,i)=><motion.line key={i} x1={a[0]} y1={a[1]} x2={a[2]} y2={a[3]} animate={{opacity:i<=phase*2?1:.08}}/>)}{[[450,70,'[0,10⁹]'],[260,175,'left'],[650,175,'right'],[155,305,'x'],[355,305,'∅'],[745,305,'x']].map(([x,y,v],i)=><motion.g key={String(v)} animate={{opacity:i<=phase*2+1?1:.15}}><rect x={Number(x)-55} y={Number(y)-24} width="110" height="48" rx="13" className={v==='∅'?'empty':''}/><text x={Number(x)} y={Number(y)+5}>{v}</text></motion.g>)}</svg><footer>未訪問的巨大區間保持 null；更新時沿 O(log C) 路徑配置節點</footer></div>
+  if(model==='merge-sort-tree') return <div className="scene intent-scene merge-sort-tree-scene"><Badge>SORTED LIST AT EVERY INTERVAL NODE</Badge><div className="mst-root">[1,2,3,4,5,6,7,9]</div><div><section><b>[0,3]</b><i>1 2 4 5</i></section><section><b>[4,7]</b><i>3 6 7 9</i></section></div><footer>區間拆成 O(log n) 節點；每個排序串列內二分值域</footer></div>
+  if(model==='segment-tree-beats') return <div className="scene intent-scene beats-scene"><Badge>MAX₁ / MAX₂ / COUNT · {lesson.zhTitle}</Badge><div className="beats-root"><b>max₁ 9</b><span>max₂ 7</span><i>count 1</i></div><div><section className={phase>0?'cut':''}><b>9</b><span>7</span><i>1</i></section><section><b>7</b><span>6</span><i>2</i></section></div><footer>只有 max₂ &lt; x &lt; max₁ 時可整段 chmin，否則繼續下推</footer></div>
+  if(model==='fenwick-tree') return <div className="scene intent-scene fenwick-scene"><Badge>LOWBIT COVERAGE · {lesson.zhTitle}</Badge><div>{[1,2,3,4,5,6,7,8].map((v,i)=><motion.section key={v} className={i===phase*2?'active':''}><b>{v}</b><i style={{width:`${(v&-v)*38}px`}}/><small>covers {v-(v&-v)+1}…{v}</small></motion.section>)}</div></div>
+  if(model==='sparse-table') return <div className="scene intent-scene sparse-scene"><Badge>POWER-OF-TWO INTERVALS · {lesson.zhTitle}</Badge>{[1,2,4,8].map((len,row)=><div key={len}>{Array.from({length:9-Math.log2(len)},(_,i)=><motion.i key={i} className={row<=2**phase?'active':''} style={{width:`${len*44}px`}}>[{i},{i+len-1}]</motion.i>)}</div>)}</div>
+  if(model==='sqrt-blocks') return <div className="scene intent-scene block-scene"><Badge>SQRT BLOCKS · {lesson.zhTitle}</Badge>{[[2,5,1],[4,9,3],[7,6,8]].map((block,i)=><motion.section key={i} className={i===phase?'active':''}><span>BLOCK {i}</span>{block.map((v,j)=><i key={j}>{v}</i>)}<b>Σ {block.reduce((a,b)=>a+b,0)}</b></motion.section>)}</div>
+  if(model==='line-container') return <div className="scene intent-scene dp-lines-scene"><Badge>LINE CONTAINER OVER x-RANGE · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{['M80 340 L820 80','M80 280 L820 190','M80 190 L820 300','M80 360 L820 255'].map((d,i)=><motion.path key={d} d={d} animate={{opacity:i<=phase+1?.8:.12}}/>)}<motion.line x1={250+phase*190} y1="40" x2={250+phase*190} y2="380"/><circle cx={250+phase*190} cy={phase===0?280:phase===1?205:170} r="9"/></svg><footer>節點保存在線段中點較優的直線，查詢沿單一路徑下降</footer></div>
+  if(model==='balanced-bst'||model==='spatial-tree'||model==='dynamic-tree') return <div className={`scene intent-scene adaptive-tree-scene ${model}`}><Badge>{model.replaceAll('-',' ').toUpperCase()} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,70,260,180],[450,70,650,180],[260,180,160,310],[260,180,360,310],[650,180,560,310],[650,180,750,310]].map((a,i)=><motion.line key={i} x1={a[0]} y1={a[1]} x2={a[2]} y2={a[3]} animate={{opacity:i<=phase*2+1?1:.15}}/>)}{[[450,70,8],[260,180,4],[650,180,12],[160,310,2],[360,310,6],[560,310,10],[750,310,14]].map(([x,y,v],i)=><motion.g key={v} animate={{scale:i===phase*2?1.14:1,x:model==='dynamic-tree'&&phase===2&&i>3?40:0}}><rect x={x-37} y={y-24} width="74" height="48" rx="14"/><text x={x} y={y+5}>{v}</text></motion.g>)}</svg></div>
+  if(model==='wavelet') return <div className="scene intent-scene wavelet-scene"><Badge>VALUE PARTITION LEVELS · {lesson.zhTitle}</Badge>{[[7,1,6,3,5,2,8,4],[1,3,2,4,7,6,5,8],[1,2,3,4,5,6,7,8]].map((row,r)=><div key={r}>{row.map((v,i)=><motion.i key={`${r}-${i}`} className={i<=phase*3?'active':''}>{v}</motion.i>)}<span>bit {2-r}</span></div>)}</div>
+  if(model==='persistent-tree'||model==='persistent-dsu') return <div className="scene intent-scene versions-scene"><Badge>IMMUTABLE VERSIONS · {lesson.zhTitle}</Badge>{['v0','v1','v2'].map((v,i)=><motion.section key={v} className={i<=phase?'active':''}><b>{v}</b><div><i/><i/><i/><i/></div><span>{i===0?'original':`copy path ${i}`}</span></motion.section>)}</div>
+  if(model==='lazy-tree'||model==='segment-tree') return <div className="scene intent-scene lazy-scene"><Badge>{model==='lazy-tree'?'LAZY TAG PROPAGATION':'INTERVAL AGGREGATION'} · {lesson.zhTitle}</Badge><div className="lazy-root"><b>[0,7]</b><i>{phase?'Σ 37':'Σ ?'}</i>{model==='lazy-tree'&&<em>+3</em>}</div><div className="lazy-children"><section><b>[0,3]</b><i>Σ 12</i>{model==='lazy-tree'&&phase>0&&<em>+3</em>}</section><section><b>[4,7]</b><i>Σ 25</i>{model==='lazy-tree'&&phase>1&&<em>+3</em>}</section></div></div>
+  return null
+}
+
+export function DPAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='dp-grid'||model==='dp-2d'||model==='dp-bitmask'||model==='dp-interval') return <MatrixScene lesson={lesson} frame={frame} label={model==='dp-bitmask'?'SUBSET MASK TABLE':model==='dp-interval'?'INTERVAL LENGTH ORDER':model==='dp-grid'?'GRID DEPENDENCIES':'TWO PREFIX AXES'}/>
+  if(model==='dp-tree') return <div className="scene intent-scene dp-tree-scene"><Badge>CHILD STATES → PARENT STATE · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,90,260,250],[450,90,640,250],[260,250,150,360],[260,250,360,360]].map((a,i)=><motion.path key={i} d={`M${a[2]} ${a[3]} Q${a[0]} ${(a[1]+a[3])/2} ${a[0]} ${a[1]}`} animate={{pathLength:i<=phase*2?1:.15}}/>)}{[[450,90,'dp[u]'],[260,250,'dp[v₁]'],[640,250,'dp[v₂]'],[150,360,'leaf'],[360,360,'leaf']].map(([x,y,v],i)=><g key={String(v)}><rect x={Number(x)-52} y={Number(y)-25} width="104" height="50" rx="14" className={i<=phase*2?'active':''}/><text x={Number(x)} y={Number(y)+5}>{v}</text></g>)}</svg></div>
+  if(model==='dp-lines') return <div className="scene intent-scene dp-lines-scene"><Badge>DP TRANSITIONS AS LINES · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{['M100 340 L800 80','M100 280 L800 160','M100 210 L800 260','M100 360 L800 300'].map((d,i)=><motion.path key={d} d={d} animate={{opacity:i<=phase+1?.75:.12}}/>)}<motion.line x1={260+phase*170} y1="40" x2={260+phase*170} y2="385"/><circle cx={260+phase*170} cy={phase===0?280:phase===1?202:171} r="9"/></svg><footer>query x：取下包絡線最小值</footer></div>
+  if(model==='dp-optimization') return <div className="scene intent-scene opt-dp-scene"><Badge>MONOTONE OPTIMAL SPLIT · {lesson.zhTitle}</Badge><div>{Array.from({length:36},(_,i)=><motion.i key={i} className={Math.floor(i/6)<=phase&&i%6>=Math.floor(i/6)?'candidate':''}/>)}</div><motion.span animate={{transform:`translate(${phase*58}px,${phase*42}px)`}}>OPT</motion.span></div>
+  if(model==='dp-digit') return <div className="scene intent-scene digit-dp-scene"><Badge>DIGIT POSITION × TIGHT × STATE</Badge><div className="digit-number">{['2','7','4','9'].map((d,i)=><motion.i key={i} className={i===phase?'active':''}>{d}</motion.i>)}</div><div className="digit-branches"><span>smaller</span><span>equal / tight</span><span>invalid</span></div></div>
+  return null
+}
+
+export function StringAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='trie'||model==='string-automaton'||model==='suffix-automaton'||model==='suffix-tree'||model==='palindromic-tree') return <div className="scene intent-scene automaton-scene"><Badge>{model==='trie'?'SHARED PREFIX TREE':model==='string-automaton'?'TRIE + FAILURE LINKS':model==='suffix-tree'?'COMPRESSED SUFFIX EDGES':model==='palindromic-tree'?'PALINDROME NODES + SUFFIX LINKS':'SUBSTRING AUTOMATON'} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,55,270,150,'a'],[450,55,620,150,'s'],[270,150,170,270,'n'],[270,150,360,270,'t'],[620,150,540,270,'h'],[620,150,720,270,'e'],[540,270,470,365,'e'],[540,270,610,365,'r']].map(([x1,y1,x2,y2,c],i)=><g key={i}><motion.line x1={x1} y1={y1} x2={x2} y2={y2} className={i<=phase*3?'lit':''}/><text x={(Number(x1)+Number(x2))/2} y={(Number(y1)+Number(y2))/2-8}>{c}</text></g>)}{[[450,55],[270,150],[620,150],[170,270],[360,270],[540,270],[720,270],[470,365],[610,365]].map(([x,y],i)=><motion.circle key={i} cx={x} cy={y} r="23" className={i<=phase*3?'active':''}/>)}</svg></div>
+  if(model==='suffix-order') return <div className="scene intent-scene suffix-scene"><Badge>SORTED SUFFIXES + LCP · {lesson.zhTitle}</Badge>{['$','A$','ANA$','ANANA$','BANANA$','NA$','NANA$'].map((s,i)=><motion.div key={s} animate={{opacity:i<=phase*3?1:.2,x:i<=phase*3?0:20}}><small>{[6,5,3,1,0,4,2][i]}</small><b>{s}</b><i style={{width:`${[0,0,1,3,0,0,2][i]*28}px`}}/></motion.div>)}</div>
+  if(model==='palindrome') return <div className="scene intent-scene palindrome-scene"><Badge>PALINDROME RADIUS · {lesson.zhTitle}</Badge><div>{[...'ABACABA'].map((c,i)=><motion.i key={i} className={Math.abs(i-3)<=phase+1?'active':''} animate={{y:Math.abs(i-3)<=phase+1?-10:0}}>{c}<small>{i}</small></motion.i>)}</div><motion.span animate={{width:`${(phase*2+3)*72}px`}}/></div>
+  return null
+}
+
+export function FlowAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='assignment') return <div className="scene intent-scene assignment-scene"><Badge>COST MATRIX → ONE-TO-ONE ASSIGNMENT</Badge><div className="assignment-matrix">{[[7,3,8,6],[5,9,2,7],[6,4,3,8],[9,5,7,4]].flatMap((row,r)=>row.map((value,c)=><motion.i key={`${r}-${c}`} className={c===[1,2,0,3][r]&&r<=phase?'chosen':''}>{value}</motion.i>))}</div><footer>每列、每欄恰選一格；維持可行勢能與零邊</footer></div>
+  if(model==='stable-matching') return <div className="scene intent-scene stable-scene"><Badge>PROPOSALS + PREFERENCE ORDER</Badge><div className="stable-side">{['A','B','C','D'].map((x,i)=><i key={x} className={i<=phase?'active':''}>{x}</i>)}</div><svg viewBox="0 0 500 300">{[[0,1],[1,0],[2,3],[3,2]].map(([a,b],i)=><motion.line key={i} x1="20" y1={40+a*70} x2="480" y2={40+b*70} animate={{opacity:i<=phase?1:.12}}/>)}</svg><div className="stable-side right">{['W','X','Y','Z'].map((x)=><i key={x}>{x}</i>)}</div><footer>被拒絕者繼續向下一順位提議；完成時不存在 blocking pair</footer></div>
+  if(model==='general-matching') return <div className="scene intent-scene blossom-scene"><Badge>ODD CYCLE → CONTRACT BLOSSOM</Badge><svg viewBox="0 0 900 430"><motion.path d="M250 280 L380 90 L550 120 L650 300 L420 350 Z" animate={{opacity:phase<2?1:.18}}/><line x1="80" y1="220" x2="250" y2="280"/><line x1="650" y1="300" x2="820" y2="205"/>{[[250,280],[380,90],[550,120],[650,300],[420,350]].map(([x,y],i)=><motion.circle key={i} cx={x} cy={y} r={phase===2?i===0?66:0:26} animate={{opacity:phase===2&&i>0?0:1}}/>)}<motion.circle cx="450" cy="220" r="92" className="contracted" animate={{opacity:phase===2?1:0}}/></svg><footer>縮 contracted odd cycle 後找增廣路，再展開翻轉匹配</footer></div>
+  return null
+}
+
+export function MathAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='euclid') return <div className="scene intent-scene euclid-scene"><Badge>REMAINDER SHRINKING · {lesson.zhTitle}</Badge>{[[84,30],[30,24],[24,6],[6,0]].slice(0,phase+2).map(([a,b],i)=><motion.section key={i} initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}}><b>{a}</b><span>= {Math.floor(a/Math.max(1,b))} × {b} + {b?a%b:0}</span></motion.section>)}</div>
+  if(model==='sieve'||model==='primality') return <div className="scene intent-scene sieve-scene"><Badge>{model==='sieve'?'MULTIPLE MARKING':'WITNESS TESTS'} · {lesson.zhTitle}</Badge><div>{Array.from({length:40},(_,i)=>i+2).map(n=><motion.i key={n} className={(n%2===0&&n!==2)||(phase>0&&n%3===0&&n!==3)||(phase>1&&n%5===0&&n!==5)?'composite':'prime'}>{n}</motion.i>)}</div></div>
+  if(model==='factorization') return <div className="scene intent-scene factor-scene"><Badge>COMPOSITE → NONTRIVIAL FACTORS · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{[[450,80,280,210],[450,80,620,210],[280,210,190,340],[280,210,360,340],[620,210,540,340],[620,210,700,340]].map((a,i)=><motion.line key={i} x1={a[0]} y1={a[1]} x2={a[2]} y2={a[3]} animate={{opacity:i<=phase*2+1?1:.12}}/>)}{[[450,80,'1386'],[280,210,'42'],[620,210,'33'],[190,340,'2'],[360,340,'3·7'],[540,340,'3'],[700,340,'11']].map(([x,y,v],i)=><motion.g key={String(v)} animate={{opacity:i<=phase*2+2?1:.15}}><circle cx={Number(x)} cy={Number(y)} r="31"/><text x={Number(x)} y={Number(y)+5}>{v}</text></motion.g>)}</svg></div>
+  if(model==='exponentiation') return <div className="scene intent-scene exponent-scene"><Badge>BINARY POWERS · {lesson.zhTitle}</Badge><div className="power-bits">{['1','0','1','1','0','1'].map((b,i)=><motion.i key={i} className={i<=phase*2?'active':''}><small>2^{5-i}</small>{b}</motion.i>)}</div><div className="power-accumulator"><span>result</span><b>{['1','a⁴','a⁴·a²·a'][phase]}</b></div></div>
+  if(model==='xor-basis') return <div className="scene intent-scene basis-scene"><Badge>HIGHEST-BIT PIVOTS · {lesson.zhTitle}</Badge>{['101101','010110','001011','000101'].map((bits,row)=><div key={bits}>{[...bits].map((bit,i)=><motion.i key={i} className={bit==='1'&&i===row?'pivot':''}>{bit}</motion.i>)}<span>{row<=phase?'inserted':'candidate'}</span></div>)}</div>
+  if(model==='impartial-game') return <div className="scene intent-scene nim-scene"><Badge>PILE XOR · {lesson.zhTitle}</Badge><div>{[3,5,6,2].map((h,i)=><section key={i}>{Array.from({length:h},(_,j)=><motion.i key={j} animate={{opacity:i===phase&&j>=h-2?.18:1}}/>)}<b>{h}</b></section>)}</div><footer>3 XOR 5 XOR 6 XOR 2 = 2 ≠ 0</footer></div>
+  if(model==='congruence'||model==='discrete-log') return <div className="scene intent-scene clock-scene"><Badge>MODULAR CYCLE · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{Array.from({length:12},(_,i)=>{const angle=i*Math.PI/6-Math.PI/2,x=450+150*Math.cos(angle),y=220+150*Math.sin(angle);return <g key={i}><circle cx={x} cy={y} r="20" className={i===phase*4?'active':''}/><text x={x} y={y+5}>{i}</text></g>})}<motion.path d="M450 220 L580 145" animate={{rotate:phase*120}} style={{transformOrigin:'450px 220px'}}/></svg></div>
+  return null
+}
+
+export function GeometryAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='polygon'||model==='minkowski-sum') return <div className="scene intent-scene polygon-scene"><Badge>{model==='minkowski-sum'?'EDGE-VECTOR MERGE':'POLYGON ORIENTATION / CONTAINMENT'} · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430"><motion.path d={model==='minkowski-sum'?'M180 310 L300 100 L430 250 Z':'M160 320 L260 95 L520 80 L740 220 L610 350 L350 285 Z'} animate={{pathLength:1}}/><motion.path className="secondary" d={model==='minkowski-sum'?'M470 300 L560 150 L730 260 Z':'M160 320 L260 95 L520 80'} animate={{opacity:phase?.9:.25}}/><circle cx={360+phase*80} cy={220} r="8"/><motion.line x1="100" y1={220} x2="820" y2={220} animate={{opacity:model==='polygon'?.7:0}}/></svg><footer>{model==='minkowski-sum'?'依極角合併兩個凸多邊形邊向量':'射線交點奇偶／相鄰頂點外積累加'}</footer></div>
+  if(model==='circle-geometry') return null
+  if(model==='polar-sort') return <div className="scene intent-scene polar-scene"><Badge>HALF-PLANE + CROSS PRODUCT ORDER</Badge><svg viewBox="0 0 900 430"><circle cx="450" cy="220" r="9"/>{[[720,140],[690,310],[520,70],[250,110],[170,280],[400,370]].map(([x,y],i)=><g key={i}><motion.line x1="450" y1="220" x2={x} y2={y} animate={{opacity:i<=phase*2+1?1:.18}}/><circle cx={x} cy={y} r="8"/><text x={x+12} y={y-10}>{i+1}</text></g>)}<motion.path d="M600 220 A150 150 0 0 0 450 70" animate={{pathLength:(phase+1)/3}}/></svg></div>
+  if(model==='spatial-partition') return <div className="scene intent-scene voronoi-scene"><Badge>NEAREST-SITE PARTITION · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430">{['M80 80 L280 180 L240 390','M280 180 L470 70 L520 250 L390 420','M520 250 L760 100 L830 350 L390 420'].map((d,i)=><motion.path key={d} d={d} animate={{opacity:i<=phase?.8:.15}}/>)}{[[180,120],[390,160],[650,150],[530,330],[260,320]].map(([x,y],i)=><motion.circle key={i} cx={x} cy={y} r="8" animate={{scale:i===phase?1.6:1}}/>)}</svg></div>
+  return null
+}
+
+export function TransformAdaptiveScene({lesson,frame}:Props) {
+  const model=modelOf(lesson),phase=phaseOf(frame)
+  if(model==='polynomial') return <div className="scene intent-scene polynomial-scene"><Badge>POINTS → UNIQUE POLYNOMIAL · {lesson.zhTitle}</Badge><svg viewBox="0 0 900 430"><path d="M80 360 Q220 310 310 180 T520 210 T820 75"/>{[[140,335],[280,220],[430,180],[590,245],[760,105]].map(([x,y],i)=><motion.g key={i} animate={{opacity:i<=phase*2?1:.2}}><circle cx={x} cy={y} r="8"/><line x1={x} y1="380" x2={x} y2={y}/></motion.g>)}</svg></div>
+  if(model==='linear-recurrence') return <div className="scene intent-scene recurrence-scene"><Badge>SEQUENCE → MINIMAL RECURRENCE</Badge><div>{[1,1,2,3,5,8,13,21].map((v,i)=><motion.i key={i} className={i<=phase*3+1?'active':''}>{v}</motion.i>)}</div><footer>aₙ = <b>1·aₙ₋₁ + 1·aₙ₋₂</b></footer></div>
+  return null
+}
