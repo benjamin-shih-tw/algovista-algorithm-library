@@ -270,17 +270,37 @@ const codeRole = (line: string) => {
   return '讀取／呼叫'
 }
 
+const codePurpose = (lesson: AlgorithmLesson, line: string, fallback: string) => {
+  if (/\b(sort|stable_sort)\s*\(/.test(line)) {
+    if (lesson.id === 'meet-in-the-middle') return '把右半部的所有子集合和由小到大排序，讓下一步能用 upper_bound 二分搜尋最大合法補數。'
+    return '先建立由小到大的處理順序，讓後續二分搜尋、雙指標或相鄰掃描能安全利用單調性。'
+  }
+  if (/\bupper_bound\s*\(/.test(line)) return '在已排序容器中找出第一個大於上限的位置；往前一格就是不超過上限的最大候選。'
+  if (/\blower_bound\s*\(/.test(line)) return '在已排序容器中找出第一個不小於目標的位置，避免重新線性掃描整段資料。'
+  return fallback
+}
+
+const codeEffect = (line: string, fallback: string) => {
+  const container = line.match(/\b(?:sort|stable_sort|reverse)\s*\(\s*([A-Za-z_]\w*)/)?.[1]
+  if (/\b(sort|stable_sort)\s*\(/.test(line)) return `${container ?? '目標容器'} 的元素順序會被原地改成由小到大；這不是只讀取資料。排序後才可以正確呼叫 lower_bound 或 upper_bound。`
+  if (/\breverse\s*\(/.test(line)) return `${container ?? '目標容器'} 的元素順序會被原地反轉，後續程式讀到的是新順序。`
+  if (/^if\s*\(/.test(line)) return '這行只決定是否進入分支；條件成立後，分支內的敘述才會改變狀態。'
+  if (/^(for|while)\s*\(/.test(line)) return '這行負責控制是否進入下一輪；真正的資料變化發生在迴圈本體。'
+  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?$/.test(line)) return '這是函式入口，只建立參數名稱與回傳規格，不會在這一行修改輸入。'
+  return fallback
+}
+
 const buildCodeGuide = (lesson: AlgorithmLesson, frames: Frame[]): CodeGuideLine[] => meaningfulCodeLines(lesson).map(({ line, number }) => {
   const related = frames.find((frame) => frame.codeLines.includes(number))
-  const purpose = related?.state?.operation ? humanizeStateValue(related.state.operation) : related?.title ?? lesson.description
-  const effect = related?.state?.after ? humanizeStateValue(related.state.after) : describeEntries(related ?? frames[0], true)
+  const fallbackPurpose = related?.state?.operation ? humanizeStateValue(related.state.operation) : related?.title ?? lesson.description
+  const fallbackEffect = related?.state?.after ? humanizeStateValue(related.state.after) : describeEntries(related ?? frames[0], true)
   return {
     lineNumber: number,
     code: line,
     role: codeRole(line),
     syntax: explainCppLine(line, lesson, number),
-    purpose: `在 ${lesson.zhTitle} 中，這行負責：${purpose}。`,
-    effect: `完成後應觀察到：${effect}。`,
+    purpose: codePurpose(lesson, line, `在 ${lesson.zhTitle} 中，這行負責：${fallbackPurpose}。`),
+    effect: codeEffect(line, `完成後應觀察到：${fallbackEffect}${/[。！？]$/.test(fallbackEffect)?'':'。'}`),
   }
 })
 

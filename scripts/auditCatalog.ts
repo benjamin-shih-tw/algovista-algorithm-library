@@ -97,6 +97,12 @@ for (const lesson of lessons) {
   const guidedLines = new Set(lesson.codeGuide?.map((item) => item.lineNumber) ?? [])
   for (const { number } of meaningfulLines) if (!guidedLines.has(number)) errors.push(`${lesson.id}: code line ${number} has no line-by-line guide`)
   if (lesson.codeGuide?.some((item) => !item.syntax || !item.purpose || !item.effect)) errors.push(`${lesson.id}: incomplete line-by-line code guide`)
+  if (lesson.id === 'meet-in-the-middle') {
+    if (lesson.code.length < 25) errors.push(`${lesson.id}: beginner implementation is too compressed`)
+    const sortGuide = lesson.codeGuide?.find((item) => lesson.code[item.lineNumber - 1]?.includes('sort(rightSums'))
+    if (!sortGuide?.purpose.includes('upper_bound')) errors.push(`${lesson.id}: sort step does not explain why binary search becomes valid`)
+    if (!sortGuide?.effect.includes('原地')) errors.push(`${lesson.id}: sort step does not explain the visible data mutation`)
+  }
   if (new Set(lesson.frames.map((frame) => frame.title)).size !== lesson.frames.length) errors.push(`${lesson.id}: repeated step title`)
   const teachingStates = lesson.frames.map((frame) => JSON.stringify({ code: frame.codeLine, state: Object.fromEntries(Object.entries(frame.state ?? {}).filter(([key]) => key !== 'timelineStep')), active: frame.active, accepted: frame.accepted }))
   if (new Set(teachingStates).size !== teachingStates.length) errors.push(`${lesson.id}: repeated teaching state does not create a real new step`)

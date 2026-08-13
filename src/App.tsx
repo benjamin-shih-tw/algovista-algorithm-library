@@ -317,6 +317,26 @@ function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
   </motion.div>
 }
 
+function SyncedCodePanel({lesson,frame,step}:{lesson:AlgorithmLesson;frame:Frame;step:number}) {
+  const activeGuides=(lesson.codeGuide??[]).filter((item)=>frame.codeLines.includes(item.lineNumber))
+  const primaryGuide=activeGuides[0]
+  return <aside className="code-panel">
+    <header><div><i/><i/><i/><span>C++17</span></div><b>完整模板 · 逐行同步</b></header>
+    <div className="code-scroll" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
+      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber);return <div key={lineIndex} className="code-source-row"><div className={active?'code-line active':'code-line'} aria-current={active?'step':undefined}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></div></div>})}</pre>
+    </div>
+    <motion.section className="code-focus-card" key={`${lesson.id}-code-${step}`} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}>
+      <header><span>正在執行</span><div>{activeGuides.map((guide)=><b key={guide.lineNumber}>第 {guide.lineNumber} 行</b>)}</div></header>
+      <code><CppCode line={primaryGuide?.code??frame.codeLine}/></code>
+      <div className="code-focus-grid">
+        <article><span>為什麼現在做</span><p>{primaryGuide?.purpose??frame.explanation}</p></article>
+        <article><span>C++ 語法</span><p>{primaryGuide?.syntax??frame.beginner!.codeMeaning}</p></article>
+        <article><span>執行後真的改了什麼</span><p>{primaryGuide?.effect??frame.beginner!.result}</p></article>
+      </div>
+    </motion.section>
+  </aside>
+}
+
 function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () => void }) {
   const requestedStep=Number(new URLSearchParams(window.location.search).get('step') ?? 1)
   const initialStep=Number.isFinite(requestedStep)?Math.max(0,Math.min(lesson.frames.length-1,Math.floor(requestedStep)-1)):0
@@ -345,7 +365,7 @@ function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () 
           <VisualStepStrip lesson={lesson} frame={frame}/>
           <div className="state-inspector"><span>ALGORITHM STATE · 目前變數</span><div>{Object.entries(frame.state ?? {}).filter(([key])=>!['phase','algorithm','rationale','invariant','timelineStep'].includes(key)).slice(0,6).map(([key,value])=><dl key={key}><dt>{humanizeStateKey(key)}</dt><dd>{humanizeStateValue(value)}</dd></dl>)}</div></div>
         </div>
-        <aside className="code-panel"><header><div><i/><i/><i/><span>C++17</span></div><b>STEP-SYNCED SOURCE</b></header><pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber),guide=lesson.codeGuide?.find((item)=>item.lineNumber===lineNumber),stepRole=humanizeStateValue(frame.state?.operation??guide?.role??'目前操作');return <div key={lineIndex} className="code-source-row"><div className={active?'code-line active':'code-line'} aria-current={active?'step':undefined}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></div>{active&&guide&&<motion.div className="inline-code-guide" key={`${index}-${lineNumber}`} initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}><span>{stepRole}</span><p>本步用途：{stepRole}；這行在整個演算法中的角色是「{guide.role}」。</p><p>{guide.syntax}</p><p>{frame.beginner!.result}</p></motion.div>}</div>})}</pre><motion.div className="code-teacher" key={`${lesson.id}-code-${index}`} initial={{opacity:0}} animate={{opacity:1}}><span><BookOpen size={13}/> 這一步的程式碼總結</span><p>{frame.beginner!.codeMeaning}</p></motion.div></aside>
+        <SyncedCodePanel lesson={lesson} frame={frame} step={index}/>
       </div>
       <div className="explanation-card detailed"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><div className="reasoning-grid"><article><span><Eye size={14}/> 先看哪裡</span><p>{frame.beginner!.observe}</p></article><article><span><Zap size={14}/> 現在執行</span><p>{frame.beginner!.action}</p></article><article><span><ShieldCheck size={14}/> 為什麼正確</span><p>{frame.beginner!.reason}</p></article><article><span><CheckCircle2 size={14}/> 執行後得到</span><p>{frame.beginner!.result}</p></article></div><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
     </section>
