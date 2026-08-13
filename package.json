@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "audit:catalog": "esbuild scripts/auditCatalog.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-catalog-audit.mjs && node /tmp/algovista-catalog-audit.mjs",
+    "audit:templates": "esbuild scripts/reportTemplates.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-template-audit.mjs && node /tmp/algovista-template-audit.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

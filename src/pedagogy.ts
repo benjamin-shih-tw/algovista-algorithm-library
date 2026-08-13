@@ -180,6 +180,69 @@ const describeEntries = (frame: Frame, fromEnd = false) => {
   return selected.map(([key, value]) => `${humanizeStateKey(key)}是 ${humanizeStateValue(value)}`).join('；')
 }
 
+const splitStatements = (source: string) => {
+  const pieces: string[] = []
+  let start = 0
+  let parentheses = 0
+  let brackets = 0
+  let quote = ''
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index]
+    const previous = source[index - 1]
+    if (quote) {
+      if (char === quote && previous !== '\\') quote = ''
+      continue
+    }
+    if (char === '"' || char === "'") { quote = char; continue }
+    if (char === '(') parentheses += 1
+    if (char === ')') parentheses = Math.max(0, parentheses - 1)
+    if (char === '[') brackets += 1
+    if (char === ']') brackets = Math.max(0, brackets - 1)
+    if (char === ';' && parentheses === 0 && brackets === 0) {
+      pieces.push(source.slice(start, index + 1).trim())
+      start = index + 1
+    }
+  }
+  const remainder = source.slice(start).trim()
+  if (remainder) pieces.push(remainder)
+  return pieces.filter(Boolean)
+}
+
+const expandReadableLine = (rawLine: string) => {
+  const trimmed = rawLine.trim()
+  if (!trimmed || trimmed.startsWith('//')) return [rawLine]
+  const indent = rawLine.match(/^\s*/)?.[0] ?? ''
+  const inlineBlock = trimmed.match(/^(.*\))\s*\{\s*(.+)\s*\}\s*$/)
+  if (inlineBlock && !trimmed.includes('[]')) {
+    const body = splitStatements(inlineBlock[2])
+    if (body.length > 1) return [`${indent}${inlineBlock[1]} {`, ...body.map((line) => `${indent}  ${line}`), `${indent}}`]
+  }
+  const statements = splitStatements(trimmed)
+  if (statements.length > 1 && !trimmed.includes('{') && !trimmed.includes('}')) return statements.map((line) => `${indent}${line}`)
+  return [rawLine]
+}
+
+const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
+  const code: string[] = [
+    `// ${lesson.title}｜${lesson.zhTitle}`,
+    `// Purpose: ${lesson.description}`,
+    `// Complexity: ${lesson.complexity}`,
+    '',
+  ]
+  const lineMap = new Map<number, number[]>()
+  lesson.code.forEach((line, index) => {
+    const expanded = expandReadableLine(line)
+    const mapped = expanded.map((expandedLine) => { code.push(expandedLine); return code.length })
+    lineMap.set(index + 1, mapped)
+  })
+  const frames = lesson.frames.map((frame) => {
+    const codeLines = [...new Set(frame.codeLines.flatMap((line) => lineMap.get(line) ?? []))]
+    const firstMeaningful = codeLines.find((line) => code[line - 1]?.trim() && !/^[{}]+;?$/.test(code[line - 1].trim())) ?? codeLines[0]
+    return { ...frame, codeLines, codeLine: firstMeaningful ? code[firstMeaningful - 1].trim() : frame.codeLine }
+  })
+  return { ...lesson, code, frames }
+}
+
 const ensureCodeCoverage = (lesson: AlgorithmLesson) => {
   const frames = lesson.frames.map((frame) => ({ ...frame, codeLines: [...new Set(frame.codeLines)] }))
   const covered = new Set(frames.flatMap((frame) => frame.codeLines))
@@ -304,7 +367,8 @@ const buildCodeGuide = (lesson: AlgorithmLesson, frames: Frame[]): CodeGuideLine
   }
 })
 
-export const enrichPedagogy = (lesson: AlgorithmLesson): AlgorithmLesson => {
+export const enrichPedagogy = (rawLesson: AlgorithmLesson): AlgorithmLesson => {
+  const lesson = prepareReadableTemplate(rawLesson)
   const coveredFrames = ensureCodeCoverage(lesson)
   const total = coveredFrames.length
   const frames = coveredFrames.map((frame, step) => {

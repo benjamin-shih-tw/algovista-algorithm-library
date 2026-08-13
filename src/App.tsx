@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Eye, ExternalLink, Layers3, Lightbulb, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Zap } from 'lucide-react'
 import { categories, lessons, segmentNodes, segmentValues, type AlgorithmCategory, type AlgorithmLesson, type Frame, type VisualKind } from './algorithms'
 import { CppCode } from './CppCode'
 import { ArrayAdaptiveScene, DPAdaptiveScene, FlowAdaptiveScene, GeometryAdaptiveScene, GraphAdaptiveScene, LinearAdaptiveScene, MathAdaptiveScene, RangeAdaptiveScene, StringAdaptiveScene, TransformAdaptiveScene, TreeAdaptiveScene } from './AdaptiveScenes'
 import DotPattern from '@/components/ui/dot-pattern-1'
 import { clipSegmentToNodeRadii, edgeLabelPosition } from './visualGeometry'
 import { humanizeStateKey, humanizeStateValue } from './pedagogy'
+import { ThemeControls, themeStyle, useThemeSettings } from './ThemeControls'
 
 const INTERVAL = 5200
+const WORKSPACE_STORAGE_KEY = 'algovista-workspace-split-v1'
+const readWorkspaceWidth=()=>{try{const saved=Number(localStorage.getItem(WORKSPACE_STORAGE_KEY));return Number.isFinite(saved)&&saved>=30&&saved<=72?saved:58}catch{return 58}}
 
 const BEGINNER_PATH = [
   { id: 'linear-search', step: '01', reason: '先學會逐格讀值、比較條件與排除候選。' },
@@ -273,7 +276,7 @@ function TransformScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Fra
 }
 
 function AlgorithmScene({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
-  if(lesson.fidelity==='semantic') return <div className="algorithm-scene-wrap" data-visual-model={lesson.visualModel}><SemanticScene lesson={lesson} frame={frame}/></div>
+  if(lesson.fidelity==='semantic') return <div className="algorithm-scene-wrap resizable-y" data-visual-model={lesson.visualModel}><SemanticScene lesson={lesson} frame={frame}/></div>
   const scene=lesson.visual==='array'?<ArrayScene lesson={lesson} frame={frame}/>:
     lesson.visual==='linear'?<LinearScene lesson={lesson} frame={frame}/>:
     lesson.visual==='graph'?<GraphScene lesson={lesson} frame={frame}/>:
@@ -286,7 +289,7 @@ function AlgorithmScene({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
     lesson.visual==='math'?<MathScene lesson={lesson} frame={frame}/>:
     lesson.visual==='transform'?<TransformScene lesson={lesson} frame={frame}/>:
     <GeometryScene lesson={lesson} frame={frame}/>
-  return <div className="algorithm-scene-wrap" data-visual-model={lesson.visualModel} data-visual-step={frame.visualStep} data-cue-mode={frame.visualCue?.mode}>{scene}</div>
+  return <div className="algorithm-scene-wrap resizable-y" data-visual-model={lesson.visualModel} data-visual-step={frame.visualStep} data-cue-mode={frame.visualCue?.mode}>{scene}</div>
 }
 
 function BeginnerGuidePanel({lesson,onStart}:{lesson:AlgorithmLesson;onStart:()=>void}) {
@@ -317,13 +320,18 @@ function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
   </motion.div>
 }
 
-function SyncedCodePanel({lesson,frame,step}:{lesson:AlgorithmLesson;frame:Frame;step:number}) {
+function SyncedCodePanel({lesson,frame,step,onSeek}:{lesson:AlgorithmLesson;frame:Frame;step:number;onSeek:(step:number)=>void}) {
   const activeGuides=(lesson.codeGuide??[]).filter((item)=>frame.codeLines.includes(item.lineNumber))
   const primaryGuide=activeGuides[0]
+  const [actionStatus,setActionStatus]=useState('')
+  const templateText=lesson.code.join('\n')
+  const copyTemplate=async()=>{try{await navigator.clipboard.writeText(templateText);setActionStatus('已複製');setTimeout(()=>setActionStatus(''),1600)}catch{setActionStatus('複製失敗')}}
+  const downloadTemplate=()=>{const blob=new Blob([templateText],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`${lesson.id}.cpp`;anchor.click();URL.revokeObjectURL(url);setActionStatus('已下載')}
   return <aside className="code-panel">
-    <header><div><i/><i/><i/><span>C++17</span></div><b>完整模板 · 逐行同步</b></header>
-    <div className="code-scroll" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
-      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber);return <div key={lineIndex} className="code-source-row"><div className={active?'code-line active':'code-line'} aria-current={active?'step':undefined}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></div></div>})}</pre>
+    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div><b>完整模板 · 逐行同步</b></header>
+    <div className="code-template-note"><span>點任一行，動畫會跳到第一次執行該行的步驟。</span><b>{lesson.code.length} LINES · {lesson.frames.length} STEPS</b></div>
+    <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
+      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code>{targetStep>=0&&<small className="code-line-step">STEP {targetStep+1}</small>}</button></div>})}</pre>
     </div>
     <motion.section className="code-focus-card" key={`${lesson.id}-code-${step}`} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}>
       <header><span>正在執行</span><div>{activeGuides.map((guide)=><b key={guide.lineNumber}>第 {guide.lineNumber} 行</b>)}</div></header>
@@ -337,18 +345,28 @@ function SyncedCodePanel({lesson,frame,step}:{lesson:AlgorithmLesson;frame:Frame
   </aside>
 }
 
+function WorkspaceResizeHandle({onPointerDown,onKeyboardResize}:{onPointerDown:(event:React.PointerEvent<HTMLButtonElement>)=>void;onKeyboardResize:(delta:number)=>void}) {
+  return <button type="button" className="workspace-resizer" onPointerDown={onPointerDown} onKeyDown={(event)=>{if(event.key==='ArrowLeft'){event.preventDefault();onKeyboardResize(-2)}if(event.key==='ArrowRight'){event.preventDefault();onKeyboardResize(2)}}} aria-label="拖曳調整動畫與程式碼寬度" title="拖曳調整左右面板寬度"><GripVertical/></button>
+}
+
 function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () => void }) {
   const requestedStep=Number(new URLSearchParams(window.location.search).get('step') ?? 1)
   const initialStep=Number.isFinite(requestedStep)?Math.max(0,Math.min(lesson.frames.length-1,Math.floor(requestedStep)-1)):0
   const [index, setIndex] = useState(initialStep), [playing, setPlaying] = useState(false)
   const [stageVisible,setStageVisible]=useState(false)
+  const [visualWidth,setVisualWidth]=useState(readWorkspaceWidth)
   const stageRef=useRef<HTMLElement|null>(null)
+  const workspaceRef=useRef<HTMLDivElement|null>(null)
   const frame = lesson.frames[index]
   useEffect(() => { setIndex(initialStep); setPlaying(false) }, [lesson.id, initialStep])
   useEffect(() => { if (!playing) return; if (index === lesson.frames.length - 1) { setPlaying(false); return } const timer = setTimeout(() => setIndex((value) => value + 1), INTERVAL); return () => clearTimeout(timer) }, [playing, index, lesson.frames.length])
   useEffect(()=>{const stage=stageRef.current;if(!stage)return;const observer=new IntersectionObserver(([entry])=>setStageVisible(entry.isIntersecting),{threshold:.04});observer.observe(stage);return()=>observer.disconnect()},[lesson.id])
+  useEffect(()=>{try{localStorage.setItem(WORKSPACE_STORAGE_KEY,String(visualWidth))}catch{/* Browser storage may be disabled. */}},[visualWidth])
   const restart = () => { setIndex(0); setPlaying(true) }
   const beginLesson=()=>{setIndex(0);setPlaying(false);stageRef.current?.scrollIntoView({behavior:'smooth',block:'start'})}
+  const seekToCodeStep=(step:number)=>{setPlaying(false);setIndex(step)}
+  const beginWorkspaceResize=(event:React.PointerEvent<HTMLButtonElement>)=>{event.preventDefault();const move=(pointerEvent:PointerEvent)=>{const bounds=workspaceRef.current?.getBoundingClientRect();if(!bounds)return;setVisualWidth(Math.min(72,Math.max(30,(pointerEvent.clientX-bounds.left)/bounds.width*100)))};const finish=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',finish)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',finish)}
+  const resetLayout=()=>setVisualWidth(58)
   return <main className="player-page" style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
     <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(lessons.length).padStart(3,'0')}</span></header>
     <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p>{lesson.sources&&<div className="lesson-sources"><span>CONTENT SOURCE</span>{lesson.sources.map((source)=><a key={source.url} href={source.url} target="_blank" rel="noreferrer"><b>{source.label}</b>{source.title}</a>)}</div>}</div><div className="complexity relative z-10"><span>TIME COMPLEXITY</span><strong>{lesson.complexity}</strong></div></section>
@@ -358,16 +376,17 @@ function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () 
     </section>
     <BeginnerGuidePanel lesson={lesson} onStart={beginLesson}/>
     <section className="lesson-stage" ref={stageRef}>
-      <div className="stage-top"><span>LIVE VISUALIZATION</span><span className={playing ? 'playing' : ''}>{playing ? 'PLAYING' : 'PAUSED'}</span></div>
-      <div className="learning-workspace">
+      <div className="stage-top"><span>LIVE VISUALIZATION</span><span className="panel-size-hint"><Maximize2/>動畫、程式碼與解說視窗皆可拖曳調整</span><button className="reset-layout" onClick={resetLayout}><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? 'PLAYING' : 'PAUSED'}</span></div>
+      <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
         <div className="visual-column">
           <AlgorithmScene lesson={lesson} frame={frame}/>
           <VisualStepStrip lesson={lesson} frame={frame}/>
           <div className="state-inspector"><span>ALGORITHM STATE · 目前變數</span><div>{Object.entries(frame.state ?? {}).filter(([key])=>!['phase','algorithm','rationale','invariant','timelineStep'].includes(key)).slice(0,6).map(([key,value])=><dl key={key}><dt>{humanizeStateKey(key)}</dt><dd>{humanizeStateValue(value)}</dd></dl>)}</div></div>
         </div>
-        <SyncedCodePanel lesson={lesson} frame={frame} step={index}/>
+        <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
+        <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><div className="reasoning-grid"><article><span><Eye size={14}/> 先看哪裡</span><p>{frame.beginner!.observe}</p></article><article><span><Zap size={14}/> 現在執行</span><p>{frame.beginner!.action}</p></article><article><span><ShieldCheck size={14}/> 為什麼正確</span><p>{frame.beginner!.reason}</p></article><article><span><CheckCircle2 size={14}/> 執行後得到</span><p>{frame.beginner!.result}</p></article></div><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
+      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><div className="reasoning-grid"><article><span><Eye size={14}/> 先看哪裡</span><p>{frame.beginner!.observe}</p></article><article><span><Zap size={14}/> 現在執行</span><p>{frame.beginner!.action}</p></article><article><span><ShieldCheck size={14}/> 為什麼正確</span><p>{frame.beginner!.reason}</p></article><article><span><CheckCircle2 size={14}/> 執行後得到</span><p>{frame.beginner!.result}</p></article></div><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
     </section>
     <footer className={`player-controls ${stageVisible?'visible':''}`} aria-hidden={!stageVisible}><div className="progress"><motion.i animate={{width:`${index/(lesson.frames.length-1)*100}%`}} /></div><span>{index+1} / {lesson.frames.length}</span><div><button aria-label="上一步" title="上一步" disabled={index===0} onClick={()=>{setPlaying(false);setIndex(index-1)}}><ChevronLeft/></button><button aria-label={playing?'暫停':'播放'} title={playing?'暫停':'播放'} className="play" onClick={()=>index===lesson.frames.length-1?restart():setPlaying(!playing)}>{playing?<Pause/>:<Play/>}</button><button aria-label="下一步" title="下一步" disabled={index===lesson.frames.length-1} onClick={()=>{setPlaying(false);setIndex(index+1)}}><ChevronRight/></button><button aria-label="重新播放" title="重新播放" onClick={restart}><RotateCcw/></button></div></footer>
   </main>
@@ -398,10 +417,11 @@ function Library({ onSelect }: { onSelect: (lesson: AlgorithmLesson) => void }) 
 }
 
 export default function App() {
+  const [theme,setTheme]=useThemeSettings()
   const directLessonId=new URLSearchParams(window.location.search).get('lesson')
   const [selected,setSelected]=useState<AlgorithmLesson|null>(()=>lessons.find((lesson)=>lesson.id===directLessonId)??null)
   const selectLesson=(lesson:AlgorithmLesson)=>{window.history.replaceState(null,'',`?lesson=${lesson.id}`);setSelected(lesson)}
   const clearLesson=()=>{window.history.replaceState(null,'',window.location.pathname);setSelected(null)}
   const catalogManifest=JSON.stringify(lessons.map(({id,visualModel,frames})=>({id,visualModel,steps:frames.length})))
-  return <><script id="catalog-manifest" type="application/json">{catalogManifest}</script>{selected?<LessonPlayer lesson={selected} onBack={clearLesson}/>:<Library onSelect={selectLesson}/>}</>
+  return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{selected?<LessonPlayer lesson={selected} onBack={clearLesson}/>:<Library onSelect={selectLesson}/>}</div>
 }
