@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "audit:catalog": "esbuild scripts/auditCatalog.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-catalog-audit.mjs && node /tmp/algovista-catalog-audit.mjs",
     "audit:templates": "esbuild scripts/reportTemplates.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-template-audit.mjs && node /tmp/algovista-template-audit.mjs",
+    "audit:knowledge": "esbuild scripts/auditKnowledge.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-knowledge-audit.mjs && node /tmp/algovista-knowledge-audit.mjs",
+    "audit:cpp": "esbuild scripts/auditCpp.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-cpp-audit.mjs && node /tmp/algovista-cpp-audit.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

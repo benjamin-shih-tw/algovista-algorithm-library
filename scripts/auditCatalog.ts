@@ -90,7 +90,7 @@ for (const lesson of lessons) {
   }
   const meaningfulLines = lesson.code
     .map((line, index) => ({ line: line.trim(), number: index + 1 }))
-    .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//'))
+    .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//') && !line.startsWith('#include') && !/^using namespace\b/.test(line))
   for (const { line, number } of meaningfulLines) if (/\.\.\.|for each|write n-1|random c|childContaining/.test(line)) errors.push(`${lesson.id}: code line ${number} still contains pseudocode placeholder text`)
   const explainedLines = new Set(lesson.frames.flatMap((frame) => frame.codeLines))
   for (const { number } of meaningfulLines) if (!explainedLines.has(number)) errors.push(`${lesson.id}: code line ${number} is never explained`)

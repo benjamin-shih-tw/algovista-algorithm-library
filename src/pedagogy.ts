@@ -39,7 +39,7 @@ export const humanizeStateValue = (value: string | number | string[]) => {
 const cleanCode = (line: string) => line.trim() || '（這一行只負責分隔程式區塊）'
 const meaningfulCodeLines = (lesson: AlgorithmLesson) => lesson.code
   .map((line, index) => ({ line: line.trim(), number: index + 1 }))
-  .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//'))
+  .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//') && !line.startsWith('#include') && !/^using namespace\b/.test(line))
 
 export const explainCppLine = (line: string, lesson: AlgorithmLesson, lineNumber: number) => {
   const code = cleanCode(line)
@@ -227,6 +227,9 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
     `// ${lesson.title}｜${lesson.zhTitle}`,
     `// Purpose: ${lesson.description}`,
     `// Complexity: ${lesson.complexity}`,
+    '',
+    '#include <bits/stdc++.h>',
+    'using namespace std;',
     '',
   ]
   const lineMap = new Map<number, number[]>()

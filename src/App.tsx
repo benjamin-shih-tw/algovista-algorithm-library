@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BookOpen, Boxes, Bug, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Code2, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Link2, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Workflow, Zap } from 'lucide-react'
 import { categories, lessons, segmentNodes, segmentValues, type AlgorithmCategory, type AlgorithmLesson, type Frame, type VisualKind } from './algorithms'
 import { CppCode } from './CppCode'
 import { ArrayAdaptiveScene, DPAdaptiveScene, FlowAdaptiveScene, GeometryAdaptiveScene, GraphAdaptiveScene, LinearAdaptiveScene, MathAdaptiveScene, RangeAdaptiveScene, StringAdaptiveScene, TransformAdaptiveScene, TreeAdaptiveScene } from './AdaptiveScenes'
@@ -17,11 +17,23 @@ const BEGINNER_PATH = [
   { id: 'linear-search', step: '01', reason: '先學會逐格讀值、比較條件與排除候選。' },
   { id: 'binary-search', step: '02', reason: '接著理解「為什麼能安全丟掉一半」。' },
   { id: 'prefix-sum', step: '03', reason: '第一次體驗用預處理換取更快查詢。' },
-  { id: 'bfs', step: '04', reason: '把陣列思維擴展到圖，學會 queue 與逐層搜尋。' },
-  { id: 'segment-tree', step: '05', reason: '最後組合遞迴、區間分解與資料結構。' },
+  { id: 'queue', step: '04', reason: '先掌握 FIFO，才不會在 BFS 中突然遇到未定義容器。' },
+  { id: 'bfs', step: '05', reason: '把 Queue 套到圖上，按距離逐層搜尋。' },
+  { id: 'segment-tree', step: '06', reason: '最後組合遞迴、區間分解與可修改資料結構。' },
 ] as const
 
 const beginnerRank = new Map<string,string>(BEGINNER_PATH.map((item) => [item.id, item.step]))
+const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]))
+const depthCache = new Map<string, number>()
+const curriculumDepth = (lesson: AlgorithmLesson): number => {
+  const cached = depthCache.get(lesson.id)
+  if (cached !== undefined) return cached
+  const depth = lesson.knowledge?.prerequisites.length
+    ? 1 + Math.max(...lesson.knowledge.prerequisites.map((item) => curriculumDepth(lessonById.get(item.lessonId)!)))
+    : 0
+  depthCache.set(lesson.id, depth)
+  return depth
+}
 
 function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = GraphAdaptiveScene({ lesson, frame })
@@ -138,11 +150,13 @@ function GeometryScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Fram
 
 function SegmentScene({ frame }: { frame: Frame }) {
   const step = frame.segmentStep!
+  const values=frame.values??segmentValues
+  const isUpdate=frame.state?.operationType==='point update'||frame.state?.phaseName==='update'
   return <div className="scene segment-scene">
-    <div className="mini-array">{segmentValues.map((value, index) => <span key={index} className={index >= 1 && index <= 5 ? 'selected' : ''}>{value}</span>)}</div>
+    <div className="mini-array">{values.map((value, index) => <span key={index} className={isUpdate?index===4?'selected':'':index >= 1 && index <= 5 ? 'selected' : ''}>{value}</span>)}</div>
     <svg viewBox="0 0 1000 430">
       {segmentNodes.filter((node) => node.parentId).map((node) => { const parent = segmentNodes.find((item) => item.id === node.parentId)!; return <line key={node.id} x1={parent.x*10} y1={parent.y*4} x2={node.x*10} y2={node.y*4} className={`seg-edge ${step.statuses[node.id]}`} /> })}
-      {segmentNodes.map((node) => <g key={node.id}><rect x={node.x*10-42} y={node.y*4-21} width="84" height="42" rx="13" className={`seg-node ${step.statuses[node.id]}`} /><text x={node.x*10} y={node.y*4-2} className="seg-range">[{node.left+1},{node.right+1}]</text><text x={node.x*10} y={node.y*4+12} className="seg-sum">Σ {node.sum}</text></g>)}
+      {segmentNodes.map((node) => {const sum=values.slice(node.left,node.right+1).reduce((total,value)=>total+value,0);return <g key={node.id}><rect x={node.x*10-42} y={node.y*4-21} width="84" height="42" rx="13" className={`seg-node ${step.statuses[node.id]}`} /><text x={node.x*10} y={node.y*4-2} className="seg-range">[{node.left+1},{node.right+1}]</text><text x={node.x*10} y={node.y*4+12} className="seg-sum">Σ {sum}</text></g>})}
     </svg>
   </div>
 }
@@ -313,6 +327,41 @@ function BeginnerGuidePanel({lesson,onStart}:{lesson:AlgorithmLesson;onStart:()=
   </section>
 }
 
+function LessonDependencyLink({lessonId,reason,onNavigate}:{lessonId:string;reason:string;onNavigate:(lesson:AlgorithmLesson)=>void}) {
+  const target=lessonById.get(lessonId)
+  if(!target)return null
+  return <button type="button" onClick={()=>onNavigate(target)} style={{'--lesson-accent':target.accent} as React.CSSProperties}><span>{target.index}</span><div><b>{target.zhTitle}</b><small>{reason}</small></div><ChevronRight/></button>
+}
+
+function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNavigate:(lesson:AlgorithmLesson)=>void}) {
+  const [expanded,setExpanded]=useState(false)
+  const unit=lesson.knowledge!
+  return <section className={`knowledge-unit ${expanded?'expanded':'collapsed'}`}>
+    <button type="button" className="knowledge-trigger" onClick={()=>setExpanded((value)=>!value)} aria-expanded={expanded} aria-controls={`knowledge-unit-${lesson.id}`}>
+      <Workflow/><div><span>COMPLETE KNOWLEDGE UNIT</span><h2>完整演算法體系</h2><p>{unit.operationFlow.map((item)=>item.replace(/^\d+\.\s*/, '').split('：')[0]).join(' → ')}</p></div>
+      <div className="knowledge-counts"><b>{unit.prerequisites.length} 先備</b><b>{unit.operations.length} 操作</b><b>{unit.extensions.length} 延伸</b></div>
+      <span className="guide-toggle-label">{expanded?'收起':'展開'}<ChevronDown/></span>
+    </button>
+    <AnimatePresence initial={false}>{expanded&&<motion.div id={`knowledge-unit-${lesson.id}`} className="knowledge-content" initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:.24,ease:'easeOut'}}>
+      <div className="knowledge-dependencies">
+        <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
+        <section><header><BookOpen/><span>本頁會先定義</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
+      </div>
+      <div className="knowledge-motivation">
+        <article><span>01 · PROBLEM</span><h3>要解決什麼</h3><p>{unit.motivation.problem}</p></article>
+        <article><span>02 · NAIVE</span><h3>直接做為什麼慢</h3><p>{unit.motivation.naive}</p></article>
+        <article><span>03 · CORE IDEA</span><h3>核心想法</h3><p>{unit.coreIdea}</p></article>
+      </div>
+      <section className="knowledge-section"><header><Boxes/><div><span>STRUCTURE / STATE</span><h3>每個狀態代表什麼</h3></div></header><div className="term-grid">{unit.structure.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
+      <section className="knowledge-section"><header><Workflow/><div><span>INITIALIZE → OPERATE → VERIFY</span><h3>操作 lifecycle</h3></div></header><div className="initialization-card"><b>{unit.initialization.goal}</b>{unit.initialization.steps.map((item)=><p key={item}>{item}</p>)}<small>{unit.initialization.result}</small></div><div className="operation-table"><header><span>操作</span><span>目的</span><span>讀取 / 寫入</span><span>複雜度</span></header>{unit.operations.map((operation,index)=><article key={`${operation.name}-${index}`}><b>{operation.name}</b><p>{operation.purpose}</p><p><span>讀：</span>{operation.reads}<br/><span>寫：</span>{operation.writes}</p><strong>{operation.complexity}</strong></article>)}</div></section>
+      <section className="knowledge-section"><header><Clock3/><div><span>COMPLEXITY</span><h3>各階段成本</h3></div></header><div className="complexity-grid"><article><span>PREPROCESS</span><p>{unit.complexity.preprocessing}</p></article><article><span>QUERY</span><p>{unit.complexity.query}</p></article><article><span>UPDATE</span><p>{unit.complexity.update}</p></article><article><span>MEMORY</span><p>{unit.complexity.memory}</p></article></div><p className="complexity-note">{unit.complexity.note}</p></section>
+      <section className="knowledge-section implementation-contract"><header><Code2/><div><span>IMPLEMENTATION CONTRACT</span><h3>程式碼不是孤立片段</h3></div></header><div><article><span>輸入</span><p>{unit.implementation.input}</p></article><article><span>輸出</span><p>{unit.implementation.output}</p></article><article><span>操作關係</span><p>{unit.implementation.relationship}</p></article></div><ul>{unit.implementation.assumptions.map((item)=><li key={item}>{item}</li>)}</ul></section>
+      <div className="knowledge-example-risk"><section><header><Play/><span>完整範例流程</span></header><div className="example-flow"><p><b>INPUT</b>{unit.example.input}</p>{unit.example.steps.map((item,index)=><p key={`${item}-${index}`}><b>{String(index+1).padStart(2,'0')}</b>{item}</p>)}<p><b>OUTPUT</b>{unit.example.output}</p></div></section><section><header><Bug/><span>錯誤與邊界</span></header><div>{[...unit.mistakes,...unit.edgeCases].map((item)=><p key={item}><AlertTriangle/>{item}</p>)}</div></section></div>
+      {unit.extensions.length>0&&<section className="knowledge-extensions"><header><Sparkles/><span>基礎完成後，再往這裡延伸</span></header><div>{unit.extensions.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div></section>}
+    </motion.div>}</AnimatePresence>
+  </section>
+}
+
 function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
   const step=frame.visualStep??0
   return <motion.div className="visual-step-strip" key={`${lesson.id}-visual-${step}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>
@@ -331,7 +380,8 @@ function SyncedCodePanel({lesson,frame,step,onSeek}:{lesson:AlgorithmLesson;fram
   const copyTemplate=async()=>{try{await navigator.clipboard.writeText(templateText);setActionStatus('已複製');setTimeout(()=>setActionStatus(''),1600)}catch{setActionStatus('複製失敗')}}
   const downloadTemplate=()=>{const blob=new Blob([templateText],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`${lesson.id}.cpp`;anchor.click();URL.revokeObjectURL(url);setActionStatus('已下載')}
   return <aside className="code-panel">
-    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div><b>完整模板 · 逐行同步</b></header>
+    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div><b>{lesson.knowledge?.implementation.scope==='extension'?'延伸實作 · 依賴先備課':'完整核心流程'} · 逐行同步</b></header>
+    <div className="code-contract"><span>INPUT</span><p>{lesson.knowledge?.implementation.input}</p><span>OUTPUT</span><p>{lesson.knowledge?.implementation.output}</p></div>
     <div className="code-template-note"><span>點任一行，動畫會跳到第一次執行該行的步驟。</span><b>{lesson.code.length} LINES · {lesson.frames.length} STEPS</b></div>
     <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
       <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code>{targetStep>=0&&<small className="code-line-step">STEP {targetStep+1}</small>}</button></div>})}</pre>
@@ -352,7 +402,7 @@ function WorkspaceResizeHandle({onPointerDown,onKeyboardResize}:{onPointerDown:(
   return <button type="button" className="workspace-resizer" onPointerDown={onPointerDown} onKeyDown={(event)=>{if(event.key==='ArrowLeft'){event.preventDefault();onKeyboardResize(-2)}if(event.key==='ArrowRight'){event.preventDefault();onKeyboardResize(2)}}} aria-label="拖曳調整動畫與程式碼寬度" title="拖曳調整左右面板寬度"><GripVertical/></button>
 }
 
-function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () => void }) {
+function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson; onBack: () => void; onNavigate:(lesson:AlgorithmLesson)=>void }) {
   const requestedStep=Number(new URLSearchParams(window.location.search).get('step') ?? 1)
   const initialStep=Number.isFinite(requestedStep)?Math.max(0,Math.min(lesson.frames.length-1,Math.floor(requestedStep)-1)):0
   const [index, setIndex] = useState(initialStep), [playing, setPlaying] = useState(false)
@@ -377,6 +427,7 @@ function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () 
       <article><header><Target size={15}/><span>什麼時候使用</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
       <article><header><BookOpen size={15}/><span>精選例題</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
     </section>
+    <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate}/>
     <BeginnerGuidePanel lesson={lesson} onStart={beginLesson}/>
     <section className="lesson-stage" ref={stageRef}>
       <div className="stage-top"><span>LIVE VISUALIZATION</span><span className="panel-size-hint"><Maximize2/>動畫、程式碼與解說視窗皆可拖曳調整</span><button className="reset-layout" onClick={resetLayout}><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? 'PLAYING' : 'PAUSED'}</span></div>
@@ -395,10 +446,10 @@ function LessonPlayer({ lesson, onBack }: { lesson: AlgorithmLesson; onBack: () 
   </main>
 }
 
-function LessonCard({lesson,onSelect}:{lesson:AlgorithmLesson;onSelect:(lesson:AlgorithmLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
+function LessonCard({lesson,onSelect}:{lesson:AlgorithmLesson;onSelect:(lesson:AlgorithmLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><div className="card-dependency"><Workflow/>{lesson.knowledge?.prerequisites.length?`${lesson.knowledge.prerequisites.length} 堂先備 · 深度 ${curriculumDepth(lesson)}`:'基礎單元'}</div><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
 
 function CategoryDetail({category,onBack,onSelect}:{category:AlgorithmCategory;onBack:()=>void;onSelect:(lesson:AlgorithmLesson)=>void}) {
-  const categoryLessons=lessons.filter((lesson)=>lesson.categoryId===category.id)
+  const categoryLessons=lessons.filter((lesson)=>lesson.categoryId===category.id).sort((a,b)=>curriculumDepth(a)-curriculumDepth(b)||Number(a.index)-Number(b.index))
   return <main className="library-page"><header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有分類</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">CATEGORY {category.index}</span></header>
     <section className="category-heading" style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index} · ALGORITHM DOMAIN</span><h1>{category.title}</h1><p>{category.zhTitle} · {category.description}</p></section>
     <section className="subcategory-list">{category.subcategories.map((subcategory)=>{const items=categoryLessons.filter((lesson)=>lesson.subcategory===subcategory);if(!items.length)return null;return <div className="subcategory" key={subcategory}><header><span>{subcategory}</span><b>{String(items.length).padStart(2,'0')} ALGORITHMS</b></header><div className="subcategory-grid">{items.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>)}</div></div>})}</section>
@@ -413,7 +464,7 @@ function Library({ onSelect }: { onSelect: (lesson: AlgorithmLesson) => void }) 
   if(category) return <CategoryDetail category={category} onBack={()=>setCategory(null)} onSelect={onSelect}/>
   return <main className="library-page"><header className="site-header"><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-note">COMPETITIVE PROGRAMMING · VISUALIZED</span></header>
     <section className="library-hero relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"/><span className="relative z-10">STRUCTURED ALGORITHM LIBRARY</span><h1 className="relative z-10">先建立地圖，<br/><em>再理解細節。</em></h1><p className="relative z-10">從演算法領域進入子分類，再學習具體演算法。動畫、資料結構狀態與 C++ 程式碼在每一步保持同步。</p></section>
-    <section className="beginner-path"><header><div><span>第一次來？</span><h2>照這 5 堂建立第一張演算法地圖</h2></div><p>每堂都會先教你看畫面，再讓動畫、變數與 C++ 程式碼逐步同步。</p></header><div>{beginnerLessons.map(({lesson,step,reason})=><button key={lesson.id} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span>{step}</span><div><b>{lesson.zhTitle}</b><small>{lesson.title}</small><p>{reason}</p></div><ChevronRight size={15}/></button>)}</div></section>
+    <section className="beginner-path"><header><div><span>第一次來？</span><h2>照這 6 堂建立第一張演算法地圖</h2></div><p>每堂都會先教你看畫面，再讓動畫、變數與 C++ 程式碼逐步同步。</p></header><div>{beginnerLessons.map(({lesson,step,reason})=><button key={lesson.id} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span>{step}</span><div><b>{lesson.zhTitle}</b><small>{lesson.title}</small><p>{reason}</p></div><ChevronRight size={15}/></button>)}</div></section>
     <label className="library-search"><Search/><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="搜尋演算法、分類或中文名稱"/><span>{query?`${matched.length} RESULTS`:`${lessons.length} ALGORITHMS`}</span></label>
     {query?<section className="search-results">{matched.length?matched.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>):<p>找不到符合的演算法。</p>}</section>:<section className="category-grid">{categories.map((category)=><button key={category.id} className="category-card" onClick={()=>setCategory(category)} style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index}</span><Layers3/><small>{category.subcategories.length} SUBCATEGORIES</small><h2>{category.title}</h2><p>{category.zhTitle} · {category.description}</p><footer><b>{lessons.filter((lesson)=>lesson.categoryId===category.id).length} 個演算法</b><ChevronRight/></footer></button>)}</section>}
   </main>
@@ -426,5 +477,5 @@ export default function App() {
   const selectLesson=(lesson:AlgorithmLesson)=>{window.history.replaceState(null,'',`?lesson=${lesson.id}`);setSelected(lesson)}
   const clearLesson=()=>{window.history.replaceState(null,'',window.location.pathname);setSelected(null)}
   const catalogManifest=JSON.stringify(lessons.map(({id,visualModel,frames})=>({id,visualModel,steps:frames.length})))
-  return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{selected?<LessonPlayer lesson={selected} onBack={clearLesson}/>:<Library onSelect={selectLesson}/>}</div>
+  return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{selected?<LessonPlayer lesson={selected} onBack={clearLesson} onNavigate={selectLesson}/>:<Library onSelect={selectLesson}/>}</div>
 }

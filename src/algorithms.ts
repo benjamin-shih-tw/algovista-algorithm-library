@@ -6,6 +6,7 @@ import { advancedLessons } from './advancedLessons'
 import { completionLessons } from './completionLessons'
 import { enrichLesson, type PracticeProblem, type VisualModel } from './lessonMeta'
 import { enrichPedagogy } from './pedagogy'
+import { enrichKnowledgeCatalog, type KnowledgeUnit } from './knowledge'
 
 export type AlgorithmId = string
 export type VisualKind = 'array' | 'linear' | 'graph' | 'tree' | 'segment-tree' | 'range' | 'dp' | 'string' | 'flow' | 'math' | 'geometry' | 'transform'
@@ -95,6 +96,7 @@ export interface AlgorithmLesson {
   visualModel?: VisualModel
   beginnerGuide?: BeginnerGuide
   codeGuide?: CodeGuideLine[]
+  knowledge?: KnowledgeUnit
   usage?: string[]
   practice?: PracticeProblem[]
   sources?: { label: string; title: string; url: string }[]
@@ -239,14 +241,40 @@ const hullGuidedFrames: Frame[] = [
 
 const segmentValues = [2, 5, 1, 4, 9, 3, 7, 6]
 const segmentNodes = buildTree(segmentValues)
-const segmentFrames: Frame[] = createQueryTrace(segmentValues, 1, 5).filter((step) => step.kind !== 'visit').map((step, stepIndex) => ({
-  title: `${String(stepIndex + 1).padStart(2, '0')} · ${step.title}`,
-  explanation: `${step.explanation} 遞迴始終以完整包含、完全相離或繼續拆分三種互斥情況處理，因此不會重複或漏算任何元素。`,
+const makeSegmentStep = (id: string, kind: NonNullable<Frame['segmentStep']>['kind'], active: string[], accepted: string[], title: string, explanation: string, runningTotal = 0) => {
+  const statuses = Object.fromEntries(segmentNodes.map((node) => [node.id, accepted.includes(node.id) ? 'accepted' : active.includes(node.id) ? 'active' : 'idle'])) as NonNullable<Frame['segmentStep']>['statuses']
+  return { id, kind, activeId: active.at(-1), statuses, returnedValues: {}, runningTotal, title, explanation }
+}
+const queryTrace = createQueryTrace(segmentValues, 1, 5).filter((step) => step.kind !== 'visit')
+const selectedQueryTrace = [queryTrace[0], queryTrace[1], queryTrace[3], queryTrace[5], queryTrace[7], queryTrace[10], queryTrace.at(-2)!, queryTrace.at(-1)!].filter(Boolean)
+const buildAccepted = (maximumDepth: number) => segmentNodes.filter((node) => node.depth >= maximumDepth).map((node) => node.id)
+const updatedSegmentValues = [2, 5, 1, 4, 10, 3, 7, 6]
+const segmentBuildFrames: Frame[] = [
+  { title:'01 · 先定義每個節點的責任', explanation:'SegmentTree 物件保存 n 與 tree。節點 node 代表固定閉區間 [l,r]，值是該區間總和；左右孩子分別代表 [l,mid] 與 [mid+1,r]。', codeLine:'struct SegmentTree {', codeLines:[1,2,3], state:{phaseName:'build',operationType:'structure',nodeMeaning:'tree[node] = sum of [l,r]'}, segmentStep:makeSegmentStep('build-structure','start',['0-7'],[],'定義節點區間','根節點先代表完整陣列') },
+  { title:'02 · 配置 Tree 並呼叫 Build', explanation:'建構子先配置約 4n 個位置，再以 build(1,0,n−1,a) 從根開始。空陣列不進入遞迴，避免出現 [0,−1]。', codeLine:'if (n) build(1, 0, n - 1, a);', codeLines:[4,5], state:{phaseName:'build',operationType:'initialize',n:8,storage:'4n',rootInterval:'[0,7]'}, segmentStep:makeSegmentStep('build-init','start',['0-7'],[],'配置並開始建樹','root=[0,7]') },
+  { title:'03 · 遞迴拆到單點葉節點', explanation:'只要 l<r，就用 mid 把區間拆成兩半。每次區間長度至少減半，最後一定到達 l=r 的葉節點。', codeLine:'int mid = l + (r - l) / 2;', codeLines:[7,9,10,11], state:{phaseName:'build',operationType:'split',interval:'[0,7] → [0,3] + [4,7]',invariant:'children are disjoint and cover parent'}, segmentStep:makeSegmentStep('build-split','partial',['0-7','0-3','4-7'],[],'拆分區間','左右孩子互斥且聯集等於父區間') },
+  { title:'04 · 葉節點直接讀原陣列', explanation:'當 l=r，這個節點只包含 a[l]，因此 tree[node]=a[l]。葉節點是整棵樹所有聚合值的 base case。', codeLine:'tree[node] = a[l];', codeLines:[8], state:{phaseName:'build',operationType:'write leaf',leafValues:'2,5,1,4,9,3,7,6'}, segmentStep:makeSegmentStep('build-leaves','accept',['7-7'],buildAccepted(3),'寫入葉節點','每個葉節點等於一個原始值') },
+  { title:'05 · 由孩子向上 Pull', explanation:'左右孩子完成後，父節點以 tree[left]+tree[right] 重算。這個 pull 關係同時會在之後的 point update 重複使用。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[12], state:{phaseName:'build',operationType:'pull',example:'[0,1] = 2 + 5 = 7'}, segmentStep:makeSegmentStep('build-pull','return',['0-1'],[...buildAccepted(3),'0-1'],'合併孩子','父節點等於左右子節點總和',7) },
+  { title:'06 · Build 完成，根保存總和 37', explanation:'所有內部節點都已由葉節點向上合併，根節點 [0,7] 保存 37。建樹拜訪每個節點一次，因此時間與記憶體都是 O(n)。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[12,13], state:{phaseName:'build',operationType:'build complete',rootSum:37,complexity:'O(n)'}, segmentStep:makeSegmentStep('build-complete','complete',['0-7'],segmentNodes.map((node)=>node.id),'建樹完成','所有節點值已可供 query 使用',37) },
+]
+const segmentQueryFrames: Frame[] = selectedQueryTrace.map((step, index) => ({
+  title: `${String(index + 7).padStart(2, '0')} · Query：${step.title}`,
+  explanation: `${step.explanation} 查詢只會使用 build 已建立的節點摘要；三種情況「相離、包含、部分重疊」互斥且完備，因此不重算也不漏算。`,
   codeLine: step.kind === 'accept' ? 'return tree[node]' : step.kind === 'return' ? 'return left + right' : 'query(node, left, right)',
-  codeLines: step.kind === 'accept' ? [4] : step.kind === 'ignore' ? [3] : step.kind === 'return' ? [7] : step.kind === 'partial' ? [5,6,7] : [2],
-  state: { activeInterval: step.activeId ?? 'root', runningTotal: step.runningTotal, event: step.kind },
+  codeLines: step.kind === 'accept' ? [16] : step.kind === 'ignore' ? [15] : step.kind === 'return' || step.kind === 'complete' ? [20] : step.kind === 'partial' ? [17,18,19] : [14,22],
+  state: { phaseName:'query', operationType:'range query', activeInterval: step.activeId ?? 'root', query:'[1,5]', runningTotal: step.runningTotal, event: step.kind },
   segmentStep: step,
 }))
+const updatePath = ['0-7','4-7','4-5','4-4']
+const segmentUpdateFrames: Frame[] = [
+  { title:'15 · Update 從根定位索引 4', explanation:'呼叫 update(4,10)。每層比較 index 與 mid，只進入包含索引 4 的孩子；其他子樹完全不需要改動。', codeLine:'if (index <= mid)', codeLines:[23,25,26,27], state:{phaseName:'update',operationType:'point update',index:4,value:'9 → 10',path:updatePath}, values:segmentValues, segmentStep:makeSegmentStep('update-descend','partial',updatePath,[],'沿唯一分支下降','只有包含 index=4 的節點會被修改') },
+  { title:'16 · 到達葉節點並覆寫新值', explanation:'遞迴到 [4,4] 時 l=r，將 tree[node] 從 9 改成 10 後返回。這是 update 唯一直接讀取新值的位置。', codeLine:'tree[node] = value;', codeLines:[24], state:{phaseName:'update',operationType:'write leaf',leaf:'[4,4]',value:'9 → 10'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('update-leaf','accept',['4-4'],['4-4'],'更新葉節點','a[4] 現在是 10',10) },
+  { title:'17 · Pull 第一個祖先 [4,5]', explanation:'葉節點返回後，以左右孩子重算 [4,5]：10+3=13。兄弟 [5,5] 沒有改變，但它仍是重算父節點所需的資料。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[28], state:{phaseName:'update',operationType:'pull',interval:'[4,5]',sum:'12 → 13'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('update-pull-1','return',['4-5'],['4-4','5-5','4-5'],'重算局部祖先','[4,5] = 10 + 3 = 13',13) },
+  { title:'18 · 沿路 Pull 回根節點', explanation:'依序重算 [4,7] 與 [0,7]，根總和從 37 變成 38。只有 O(log n) 個祖先被寫入。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[28,29,30], state:{phaseName:'update',operationType:'pull to root',rootSum:'37 → 38',complexity:'O(log n)'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('update-pull-root','return',['0-7'],updatePath,'更新所有祖先','根節點現在保存 38',38) },
+  { title:'19 · 再次 Query 會讀到新答案', explanation:'update 已維持「每個父節點等於左右孩子合併」的不變量，因此後續任何 query 都會使用更新後的 10，而不會讀到舊值 9。', codeLine:'long long query(int l, int r) const', codeLines:[22], state:{phaseName:'verify',operationType:'query after update',invariant:'every node equals merge(children)'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('update-verify','complete',['0-7'],segmentNodes.map((node)=>node.id),'驗證更新後結構','build → query → update 共享同一個節點 invariant',38) },
+  { title:'20 · 完整 lifecycle 已閉合', explanation:'Build 建立所有節點；Query 只讀取並合併互斥節點；Update 改葉節點後 Pull 回根。三個操作共用同一個區間定義與合併規則。', codeLine:'void update(int index, long long value)', codeLines:[30,31], state:{phaseName:'verify',operationType:'lifecycle complete',result:'build O(n) · query O(log n) · update O(log n)'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('lifecycle-complete','complete',['0-7'],segmentNodes.map((node)=>node.id),'完整操作關係','build → query → update',38) },
+]
+const segmentFrames: Frame[] = [...segmentBuildFrames, ...segmentQueryFrames, ...segmentUpdateFrames]
 
 const binaryCode = [
   'int binarySearch(vector<int>& a, int target) {', '  int low = 0, high = (int)a.size() - 1;', '  while (low <= high) {',
@@ -265,10 +293,37 @@ const dijkstraCode = [
   '      if (d + w < dist[v]) {', '        dist[v] = d + w;', '        pq.push({dist[v], v});', '      }', '    }', '  }', '}',
 ]
 const segmentCode = [
-  'long long query(int node, int l, int r, int ql, int qr) {', '  // node represents [l, r]', '  if (r < ql || qr < l) return 0;',
-  '  if (ql <= l && r <= qr) return tree[node];', '  int mid = l + (r - l) / 2;',
-  '  long long left = query(node*2, l, mid, ql, qr);', '  long long right = query(node*2+1, mid+1, r, ql, qr);',
-  '  return left + right;', '}',
+  'struct SegmentTree {',
+  '  int n;',
+  '  vector<long long> tree;',
+  '  explicit SegmentTree(const vector<long long>& a) : n(a.size()), tree(4 * max(1, n), 0) {',
+  '    if (n) build(1, 0, n - 1, a);',
+  '  }',
+  '  void build(int node, int l, int r, const vector<long long>& a) {',
+  '    if (l == r) { tree[node] = a[l]; return; }',
+  '    int mid = l + (r - l) / 2;',
+  '    build(node * 2, l, mid, a);',
+  '    build(node * 2 + 1, mid + 1, r, a);',
+  '    tree[node] = tree[node * 2] + tree[node * 2 + 1];',
+  '  }',
+  '  long long query(int node, int l, int r, int ql, int qr) const {',
+  '    if (r < ql || qr < l) return 0;',
+  '    if (ql <= l && r <= qr) return tree[node];',
+  '    int mid = l + (r - l) / 2;',
+  '    long long left = query(node * 2, l, mid, ql, qr);',
+  '    long long right = query(node * 2 + 1, mid + 1, r, ql, qr);',
+  '    return left + right;',
+  '  }',
+  '  long long query(int l, int r) const { return n ? query(1, 0, n - 1, l, r) : 0; }',
+  '  void update(int node, int l, int r, int index, long long value) {',
+  '    if (l == r) { tree[node] = value; return; }',
+  '    int mid = l + (r - l) / 2;',
+  '    if (index <= mid) update(node * 2, l, mid, index, value);',
+  '    else update(node * 2 + 1, mid + 1, r, index, value);',
+  '    tree[node] = tree[node * 2] + tree[node * 2 + 1];',
+  '  }',
+  '  void update(int index, long long value) { if (n) update(1, 0, n - 1, index, value); }',
+  '};',
 ]
 const hullCode = [
   'vector<Point> convexHull(vector<Point> p) {', '  sort(p.begin(), p.end());', '  vector<Point> lower, upper;', '  for (Point x : p) {',
@@ -439,12 +494,14 @@ const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): 
   }
 }
 
-export const lessons: AlgorithmLesson[] = [...coreLessons, ...foundationLessons, ...graphTreeLessons, ...dataDpLessons, ...advancedLessons, ...completionLessons]
+const pedagogicalLessons: AlgorithmLesson[] = [...coreLessons, ...foundationLessons, ...graphTreeLessons, ...dataDpLessons, ...advancedLessons, ...completionLessons]
   .map(ensureGuidedLesson)
   .map(enrichLesson)
   .map(enrichPedagogy)
   .map((lesson) => ({ ...lesson, fidelity: lesson.animationVersion === 2 ? 'concrete' as const : 'semantic' as const }))
   .map((lesson) => ({ ...lesson, frames: lesson.frames.map((frame, step) => ({ ...frame, trace: buildVisualTrace(lesson, frame, step) })) }))
   .map((lesson, index) => ({ ...lesson, index: String(index + 1).padStart(3, '0') }))
+
+export const lessons: AlgorithmLesson[] = enrichKnowledgeCatalog(pedagogicalLessons)
 
 export { segmentNodes, segmentValues }

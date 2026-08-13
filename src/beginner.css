@@ -49,7 +49,7 @@
 
 .beginner-path > div {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
@@ -129,14 +129,12 @@
 
 @media (max-width: 1000px) {
   .beginner-path > div { grid-template-columns: repeat(2, 1fr); }
-  .beginner-path button:last-child { grid-column: 1 / -1; }
 }
 
 @media (max-width: 700px) {
   .beginner-path { padding: 17px; }
   .beginner-path > header { grid-template-columns: 1fr; }
   .beginner-path > div { grid-template-columns: 1fr; }
-  .beginner-path button:last-child { grid-column: auto; }
   .beginner-path > header h2 { font-size: 21px; }
 }
 
