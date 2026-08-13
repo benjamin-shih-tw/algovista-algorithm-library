@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Zap } from 'lucide-react'
 import { categories, lessons, segmentNodes, segmentValues, type AlgorithmCategory, type AlgorithmLesson, type Frame, type VisualKind } from './algorithms'
 import { CppCode } from './CppCode'
 import { ArrayAdaptiveScene, DPAdaptiveScene, FlowAdaptiveScene, GeometryAdaptiveScene, GraphAdaptiveScene, LinearAdaptiveScene, MathAdaptiveScene, RangeAdaptiveScene, StringAdaptiveScene, TransformAdaptiveScene, TreeAdaptiveScene } from './AdaptiveScenes'
@@ -294,8 +294,10 @@ function AlgorithmScene({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
 
 function BeginnerGuidePanel({lesson,onStart}:{lesson:AlgorithmLesson;onStart:()=>void}) {
   const guide=lesson.beginnerGuide!
-  return <section className="beginner-guide">
-    <header><Lightbulb size={17}/><div><span>BEGINNER FIRST</span><h2>播放前，先建立理解地圖</h2></div></header>
+  const [expanded,setExpanded]=useState(false)
+  return <section className={`beginner-guide ${expanded?'expanded':'collapsed'}`}>
+    <header><button className="guide-collapse-trigger" onClick={()=>setExpanded((value)=>!value)} aria-expanded={expanded} aria-controls={`beginner-guide-${lesson.id}`}><Lightbulb size={17}/><div><span>BEGINNER FIRST</span><h2>播放前，先建立理解地圖</h2><p>{expanded?'收起理解地圖':'需要時再展開，不影響直接開始動畫'}</p></div><span className="guide-toggle-label">{expanded?'收起':'展開'}<ChevronDown size={16}/></span></button></header>
+    <AnimatePresence initial={false}>{expanded&&<motion.div id={`beginner-guide-${lesson.id}`} className="guide-collapsible-content" initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:.24,ease:'easeOut'}}>
     <div className="guide-foundation">
       <article><Eye size={17}/><span>畫面要怎麼看</span><p>{guide.mentalModel}</p></article>
       <article><Target size={17}/><span>使用前提</span><p>{guide.prerequisite}</p></article>
@@ -307,6 +309,7 @@ function BeginnerGuidePanel({lesson,onStart}:{lesson:AlgorithmLesson;onStart:()=
       <aside><span><AlertTriangle size={14}/> 初學者最常錯</span>{guide.pitfalls.map((item)=><p key={item}>{item}</p>)}</aside>
     </div>
     <button className="guide-start" onClick={onStart}><Play size={15}/> 從第 1 步開始看動畫 <ChevronRight size={15}/></button>
+    </motion.div>}</AnimatePresence>
   </section>
 }
 
