@@ -5,6 +5,7 @@ import { dataDpLessons } from './dataDpLessons'
 import { advancedLessons } from './advancedLessons'
 import { completionLessons } from './completionLessons'
 import { enrichLesson, type PracticeProblem, type VisualModel } from './lessonMeta'
+import { enrichPedagogy } from './pedagogy'
 
 export type AlgorithmId = string
 export type VisualKind = 'array' | 'linear' | 'graph' | 'tree' | 'segment-tree' | 'range' | 'dp' | 'string' | 'flow' | 'math' | 'geometry' | 'transform'
@@ -21,6 +22,36 @@ export interface VisualTrace {
   nodes: VisualTraceNode[]
   focus: string[]
   activeCode: string
+}
+export interface BeginnerStep {
+  observe: string
+  action: string
+  reason: string
+  result: string
+  codeMeaning: string
+  pitfall?: string
+}
+export interface BeginnerGuide {
+  mentalModel: string
+  prerequisite: string
+  invariant: string
+  walkthrough: string[]
+  pitfalls: string[]
+  glossary: { term: string; meaning: string }[]
+}
+export interface CodeGuideLine {
+  lineNumber: number
+  code: string
+  role: string
+  syntax: string
+  purpose: string
+  effect: string
+}
+export interface VisualCue {
+  mode: 'observe' | 'evaluate' | 'mutate' | 'verify'
+  label: string
+  focus: string[]
+  progress: number
 }
 export interface Frame {
   title: string
@@ -41,6 +72,10 @@ export interface Frame {
   codeLines: number[]
   state?: Record<string, string | number | string[]>
   trace?: VisualTrace
+  visualStep?: number
+  visualProgress?: number
+  beginner?: BeginnerStep
+  visualCue?: VisualCue
 }
 
 export interface AlgorithmLesson {
@@ -58,6 +93,8 @@ export interface AlgorithmLesson {
   fidelity?: VisualFidelity
   animationVersion?: 2
   visualModel?: VisualModel
+  beginnerGuide?: BeginnerGuide
+  codeGuide?: CodeGuideLine[]
   usage?: string[]
   practice?: PracticeProblem[]
   sources?: { label: string; title: string; url: string }[]
@@ -267,43 +304,100 @@ const cppBookSourceByCategory: Record<CategoryId, { label: string; title: string
   advanced: { label: '你的教材', title: 'CPPBook · OI', url: 'https://pingchungchang.github.io/CPPBook/lectures/oi/' },
 }
 
-const microStepLabels = [
-  { prefix: '觀察', phase: 0, note: '先讀取這一階段需要的資料與不變量，暫時不改動結構。' },
-  { prefix: '判斷', phase: 1, note: '逐項代入目前條件，確認接下來執行哪一條程式分支。' },
-  { prefix: '執行', phase: 1, note: '執行高亮程式碼造成的唯一狀態變化，其他資料保持不變。' },
-  { prefix: '確認', phase: 2, note: '檢查更新後仍符合不變量，再把結果交給下一個步驟。' },
-] as const
+const conciseSentence = (text: string) => text.split(/(?<=[。！？])/).map((sentence) => sentence.trim()).find(Boolean) ?? text
 
-const expandGuidedFrames = (lesson: AlgorithmLesson): Frame[] => lesson.frames.flatMap((frame, phaseIndex, frames) => {
-  const previous=frames[Math.max(0,phaseIndex-1)]
-  const stateEntries=Object.entries(frame.state??{})
-  return microStepLabels.map((micro,microIndex):Frame=>{
-    const usePrevious=microIndex<2&&phaseIndex>0
-    const visibleEntries=stateEntries.slice(0,Math.max(1,Math.ceil(stateEntries.length*(microIndex+1)/microStepLabels.length)))
-    const codeLineNumber=microIndex===0?frame.codeLines[0]:microIndex===3?frame.codeLines.at(-1)!:frame.codeLines[Math.min(microIndex-1,frame.codeLines.length-1)]
-    const baseActive=frame.active??[]
-    const active=microIndex===0?baseActive.slice(0,1):microIndex===1?baseActive.slice(0,Math.max(1,Math.ceil(baseActive.length/2))):baseActive
+const meaningfulCodeLines = (lesson: AlgorithmLesson) => lesson.code
+  .map((line, index) => ({ line: line.trim(), number: index + 1 }))
+  .filter(({ line }) => line && !/^[{}]+;?$/.test(line) && !line.startsWith('//'))
+
+const codeStepRole = (line: string) => {
+  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{.*\bif\b.*\breturn\b/.test(line)) return '進入函式並處理立即可判斷的特例'
+  if (/\bif\b.*\breturn\b/.test(line)) return '檢查特例，成立時提前回傳'
+  if (/\breturn\b/.test(line)) return '驗證並回傳答案'
+  if (/^if\s*\(/.test(line) || /^else\b/.test(line)) return '把目前數值代入分支條件'
+  if (/^(for|while)\s*\(/.test(line)) return '檢查迴圈是否還有工作'
+  if (/\b(push|push_back|push_front|insert|emplace|pop|pop_back|pop_front|erase|swap)\b/.test(line)) return '更新演算法使用的資料結構'
+  if (/\[[^\]]+\]\s*(\+=|-=|\*=|\/=|=)/.test(line) || /(^|\s)\w+\s*(\+=|-=|\*=|\/=|=)/.test(line)) return '算出並寫入新的狀態'
+  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?$/.test(line)) return '確認函式輸入與輸出'
+  if (/\w+\s*\([^;]*\);?$/.test(line)) return '呼叫子程序處理目前子問題'
+  return '讀取這一步需要的資料'
+}
+
+const conditionOf = (line: string) => line.match(/^(?:if|while|for)\s*\((.*)\)/)?.[1] ?? '依目前資料執行這一行'
+
+const expandGuidedFrames = (lesson: AlgorithmLesson): Frame[] => {
+  const meaningful = meaningfulCodeLines(lesson)
+  const total = Math.min(20, Math.max(10, meaningful.length))
+  const phases = lesson.frames
+  const firstInvariant = phases.find((frame) => frame.state?.invariant)?.state?.invariant ?? conciseSentence(phases[0]?.explanation ?? lesson.description)
+  const lineAssignments = Array.from({ length: total }, (_, step) => Math.floor(step * meaningful.length / total))
+
+  return Array.from({ length: total }, (_, step): Frame => {
+    const start = lineAssignments[step]
+    const end = Math.max(start + 1, Math.floor((step + 1) * meaningful.length / total))
+    const occurrenceIndex = lineAssignments.slice(0, step + 1).filter((item) => item === start).length - 1
+    const occurrenceTotal = lineAssignments.filter((item) => item === start).length
+    const bucket = meaningful.slice(start, Math.min(meaningful.length, end))
+    const selected = bucket.length ? bucket : [meaningful[Math.min(start, meaningful.length - 1)]].filter(Boolean)
+    const codeLines = selected.map((item) => item.number)
+    const primary = selected[0] ?? { line: lesson.code[0]?.trim() ?? '', number: 1 }
+    const phaseIndex = Math.min(phases.length - 1, Math.floor(step * phases.length / total))
+    const phase = phases[phaseIndex]
+    const previous = phases[Math.max(0, phaseIndex - 1)]
+    const baseRole = codeStepRole(primary.line)
+    const repeatedRoles = [
+      `讀取輸入，準備${baseRole}`,
+      `代入實際值，判斷是否${baseRole}`,
+      `執行目前敘述，開始${baseRole}`,
+      `比較執行前後，確認${baseRole}`,
+      `核對結果，完成${baseRole}`,
+    ]
+    const role = occurrenceTotal === 1 ? baseRole : repeatedRoles[Math.min(repeatedRoles.length - 1, Math.round(occurrenceIndex / Math.max(1, occurrenceTotal - 1) * (repeatedRoles.length - 1)))]
+    const before = phaseIndex === 0 ? '尚未執行這個階段，只有輸入與初始值' : `${previous.title}：${conciseSentence(previous.explanation)}`
+    const completedAfter = `${phase.title}：${conciseSentence(phase.explanation)}`
+    const after = occurrenceIndex < occurrenceTotal - 1
+      ? occurrenceIndex === 0
+        ? `已定位這行要讀取的資料，尚未改變原狀態`
+        : occurrenceIndex === 1
+          ? `已完成代入「${conditionOf(primary.line)}」，準備執行對應分支`
+          : `正在把本行造成的變化寫入高亮資料`
+      : completedAfter
+    const baseActive = phase.active ?? []
+    const revealRatio = (step + 1) / total
+    const activeCount = Math.max(1, Math.ceil(baseActive.length * Math.min(1, revealRatio * 1.4)))
+    const state = {
+      algorithm: lesson.zhTitle,
+      goal: phase.title,
+      before,
+      condition: conditionOf(primary.line),
+      operation: role,
+      after,
+      rationale: phase.explanation,
+      invariant: firstInvariant,
+      timelineStep: step + 1,
+      phase: phaseIndex,
+    }
     return {
-      ...frame,
-      title: `${micro.prefix} ${phaseIndex+1}.${microIndex+1}：${frame.title}`,
-      explanation: `${frame.explanation} ${micro.note} 右側目前高亮的是這個微步驟實際對應的程式行。`,
-      codeLine: lesson.code[codeLineNumber-1]?.trim()??frame.codeLine,
-      codeLines: microIndex===2?frame.codeLines:[codeLineNumber],
-      state: Object.fromEntries([['algorithm',lesson.zhTitle],...visibleEntries,['microPhase',micro.prefix],['phase',micro.phase]]),
-      values: usePrevious?(previous.values??frame.values):frame.values,
-      low: usePrevious?(previous.low??frame.low):frame.low,
-      high: usePrevious?(previous.high??frame.high):frame.high,
-      mid: microIndex<2?undefined:frame.mid,
-      active,
-      accepted: microIndex===3?(frame.accepted??frame.active):undefined,
-      muted: microIndex<2?previous.muted:frame.muted,
-      queue: microIndex<2?previous.queue:frame.queue,
-      priorityQueue: microIndex<2?previous.priorityQueue:frame.priorityQueue,
-      distances: usePrevious?(previous.distances??frame.distances):frame.distances,
+      ...phase,
+      title: `${String(step + 1).padStart(2, '0')}．${role}`,
+      explanation: `第 ${primary.number} 行負責「${role}」，目前屬於「${phase.title}」。${phase.explanation} 執行前是 ${before}；完成這行後應得到 ${after}。`,
+      codeLine: primary.line,
+      codeLines,
+      state,
+      values: phase.values ?? previous.values,
+      low: phase.low ?? previous.low,
+      high: phase.high ?? previous.high,
+      mid: phase.mid,
+      active: baseActive.slice(0, activeCount),
+      accepted: step === total - 1 ? (phase.accepted ?? phase.active) : phase.accepted,
+      muted: phase.muted,
+      queue: phase.queue,
+      priorityQueue: phase.priorityQueue,
+      distances: phase.distances,
       trace: undefined,
     }
   })
-})
+}
 
 const ensureGuidedLesson = (lesson: AlgorithmLesson): AlgorithmLesson => {
   if (lesson.animationVersion===2) return lesson
@@ -318,7 +412,7 @@ const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): 
   const entries = Object.entries(frame.state ?? {})
   const ratio = lesson.frames.length <= 1 ? 1 : step / (lesson.frames.length - 1)
   const phase: VisualTrace['phase'] = ratio < .34 ? 'prepare' : ratio < .78 ? 'execute' : 'verify'
-  const semanticEntries = entries.filter(([key]) => !['phase', 'status'].includes(key))
+  const semanticEntries = entries.filter(([key]) => !['phase', 'status', 'algorithm', 'microStep', 'microPhase', 'timelineStep'].includes(key))
   const first = semanticEntries[0]
   const remainingEntries = semanticEntries.slice(1)
   const operation = remainingEntries.find(([key]) => /operation|transition|decision|update|edge|current|query|focus/i.test(key)) ?? remainingEntries[0]
@@ -348,6 +442,7 @@ const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): 
 export const lessons: AlgorithmLesson[] = [...coreLessons, ...foundationLessons, ...graphTreeLessons, ...dataDpLessons, ...advancedLessons, ...completionLessons]
   .map(ensureGuidedLesson)
   .map(enrichLesson)
+  .map(enrichPedagogy)
   .map((lesson) => ({ ...lesson, fidelity: lesson.animationVersion === 2 ? 'concrete' as const : 'semantic' as const }))
   .map((lesson) => ({ ...lesson, frames: lesson.frames.map((frame, step) => ({ ...frame, trace: buildVisualTrace(lesson, frame, step) })) }))
   .map((lesson, index) => ({ ...lesson, index: String(index + 1).padStart(3, '0') }))

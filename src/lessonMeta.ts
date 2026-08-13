@@ -142,6 +142,19 @@ const cses = (title: string, task: string, note: string): PracticeProblem => ({ 
 const atcoder = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'AtCoder', title, url: `https://atcoder.jp/contests/${task.split('/')[0]}/tasks/${task.split('/')[1]}`, note })
 const codeforces = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'Codeforces', title, url: `https://codeforces.com/problemset/problem/${task.replace('-', '/')}`, note })
 
+const practiceById: Record<string, PracticeProblem> = {
+  'linear-search': atcoder('Buildings','abc353/abc353_a','從左到右找第一個符合條件的位置；不需要排序，也不能跳格。'),
+  'binary-search': cses('Factory Machines','1620','先證明答案具有單調性，再二分最小可行時間。'),
+  bfs: cses('Message Route','1667','用 FIFO queue 逐層找無權圖最短路並重建路徑。'),
+}
+
+const usageById: Record<string, [string,string]> = {
+  'linear-search': ['資料沒有排序，而你要找某個值或第一個符合條件的位置時。','資料量不大或只查一次；每個被排除的位置都必須親自比較，不能憑大小跳過。'],
+  'binary-search': ['資料已排序，或答案是否可行具有「先全部不行、之後全部可行」的單調性時。','資料量大且需要把搜尋次數從 O(n) 降到 O(log n)；使用前必須先說清楚左右邊界代表什麼。'],
+  bfs: ['圖沒有邊權，或每條邊成本都相同，並且要找最少邊數時。','使用 FIFO queue 保證距離較小的節點先處理；若邊權不同，不能直接把 BFS 當 Dijkstra。'],
+  'prefix-sum': ['同一個不變陣列上會反覆詢問區間總和時。','先用 O(n) 建立 prefix；之後每次查詢以 prefix[r+1]−prefix[l] 在 O(1) 完成，若陣列頻繁修改則不適合直接使用。'],
+}
+
 const practiceByModel: Partial<Record<VisualModel, PracticeProblem>> = {
   'array-search': cses('Sum of Two Values','1640','把搜尋條件落到實際索引。'),
   'array-two-pointers': cses('Ferris Wheel','1090','排序後讓左右指標單調移動。'),
@@ -287,6 +300,21 @@ const triggerByModel: Partial<Record<VisualModel, string>> = {
   'fourier-transform': '需要大量係數卷積，直接 O(n²) 無法通過。',
 }
 
+const triggerByVisualKind: Record<string, string> = {
+  array: '資料可依索引排列；先確認是否具備排序、單調性、連續區間或可安全排除候選的條件。',
+  linear: '處理順序是核心限制，且只需要從容器指定的一端加入、查看或移除候選。',
+  graph: '輸入描述物件間的連接關係；先確認圖的方向、邊權、連通性與是否可能含環。',
+  tree: '輸入保證連通且無環，任兩點只有一條簡單路徑，因此能使用父子、子樹與祖先關係。',
+  range: '查詢與修改會重複出現在不同區間，值得先建立可合併的摘要以避免每次重新掃描。',
+  dp: '大問題會重複依賴相同子問題，且能明確定義有限狀態、轉移來源與無後效性的計算順序。',
+  string: '輸入核心是字元順序、前綴、後綴或多模式匹配，需要重用先前比對結果而不是重新開始。',
+  flow: '每個選擇可表示成容量、成本或配對限制，且解答需要同時滿足局部限制與全域守恆。',
+  math: '答案可由等價公式或代數不變量推導；先確認整數範圍、取模規則、溢位與特殊值 0、1。',
+  geometry: '輸入是平面上的點、線、圓或多邊形；先統一座標型別、方向定義與浮點誤差策略。',
+  transform: '直接在原表示中兩兩組合太慢，且運算能轉到另一個基底或點值表示後逐點完成。',
+  'segment-tree': '需要交錯處理區間查詢與更新，且節點保存的資訊能以具結合律的運算合併。',
+}
+
 export const enrichLesson = <T extends { id: string; title: string; zhTitle: string; description: string }>(lesson: T) => {
   const visualModel = visualModelById[lesson.id]
   if (!visualModel) throw new Error(`Missing visual model for ${lesson.id}`)
@@ -296,10 +324,10 @@ export const enrichLesson = <T extends { id: string; title: string; zhTitle: str
     ...lesson,
     visualModel,
     visual: lesson.id === 'segment-tree' ? 'segment-tree' : visualKindForModel(visualModel),
-    usage: [
+    usage: usageById[lesson.id] ?? [
       `題目要求${lesson.description.replace(/[。.]$/, '')}時。`,
-      triggerByModel[visualModel] ?? `輸入限制與 ${lesson.title} 的 ${visualModel.replaceAll('-', ' ')} 狀態模型吻合時。`,
+      triggerByModel[visualModel] ?? triggerByVisualKind[lesson.id === 'segment-tree' ? 'segment-tree' : visualKindForModel(visualModel)],
     ],
-    practice: [practice],
+    practice: [practiceById[lesson.id] ?? practice],
   }
 }

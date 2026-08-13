@@ -50,6 +50,7 @@ for (const lesson of lessons) {
   lesson.frames.forEach((frame, frameIndex) => {
     if (frame.explanation.length < 28) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation too short`)
     if (!frame.codeLines.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: no active code line`)
+    if (!frame.codeLine.trim() || /^[{}]+;?$/.test(frame.codeLine.trim()) || frame.codeLine.trim().startsWith('//')) errors.push(`${lesson.id} frame ${frameIndex + 1}: active code is not an executable teaching line`)
     for (const line of frame.codeLines) if (line < 1 || line > lesson.code.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: code line ${line} out of range`)
     if (!frame.trace) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing dedicated visual trace`)
     else {
@@ -64,8 +65,41 @@ for (const lesson of lessons) {
       if (owner && owner !== lesson.id) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual state duplicates ${owner}`)
       semanticTraces.set(semanticKey, lesson.id)
     }
+    if (frame.visualStep !== frameIndex) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual step is not deterministic`)
+    const expectedProgress = lesson.frames.length <= 1 ? 1 : frameIndex / (lesson.frames.length - 1)
+    if (frame.visualProgress === undefined || Math.abs(frame.visualProgress - expectedProgress) > 0.0001) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual progress mismatch`)
+    if (!frame.visualCue) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing visible micro-animation cue`)
+    else if (frame.visualCue.progress !== frame.visualProgress || !frame.visualCue.label) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual cue is not synchronized`)
+    if (!frame.beginner) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing beginner explanation`)
+    else {
+      for (const [key, value] of Object.entries(frame.beginner)) {
+        if (key !== 'pitfall' && value.length < 18) errors.push(`${lesson.id} frame ${frameIndex + 1}: beginner ${key} is too short`)
+      }
+      if (new Set([frame.beginner.observe, frame.beginner.action, frame.beginner.reason, frame.beginner.result]).size !== 4) errors.push(`${lesson.id} frame ${frameIndex + 1}: beginner reasoning cards repeat each other`)
+      const activeSource = frame.codeLines.map((line) => lesson.code[line - 1] ?? '').join(' ')
+      const hasCondition = Boolean(frame.state?.condition) || /\b(if|while|for)\s*\(/.test(activeSource)
+      if (!hasCondition && frame.beginner.action.includes('代入「高亮程式行')) errors.push(`${lesson.id} frame ${frameIndex + 1}: non-conditional line is explained as a condition`)
+    }
+    if (['math','range','dp','transform'].includes(lesson.visual) && frame.active?.some((item) => /^[A-D]$/.test(item))) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual focus belongs to an unrelated graph template`)
   })
+  if (!lesson.beginnerGuide) errors.push(`${lesson.id}: missing beginner guide`)
+  else {
+    if (lesson.beginnerGuide.walkthrough.length < 3) errors.push(`${lesson.id}: beginner walkthrough is incomplete`)
+    if (lesson.beginnerGuide.pitfalls.length < 2) errors.push(`${lesson.id}: beginner pitfalls are incomplete`)
+    if (lesson.beginnerGuide.glossary.length < 3 || new Set(lesson.beginnerGuide.glossary.map((item) => item.term)).size !== lesson.beginnerGuide.glossary.length) errors.push(`${lesson.id}: beginner glossary is incomplete`)
+  }
+  const meaningfulLines = lesson.code
+    .map((line, index) => ({ line: line.trim(), number: index + 1 }))
+    .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//'))
+  for (const { line, number } of meaningfulLines) if (/\.\.\.|for each|write n-1|random c|childContaining/.test(line)) errors.push(`${lesson.id}: code line ${number} still contains pseudocode placeholder text`)
+  const explainedLines = new Set(lesson.frames.flatMap((frame) => frame.codeLines))
+  for (const { number } of meaningfulLines) if (!explainedLines.has(number)) errors.push(`${lesson.id}: code line ${number} is never explained`)
+  const guidedLines = new Set(lesson.codeGuide?.map((item) => item.lineNumber) ?? [])
+  for (const { number } of meaningfulLines) if (!guidedLines.has(number)) errors.push(`${lesson.id}: code line ${number} has no line-by-line guide`)
+  if (lesson.codeGuide?.some((item) => !item.syntax || !item.purpose || !item.effect)) errors.push(`${lesson.id}: incomplete line-by-line code guide`)
   if (new Set(lesson.frames.map((frame) => frame.title)).size !== lesson.frames.length) errors.push(`${lesson.id}: repeated step title`)
+  const teachingStates = lesson.frames.map((frame) => JSON.stringify({ code: frame.codeLine, state: Object.fromEntries(Object.entries(frame.state ?? {}).filter(([key]) => key !== 'timelineStep')), active: frame.active, accepted: frame.accepted }))
+  if (new Set(teachingStates).size !== teachingStates.length) errors.push(`${lesson.id}: repeated teaching state does not create a real new step`)
 }
 
 lessons.forEach((lesson, index) => {

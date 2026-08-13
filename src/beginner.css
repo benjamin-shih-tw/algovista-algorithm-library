@@ -1,0 +1,141 @@
+.player-controls {
+  transform: translate(-50%, 18px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.player-controls.visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.beginner-path {
+  margin-bottom: 22px;
+  padding: 24px;
+  border: 1px solid rgba(169, 149, 255, .22);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(169, 149, 255, .08), rgba(12, 15, 22, .78));
+}
+
+.beginner-path > header {
+  display: grid;
+  grid-template-columns: 1fr minmax(250px, 420px);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.beginner-path > header span {
+  color: #a995ff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.beginner-path > header h2 {
+  margin: 6px 0 0;
+  font-size: 25px;
+  letter-spacing: -.04em;
+}
+
+.beginner-path > header p {
+  margin: 0;
+  color: #929aac;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.beginner-path > div {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.beginner-path button {
+  min-width: 0;
+  padding: 15px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(6, 9, 14, .38);
+  transition: .2s;
+}
+
+.beginner-path button:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lesson-accent) 48%, var(--line));
+}
+
+.beginner-path button > span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--lesson-accent) 45%, var(--line));
+  border-radius: 8px;
+  color: var(--lesson-accent);
+  font-size: 9px;
+}
+
+.beginner-path button b,
+.beginner-path button small {
+  display: block;
+}
+
+.beginner-path button b { font-size: 12px; }
+.beginner-path button small { margin-top: 3px; color: var(--lesson-accent); font-size: 8px; letter-spacing: .08em; }
+.beginner-path button p { margin: 9px 0 0; color: #8f98a9; font-size: 10px; line-height: 1.55; }
+.beginner-path button > svg { margin-top: 5px; color: #687184; }
+
+.beginner-rank {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--lesson-accent) 35%, var(--line));
+  border-radius: 999px;
+  color: var(--lesson-accent);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.guide-start {
+  width: 100%;
+  margin-top: var(--space-3);
+  padding: 14px 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--lesson-accent) 45%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lesson-accent) 12%, #0b0f16);
+  color: #eff2f6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guide-start:hover { background: color-mix(in srgb, var(--lesson-accent) 18%, #0b0f16); }
+.guide-start svg:last-child { margin-left: 2px; }
+
+@media (max-width: 1000px) {
+  .beginner-path > div { grid-template-columns: repeat(2, 1fr); }
+  .beginner-path button:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .beginner-path { padding: 17px; }
+  .beginner-path > header { grid-template-columns: 1fr; }
+  .beginner-path > div { grid-template-columns: 1fr; }
+  .beginner-path button:last-child { grid-column: auto; }
+  .beginner-path > header h2 { font-size: 21px; }
+}
