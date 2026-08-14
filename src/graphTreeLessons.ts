@@ -51,10 +51,30 @@ export const graphTreeLessons:AlgorithmLesson[]=[
     {title:'死路節點逆序加入答案',explanation:'當 top 沒有未使用出邊，該節點在剩餘圖中的位置已確定，加入 circuit 後回退。',lines:[6,7],state:{deadEnd:'F',circuit:['F'],stack:['A','B','D']},active:['F'],accepted:['F']},
     {title:'反轉得到正向迴路',explanation:'回退過程可能插入其他封閉子迴路；逆序輸出自然把它們拼接。無向圖存在歐拉迴路需所有非零度節點連通且度數為偶。',lines:[10],state:{circuit:['A','B','D','F','E','C','A'],allEdgesUsed:'true'},accepted:['A','B','C','D','E','F']},
   ]}),
-  make({id:'dsu',index:'34',category:'DSU',categoryId:'graph',subcategory:'連通性',title:'Disjoint Set Union',zhTitle:'並查集',description:'以代表元維護動態集合的合併與查詢。',complexity:'Amortized O(α(n))',accent:'#a994ff',code:['int find(int x) {','  if (parent[x] == x) return x;','  return parent[x] = find(parent[x]);','}','bool unite(int a, int b) {','  a = find(a); b = find(b);','  if (a == b) return false;','  if (size[a] < size[b]) swap(a,b);','  parent[b] = a; size[a] += size[b];','  return true;','}'],phases:[
-    {title:'Find 沿父指標找到代表元',explanation:'根節點滿足 parent[x]=x；同集合元素的 find 結果相同。',lines:[1,2],state:{parent:['A→A','B→A','D→B'],query:'find(D)'},active:['A','B','D']},
-    {title:'路徑壓縮直接連到根',explanation:'遞迴返回時令 parent[D]=A，之後查詢可跳過 B；這不改變集合劃分。',lines:[3],state:{before:'D→B→A',after:'D→A'},active:['D','A'],accepted:['A']},
-    {title:'小樹掛到大樹',explanation:'先找兩個根；若不同，以 size 決定方向。合併大小可限制樹高，搭配壓縮得到近常數攤銷時間。',lines:[5,6,7,8,9,10],state:{merge:'root(E) → root(A)',newSize:5},active:['A','E'],accepted:['A','B','D','E']},
+  make({id:'dsu',index:'34',category:'DSU',categoryId:'graph',subcategory:'連通性',title:'Disjoint Set Union',zhTitle:'並查集',description:'以代表元維護動態集合的合併與查詢。',complexity:'Amortized O(α(n))',accent:'#a994ff',code:[
+    'struct DSU {',
+    '  int n;',
+    '  vector<int> parent, size;',
+    '  explicit DSU(int n = 0) : n(n), parent(n), size(n, 1) {',
+    '    iota(parent.begin(), parent.end(), 0);',
+    '  }',
+    '  int find(int x) {',
+    '    if (parent[x] == x) return x;',
+    '    return parent[x] = find(parent[x]);',
+    '  }',
+    '  bool unite(int a, int b) {',
+    '    a = find(a); b = find(b);',
+    '    if (a == b) return false;',
+    '    if (size[a] < size[b]) swap(a, b);',
+    '    parent[b] = a; size[a] += size[b];',
+    '    return true;',
+    '  }',
+    '  bool same(int a, int b) { return find(a) == find(b); }',
+    '};',
+  ],phases:[
+    {title:'Find 沿父指標找到代表元',explanation:'根節點滿足 parent[x]=x；同集合元素的 find 結果相同。',lines:[7,8],state:{parent:['A→A','B→A','D→B'],query:'find(D)'},active:['A','B','D']},
+    {title:'路徑壓縮直接連到根',explanation:'遞迴返回時令 parent[D]=A，之後查詢可跳過 B；這不改變集合劃分。',lines:[9],state:{before:'D→B→A',after:'D→A'},active:['D','A'],accepted:['A']},
+    {title:'小樹掛到大樹',explanation:'先找兩個根；若不同，以 size 決定方向。合併大小可限制樹高，搭配壓縮得到近常數攤銷時間。',lines:[11,12,13,14,15,16,17],state:{merge:'root(E) → root(A)',newSize:5},active:['A','E'],accepted:['A','B','D','E']},
   ]}),
   make({id:'tarjan-scc',index:'35',category:'CONNECTIVITY',categoryId:'graph',subcategory:'連通性',title:'Tarjan SCC',zhTitle:'強連通分量',description:'以 DFS low-link 找出可互達的極大集合。',complexity:'O(V + E)',accent:'#a994ff',code:['void dfs(int u) {','  disc[u] = low[u] = timer++; st.push(u); inStack[u] = true;','  for (int v : graph[u]) {','    if (disc[v] == -1) { dfs(v); low[u] = min(low[u], low[v]); }','    else if (inStack[v]) low[u] = min(low[u], disc[v]);','  }','  if (low[u] == disc[u]) {','    do { v = st.top(); st.pop(); inStack[v] = false; } while (v != u);','  }','}'],phases:[
     {title:'Discovery 與 Low-Link',explanation:'disc[u] 是首次進入時間；low[u] 是沿 DFS tree 邊與指向 stack 內節點的回邊可到達的最小 disc。',lines:[1,2],state:{stack:['A','B','D'],disc:'A0 B1 D2',low:'A0 B1 D2'},active:['A','B','D']},
@@ -71,7 +91,7 @@ export const graphTreeLessons:AlgorithmLesson[]=[
     {title:'等號與橋不同',explanation:'low[v]=disc[u] 時可回到 u，但刪除 u 後這條回邊也消失，所以 u 仍是割點；橋則要求嚴格大於。',lines:[6],state:{condition:'low[D] ≥ disc[B]',cutB:'true'},active:['B'],accepted:['B']},
     {title:'DFS 根需要獨立規則',explanation:'根沒有祖先；只有當 DFS tree 中有至少兩個子樹時，刪除根才會把它們分開。',lines:[9],state:{root:'A',children:2,cutA:'true'},active:['A','B','C'],accepted:['A']},
   ]}),
-  make({id:'tree-diameter',index:'38',category:'TREE',categoryId:'trees',subcategory:'樹的基礎',title:'Tree Diameter',zhTitle:'樹直徑',description:'兩次最遠點搜尋找出樹上最長簡單路徑。',complexity:'O(V)',accent:'#8bc7ff',code:['auto [x, _] = farthest(0);','auto [y, diameter] = farthest(x);','// path x ... y is a diameter'],phases:[
+  make({id:'tree-diameter',index:'38',category:'TREE',categoryId:'trees',subcategory:'樹的基礎',title:'Tree Diameter',zhTitle:'樹直徑',description:'兩次最遠點搜尋找出樹上最長簡單路徑。',complexity:'O(V)',accent:'#8bc7ff',code:['auto [x, _] = farthest(0);','auto [y, diameter] = farthest(x);','int max_tree_diameter = diameter;'],phases:[
     {title:'從任意節點找最遠端點',explanation:'在樹上從任意 A 出發，距離最遠的節點 x 必可作為某條直徑的端點。',lines:[1],state:{start:'A',farthest:'F',distance:3},active:['A','B','D','F'],accepted:['F']},
     {title:'從端點再次找最遠點',explanation:'以 F 為起點做 DFS/BFS，最遠節點 C 與 F 之間的唯一路徑具有最大長度。',lines:[2],state:{start:'F',farthest:'C',diameter:4},active:['F','D','B','A','C'],accepted:['F','C']},
     {title:'唯一路徑保證正確',explanation:'樹沒有環且兩點路徑唯一；若存在更長路徑，從第一次搜尋端點出發會找到至少同樣遠的端點，與最遠性矛盾。',lines:[3],state:{diameterPath:['F','D','B','A','C'],length:4},accepted:['A','B','C','D','F']},

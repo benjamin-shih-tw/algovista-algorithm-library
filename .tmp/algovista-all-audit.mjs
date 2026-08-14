@@ -94,13 +94,13 @@ function createQueryTrace(values3, queryLeft, queryRight) {
     });
     return value;
   };
-  const total = query(0, values3.length - 1);
+  const total2 = query(0, values3.length - 1);
   statuses[nodeId(0, values3.length - 1)] = "returned";
   push({
     kind: "complete",
     activeId: nodeId(0, values3.length - 1),
-    title: `\u67E5\u8A62\u5B8C\u6210 \xB7 ${total}`,
-    explanation: `\u6240\u6709\u9700\u8981\u7684\u5340\u6BB5\u90FD\u5DF2\u5408\u4F75\uFF0C\u5340\u9593\u7E3D\u548C\u662F ${total}\u3002`
+    title: `\u67E5\u8A62\u5B8C\u6210 \xB7 ${total2}`,
+    explanation: `\u6240\u6709\u9700\u8981\u7684\u5340\u6BB5\u90FD\u5DF2\u5408\u4F75\uFF0C\u5340\u9593\u7E3D\u548C\u662F ${total2}\u3002`
   });
   return steps;
 }
@@ -397,30 +397,10 @@ var graphTreeLessons = [
     { title: "\u6B7B\u8DEF\u7BC0\u9EDE\u9006\u5E8F\u52A0\u5165\u7B54\u6848", explanation: "\u7576 top \u6C92\u6709\u672A\u4F7F\u7528\u51FA\u908A\uFF0C\u8A72\u7BC0\u9EDE\u5728\u5269\u9918\u5716\u4E2D\u7684\u4F4D\u7F6E\u5DF2\u78BA\u5B9A\uFF0C\u52A0\u5165 circuit \u5F8C\u56DE\u9000\u3002", lines: [6, 7], state: { deadEnd: "F", circuit: ["F"], stack: ["A", "B", "D"] }, active: ["F"], accepted: ["F"] },
     { title: "\u53CD\u8F49\u5F97\u5230\u6B63\u5411\u8FF4\u8DEF", explanation: "\u56DE\u9000\u904E\u7A0B\u53EF\u80FD\u63D2\u5165\u5176\u4ED6\u5C01\u9589\u5B50\u8FF4\u8DEF\uFF1B\u9006\u5E8F\u8F38\u51FA\u81EA\u7136\u628A\u5B83\u5011\u62FC\u63A5\u3002\u7121\u5411\u5716\u5B58\u5728\u6B50\u62C9\u8FF4\u8DEF\u9700\u6240\u6709\u975E\u96F6\u5EA6\u7BC0\u9EDE\u9023\u901A\u4E14\u5EA6\u6578\u70BA\u5076\u3002", lines: [10], state: { circuit: ["A", "B", "D", "F", "E", "C", "A"], allEdgesUsed: "true" }, accepted: ["A", "B", "C", "D", "E", "F"] }
   ] }),
-  make2({ id: "dsu", index: "34", category: "DSU", categoryId: "graph", subcategory: "\u9023\u901A\u6027", title: "Disjoint Set Union", zhTitle: "\u4E26\u67E5\u96C6", description: "\u4EE5\u4EE3\u8868\u5143\u7DAD\u8B77\u52D5\u614B\u96C6\u5408\u7684\u5408\u4F75\u8207\u67E5\u8A62\u3002", complexity: "Amortized O(\u03B1(n))", accent: "#a994ff", code: [
-    "struct DSU {",
-    "  int n;",
-    "  vector<int> parent, size;",
-    "  explicit DSU(int n = 0) : n(n), parent(n), size(n, 1) {",
-    "    iota(parent.begin(), parent.end(), 0);",
-    "  }",
-    "  int find(int x) {",
-    "    if (parent[x] == x) return x;",
-    "    return parent[x] = find(parent[x]);",
-    "  }",
-    "  bool unite(int a, int b) {",
-    "    a = find(a); b = find(b);",
-    "    if (a == b) return false;",
-    "    if (size[a] < size[b]) swap(a, b);",
-    "    parent[b] = a; size[a] += size[b];",
-    "    return true;",
-    "  }",
-    "  bool same(int a, int b) { return find(a) == find(b); }",
-    "};"
-  ], phases: [
-    { title: "Find \u6CBF\u7236\u6307\u6A19\u627E\u5230\u4EE3\u8868\u5143", explanation: "\u6839\u7BC0\u9EDE\u6EFF\u8DB3 parent[x]=x\uFF1B\u540C\u96C6\u5408\u5143\u7D20\u7684 find \u7D50\u679C\u76F8\u540C\u3002", lines: [7, 8], state: { parent: ["A\u2192A", "B\u2192A", "D\u2192B"], query: "find(D)" }, active: ["A", "B", "D"] },
-    { title: "\u8DEF\u5F91\u58D3\u7E2E\u76F4\u63A5\u9023\u5230\u6839", explanation: "\u905E\u8FF4\u8FD4\u56DE\u6642\u4EE4 parent[D]=A\uFF0C\u4E4B\u5F8C\u67E5\u8A62\u53EF\u8DF3\u904E B\uFF1B\u9019\u4E0D\u6539\u8B8A\u96C6\u5408\u5283\u5206\u3002", lines: [9], state: { before: "D\u2192B\u2192A", after: "D\u2192A" }, active: ["D", "A"], accepted: ["A"] },
-    { title: "\u5C0F\u6A39\u639B\u5230\u5927\u6A39", explanation: "\u5148\u627E\u5169\u500B\u6839\uFF1B\u82E5\u4E0D\u540C\uFF0C\u4EE5 size \u6C7A\u5B9A\u65B9\u5411\u3002\u5408\u4F75\u5927\u5C0F\u53EF\u9650\u5236\u6A39\u9AD8\uFF0C\u642D\u914D\u58D3\u7E2E\u5F97\u5230\u8FD1\u5E38\u6578\u6524\u92B7\u6642\u9593\u3002", lines: [11, 12, 13, 14, 15, 16, 17], state: { merge: "root(E) \u2192 root(A)", newSize: 5 }, active: ["A", "E"], accepted: ["A", "B", "D", "E"] }
+  make2({ id: "dsu", index: "34", category: "DSU", categoryId: "graph", subcategory: "\u9023\u901A\u6027", title: "Disjoint Set Union", zhTitle: "\u4E26\u67E5\u96C6", description: "\u4EE5\u4EE3\u8868\u5143\u7DAD\u8B77\u52D5\u614B\u96C6\u5408\u7684\u5408\u4F75\u8207\u67E5\u8A62\u3002", complexity: "Amortized O(\u03B1(n))", accent: "#a994ff", code: ["int find(int x) {", "  if (parent[x] == x) return x;", "  return parent[x] = find(parent[x]);", "}", "bool unite(int a, int b) {", "  a = find(a); b = find(b);", "  if (a == b) return false;", "  if (size[a] < size[b]) swap(a,b);", "  parent[b] = a; size[a] += size[b];", "  return true;", "}"], phases: [
+    { title: "Find \u6CBF\u7236\u6307\u6A19\u627E\u5230\u4EE3\u8868\u5143", explanation: "\u6839\u7BC0\u9EDE\u6EFF\u8DB3 parent[x]=x\uFF1B\u540C\u96C6\u5408\u5143\u7D20\u7684 find \u7D50\u679C\u76F8\u540C\u3002", lines: [1, 2], state: { parent: ["A\u2192A", "B\u2192A", "D\u2192B"], query: "find(D)" }, active: ["A", "B", "D"] },
+    { title: "\u8DEF\u5F91\u58D3\u7E2E\u76F4\u63A5\u9023\u5230\u6839", explanation: "\u905E\u8FF4\u8FD4\u56DE\u6642\u4EE4 parent[D]=A\uFF0C\u4E4B\u5F8C\u67E5\u8A62\u53EF\u8DF3\u904E B\uFF1B\u9019\u4E0D\u6539\u8B8A\u96C6\u5408\u5283\u5206\u3002", lines: [3], state: { before: "D\u2192B\u2192A", after: "D\u2192A" }, active: ["D", "A"], accepted: ["A"] },
+    { title: "\u5C0F\u6A39\u639B\u5230\u5927\u6A39", explanation: "\u5148\u627E\u5169\u500B\u6839\uFF1B\u82E5\u4E0D\u540C\uFF0C\u4EE5 size \u6C7A\u5B9A\u65B9\u5411\u3002\u5408\u4F75\u5927\u5C0F\u53EF\u9650\u5236\u6A39\u9AD8\uFF0C\u642D\u914D\u58D3\u7E2E\u5F97\u5230\u8FD1\u5E38\u6578\u6524\u92B7\u6642\u9593\u3002", lines: [5, 6, 7, 8, 9, 10], state: { merge: "root(E) \u2192 root(A)", newSize: 5 }, active: ["A", "E"], accepted: ["A", "B", "D", "E"] }
   ] }),
   make2({ id: "tarjan-scc", index: "35", category: "CONNECTIVITY", categoryId: "graph", subcategory: "\u9023\u901A\u6027", title: "Tarjan SCC", zhTitle: "\u5F37\u9023\u901A\u5206\u91CF", description: "\u4EE5 DFS low-link \u627E\u51FA\u53EF\u4E92\u9054\u7684\u6975\u5927\u96C6\u5408\u3002", complexity: "O(V + E)", accent: "#a994ff", code: ["void dfs(int u) {", "  disc[u] = low[u] = timer++; st.push(u); inStack[u] = true;", "  for (int v : graph[u]) {", "    if (disc[v] == -1) { dfs(v); low[u] = min(low[u], low[v]); }", "    else if (inStack[v]) low[u] = min(low[u], disc[v]);", "  }", "  if (low[u] == disc[u]) {", "    do { v = st.top(); st.pop(); inStack[v] = false; } while (v != u);", "  }", "}"], phases: [
     { title: "Discovery \u8207 Low-Link", explanation: "disc[u] \u662F\u9996\u6B21\u9032\u5165\u6642\u9593\uFF1Blow[u] \u662F\u6CBF DFS tree \u908A\u8207\u6307\u5411 stack \u5167\u7BC0\u9EDE\u7684\u56DE\u908A\u53EF\u5230\u9054\u7684\u6700\u5C0F disc\u3002", lines: [1, 2], state: { stack: ["A", "B", "D"], disc: "A0 B1 D2", low: "A0 B1 D2" }, active: ["A", "B", "D"] },
@@ -437,7 +417,7 @@ var graphTreeLessons = [
     { title: "\u7B49\u865F\u8207\u6A4B\u4E0D\u540C", explanation: "low[v]=disc[u] \u6642\u53EF\u56DE\u5230 u\uFF0C\u4F46\u522A\u9664 u \u5F8C\u9019\u689D\u56DE\u908A\u4E5F\u6D88\u5931\uFF0C\u6240\u4EE5 u \u4ECD\u662F\u5272\u9EDE\uFF1B\u6A4B\u5247\u8981\u6C42\u56B4\u683C\u5927\u65BC\u3002", lines: [6], state: { condition: "low[D] \u2265 disc[B]", cutB: "true" }, active: ["B"], accepted: ["B"] },
     { title: "DFS \u6839\u9700\u8981\u7368\u7ACB\u898F\u5247", explanation: "\u6839\u6C92\u6709\u7956\u5148\uFF1B\u53EA\u6709\u7576 DFS tree \u4E2D\u6709\u81F3\u5C11\u5169\u500B\u5B50\u6A39\u6642\uFF0C\u522A\u9664\u6839\u624D\u6703\u628A\u5B83\u5011\u5206\u958B\u3002", lines: [9], state: { root: "A", children: 2, cutA: "true" }, active: ["A", "B", "C"], accepted: ["A"] }
   ] }),
-  make2({ id: "tree-diameter", index: "38", category: "TREE", categoryId: "trees", subcategory: "\u6A39\u7684\u57FA\u790E", title: "Tree Diameter", zhTitle: "\u6A39\u76F4\u5F91", description: "\u5169\u6B21\u6700\u9060\u9EDE\u641C\u5C0B\u627E\u51FA\u6A39\u4E0A\u6700\u9577\u7C21\u55AE\u8DEF\u5F91\u3002", complexity: "O(V)", accent: "#8bc7ff", code: ["auto [x, _] = farthest(0);", "auto [y, diameter] = farthest(x);", "int max_tree_diameter = diameter;"], phases: [
+  make2({ id: "tree-diameter", index: "38", category: "TREE", categoryId: "trees", subcategory: "\u6A39\u7684\u57FA\u790E", title: "Tree Diameter", zhTitle: "\u6A39\u76F4\u5F91", description: "\u5169\u6B21\u6700\u9060\u9EDE\u641C\u5C0B\u627E\u51FA\u6A39\u4E0A\u6700\u9577\u7C21\u55AE\u8DEF\u5F91\u3002", complexity: "O(V)", accent: "#8bc7ff", code: ["auto [x, _] = farthest(0);", "auto [y, diameter] = farthest(x);", "// path x ... y is a diameter"], phases: [
     { title: "\u5F9E\u4EFB\u610F\u7BC0\u9EDE\u627E\u6700\u9060\u7AEF\u9EDE", explanation: "\u5728\u6A39\u4E0A\u5F9E\u4EFB\u610F A \u51FA\u767C\uFF0C\u8DDD\u96E2\u6700\u9060\u7684\u7BC0\u9EDE x \u5FC5\u53EF\u4F5C\u70BA\u67D0\u689D\u76F4\u5F91\u7684\u7AEF\u9EDE\u3002", lines: [1], state: { start: "A", farthest: "F", distance: 3 }, active: ["A", "B", "D", "F"], accepted: ["F"] },
     { title: "\u5F9E\u7AEF\u9EDE\u518D\u6B21\u627E\u6700\u9060\u9EDE", explanation: "\u4EE5 F \u70BA\u8D77\u9EDE\u505A DFS/BFS\uFF0C\u6700\u9060\u7BC0\u9EDE C \u8207 F \u4E4B\u9593\u7684\u552F\u4E00\u8DEF\u5F91\u5177\u6709\u6700\u5927\u9577\u5EA6\u3002", lines: [2], state: { start: "F", farthest: "C", diameter: 4 }, active: ["F", "D", "B", "A", "C"], accepted: ["F", "C"] },
     { title: "\u552F\u4E00\u8DEF\u5F91\u4FDD\u8B49\u6B63\u78BA", explanation: "\u6A39\u6C92\u6709\u74B0\u4E14\u5169\u9EDE\u8DEF\u5F91\u552F\u4E00\uFF1B\u82E5\u5B58\u5728\u66F4\u9577\u8DEF\u5F91\uFF0C\u5F9E\u7B2C\u4E00\u6B21\u641C\u5C0B\u7AEF\u9EDE\u51FA\u767C\u6703\u627E\u5230\u81F3\u5C11\u540C\u6A23\u9060\u7684\u7AEF\u9EDE\uFF0C\u8207\u6700\u9060\u6027\u77DB\u76FE\u3002", lines: [3], state: { diameterPath: ["F", "D", "B", "A", "C"], length: 4 }, accepted: ["A", "B", "C", "D", "F"] }
@@ -488,102 +468,10 @@ var make3 = (s) => {
 var dsAccent = "#72e6b7";
 var dpAccent = "#ffad72";
 var dataDpLessons = [
-  make3({ id: "fenwick-tree", index: "45", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Fenwick Tree", zhTitle: "\u6A39\u72C0\u9663\u5217", description: "\u4EE5 lowbit \u5206\u7D44\u7DAD\u8B77\u524D\u7DB4\u805A\u5408\u503C\u3002", complexity: "O(log n)", accent: dsAccent, code: [
-    "struct FenwickTree {",
-    "  int n;",
-    "  vector<long long> bit;",
-    "  explicit FenwickTree(int n = 0) : n(n), bit(n + 1, 0) {}",
-    "  void add(int i, long long delta) {",
-    "    for (; i <= n; i += i & -i) bit[i] += delta;",
-    "  }",
-    "  long long prefix(int i) const {",
-    "    long long s = 0;",
-    "    for (; i > 0; i -= i & -i) s += bit[i];",
-    "    return s;",
-    "  }",
-    "  long long query(int l, int r) const {",
-    "    return l <= r ? prefix(r) - prefix(l - 1) : 0;",
-    "  }",
-    "};"
-  ], invariant: "bit[i] \u5132\u5B58\u9577\u5EA6 lowbit(i) \u7684\u53F3\u7AEF\u5340\u9593\u7E3D\u548C\uFF0C\u5373 (i-lowbit(i), i]\uFF1B\u9019\u4E9B\u5340\u9593\u662F\u4E8C\u9032\u4F4D\u7D22\u5F15\u81EA\u7136\u5F62\u6210\u7684\u5206\u7D44\u3002", transition: "\u55AE\u9EDE add \u6CBF i += lowbit(i) \u66F4\u65B0\u6240\u6709\u5305\u542B\u8A72\u4F4D\u7F6E\u7684\u5206\u7D44\uFF1Bprefix \u5247\u6CBF i -= lowbit(i) \u62C6\u51FA\u4E92\u65A5\u5340\u9593\uFF0C\u6070\u597D\u8986\u84CB [1,i]\u3002", result: "\u6BCF\u6B21\u7D22\u5F15\u6700\u4F4E\u4F4D\u5143\u81F3\u5C11\u5411\u66F4\u9AD8\u4F4D\u9032\u4F4D\u6216\u88AB\u6E05\u9664\uFF0C\u6700\u591A O(log n) \u6B65\u3002\u5340\u9593\u548C\u53EF\u7531 prefix(r)-prefix(l-1) \u5F97\u5230\u3002", states: [{ lowbit: "i & -i", bit: "bit[4] covers [1,4]" }, { operation: "add position 3", path: ["3", "4", "8"] }, { query: "sum [2,6]", formula: "prefix(6)-prefix(1)" }] }),
-  make3({ id: "lazy-segment-tree", index: "46", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Lazy Segment Tree", zhTitle: "\u61F6\u60F0\u6A19\u8A18\u7DDA\u6BB5\u6A39", description: "\u5B8C\u6574\u8986\u84CB\u6642\u5EF6\u5F8C\u5411\u5B50\u7BC0\u9EDE\u50B3\u905E\u4FEE\u6539\u3002", complexity: "O(log n) per operation", accent: dsAccent, code: [
-    "struct LazySegmentTree {",
-    "  int n;",
-    "  vector<long long> tree, lazy;",
-    "  explicit LazySegmentTree(int n = 0) : n(n), tree(4 * max(1, n), 0), lazy(4 * max(1, n), 0) {}",
-    "  void apply(int p, int l, int r, long long v) {",
-    "    tree[p] += v * (r - l + 1); lazy[p] += v;",
-    "  }",
-    "  void push(int p, int l, int r) {",
-    "    if (!lazy[p]) return;",
-    "    int m = l + (r - l) / 2;",
-    "    apply(p * 2, l, m, lazy[p]); apply(p * 2 + 1, m + 1, r, lazy[p]);",
-    "    lazy[p] = 0;",
-    "  }",
-    "  void update(int p, int l, int r, int ql, int qr, long long v) {",
-    "    if (ql <= l && r <= qr) { apply(p, l, r, v); return; }",
-    "    push(p, l, r);",
-    "    int m = l + (r - l) / 2;",
-    "    if (ql <= m) update(p * 2, l, m, ql, qr, v);",
-    "    if (qr > m) update(p * 2 + 1, m + 1, r, ql, qr, v);",
-    "    tree[p] = tree[p * 2] + tree[p * 2 + 1];",
-    "  }",
-    "  long long query(int p, int l, int r, int ql, int qr) {",
-    "    if (ql <= l && r <= qr) return tree[p];",
-    "    push(p, l, r);",
-    "    int m = l + (r - l) / 2; long long res = 0;",
-    "    if (ql <= m) res += query(p * 2, l, m, ql, qr);",
-    "    if (qr > m) res += query(p * 2 + 1, m + 1, r, ql, qr);",
-    "    return res;",
-    "  }",
-    "  void update(int l, int r, long long v) { if (n) update(1, 0, n - 1, l, r, v); }",
-    "  long long query(int l, int r) { return n ? query(1, 0, n - 1, l, r) : 0; }",
-    "};"
-  ], invariant: "tree[p] \u5FC5\u9808\u53CD\u6620\u7BC0\u9EDE\u5340\u9593\u5DF2\u5957\u7528\u7684\u6240\u6709\u4FEE\u6539\uFF1Blazy[p] \u8868\u793A\u9019\u4E9B\u4FEE\u6539\u5C1A\u672A\u50B3\u7D66\u5B50\u7BC0\u9EDE\uFF0C\u800C\u4E0D\u662F\u5C1A\u672A\u4F5C\u7528\u65BC p\u3002", transition: "\u66F4\u65B0\u5B8C\u6574\u8986\u84CB p \u6642\u76F4\u63A5 apply \u4E26\u505C\u6B62\u905E\u8FF4\u3002\u53EA\u6709\u5728\u9700\u8981\u9032\u5165\u5B50\u7BC0\u9EDE\u524D push\uFF0C\u5C07\u6A19\u8A18\u7B49\u50F9\u5730\u4F5C\u7528\u5230\u5169\u500B\u5B50\u5340\u9593\u5F8C\u6E05\u7A7A\u7236\u6A19\u8A18\u3002", result: "\u5EF6\u5F8C\u50B3\u905E\u4E0D\u6539\u8B8A\u4EFB\u4F55\u53EF\u89C0\u5BDF\u67E5\u8A62\u7D50\u679C\uFF1B\u4E00\u6B21\u64CD\u4F5C\u53EA\u9020\u8A2A O(log n) \u500B\u908A\u754C\u7BC0\u9EDE\u8207 O(log n) \u500B\u5B8C\u6574\u8986\u84CB\u7BC0\u9EDE\u3002", states: [{ node: "[1,8]", lazy: 0 }, { update: "[2,6] += 3", covered: ["[3,4]", "[5,6]"] }, { rootSum: "old + 15", pendingTags: ["[3,4]:+3", "[5,6]:+3"] }] }),
-  make3({ id: "persistent-segment-tree", index: "47", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u6301\u4E45\u5316\u8207\u52D5\u614B\u7D50\u69CB", title: "Persistent Segment Tree", zhTitle: "\u6301\u4E45\u5316\u7DDA\u6BB5\u6A39", description: "\u66F4\u65B0\u6642\u53EA\u8907\u88FD\u6839\u5230\u8449\u7684\u8DEF\u5F91\uFF0C\u4FDD\u7559\u820A\u7248\u672C\u3002", complexity: "O(log n) new nodes", accent: dsAccent, code: [
-    "struct PersistentSegmentTree {",
-    "  struct Node { int left = 0, right = 0; long long value = 0; };",
-    "  int n;",
-    "  vector<Node> tree;",
-    "  vector<int> roots;",
-    "  explicit PersistentSegmentTree(int n = 0) : n(n), tree(1) {}",
-    "  int update(int prev, int l, int r, int pos, long long val) {",
-    "    int cur = tree.size();",
-    "    tree.push_back(prev ? tree[prev] : Node{});",
-    "    if (l == r) { tree[cur].value = val; return cur; }",
-    "    int m = l + (r - l) / 2;",
-    "    if (pos <= m) tree[cur].left = update(prev ? tree[prev].left : 0, l, m, pos, val);",
-    "    else tree[cur].right = update(prev ? tree[prev].right : 0, m + 1, r, pos, val);",
-    "    tree[cur].value = tree[tree[cur].left].value + tree[tree[cur].right].value;",
-    "    return cur;",
-    "  }",
-    "  long long query(int node, int l, int r, int ql, int qr) const {",
-    "    if (!node || r < ql || qr < l) return 0;",
-    "    if (ql <= l && r <= qr) return tree[node].value;",
-    "    int m = l + (r - l) / 2;",
-    "    return query(tree[node].left, l, m, ql, qr) + query(tree[node].right, m + 1, r, ql, qr);",
-    "  }",
-    "};"
-  ], invariant: "\u6BCF\u500B\u7248\u672C\u7684 root \u6307\u5411\u4E00\u68F5\u4E0D\u53EF\u8B8A\u6A39\uFF1B\u672A\u88AB\u6B64\u6B21\u66F4\u65B0\u8DEF\u5F91\u89F8\u53CA\u7684\u5B50\u6A39\u53EF\u4EE5\u5B89\u5168\u8207\u820A\u7248\u672C\u5171\u4EAB\u3002", transition: "\u66F4\u65B0\u4F4D\u7F6E pos \u6642\u8907\u88FD\u6BCF\u5C64\u7576\u524D\u7BC0\u9EDE\uFF0C\u53EA\u905E\u8FF4\u4E00\u500B\u5B50\u7BC0\u9EDE\uFF0C\u53E6\u4E00\u500B child pointer \u6CBF\u7528 old\uFF1B\u56DE\u7A0B\u91CD\u65B0 merge\u3002", result: "\u65B0\u7248\u672C\u50C5\u914D\u7F6E\u6A39\u9AD8 O(log n) \u500B\u7BC0\u9EDE\uFF0C\u820A root \u7684\u6240\u6709\u6307\u6A19\u672A\u6539\u8B8A\uFF0C\u56E0\u6B64\u53EF\u540C\u6642\u67E5\u8A62\u4EFB\u610F\u6B77\u53F2\u7248\u672C\u3002", states: [{ versions: ["root0"], sharedNodes: "all" }, { update: "version0 pos=5\u219210", copiedPath: ["[1,8]", "[5,8]", "[5,6]", "[5,5]"] }, { versions: ["root0", "root1"], newNodes: 4 }] }),
-  make3({ id: "sparse-table", index: "48", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Sparse Table", zhTitle: "\u7A00\u758F\u8868", description: "\u9810\u8655\u7406\u6240\u6709 2 \u7684\u51AA\u6B21\u5340\u9593\uFF0CO(1) \u56DE\u7B54\u51AA\u7B49\u67E5\u8A62\u3002", complexity: "Build O(n log n) \xB7 Query O(1)", accent: dsAccent, code: [
-    "struct SparseTable {",
-    "  int n;",
-    "  vector<vector<int>> st;",
-    "  explicit SparseTable(const vector<int>& a) : n(a.size()) {",
-    "    if (!n) return;",
-    "    int k = 32 - __builtin_clz(n);",
-    "    st.assign(k, vector<int>(n));",
-    "    st[0] = a;",
-    "    for (int j = 1; j < k; ++j)",
-    "      for (int i = 0; i + (1 << j) <= n; ++i)",
-    "        st[j][i] = min(st[j - 1][i], st[j - 1][i + (1 << (j - 1))]);",
-    "  }",
-    "  int query(int l, int r) const {",
-    "    int k = 31 - __builtin_clz(r - l + 1);",
-    "    return min(st[k][l], st[k][r - (1 << k) + 1]);",
-    "  }",
-    "};"
-  ], invariant: "st[k][i] \u5132\u5B58\u9577\u5EA6 2^k\u3001\u5DE6\u7AEF i \u7684\u5340\u9593\u7B54\u6848\uFF1B\u7531\u5169\u500B\u76F8\u9130 2^(k\u22121) \u5340\u9593\u5408\u4F75\u3002", transition: "\u5C0D RMQ \u9078 k=floor(log2(length))\uFF0C\u7528\u5F9E\u5DE6\u53F3\u7AEF\u958B\u59CB\u7684\u5169\u500B\u9577\u5EA6 2^k \u5340\u9593\u8986\u84CB\u67E5\u8A62\uFF1B\u5B83\u5011\u53EF\u4EE5\u91CD\u758A\u3002", result: "min/max/gcd \u5177\u6709\u51AA\u7B49\u6027\uFF0C\u91CD\u8907\u5143\u7D20\u4E0D\u5F71\u97FF\u7B54\u6848\uFF0C\u6240\u4EE5\u5169\u6B21\u67E5\u8868\u5373\u53EF\uFF1Bsum \u4E0D\u5177\u51AA\u7B49\u6027\uFF0C\u4E0D\u80FD\u4F7F\u7528\u91CD\u758A\u7248\u672C\u3002", states: [{ level0: ["2", "5", "1", "4", "9", "3", "7", "6"] }, { build: "st[2][2] = min([2,3],[4,5])", value: 1 }, { query: "min [2,6]", blocks: ["[2,5]", "[3,6]"], answer: 1 }] }),
+  make3({ id: "fenwick-tree", index: "45", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Fenwick Tree", zhTitle: "\u6A39\u72C0\u9663\u5217", description: "\u4EE5 lowbit \u5206\u7D44\u7DAD\u8B77\u524D\u7DB4\u805A\u5408\u503C\u3002", complexity: "O(log n)", accent: dsAccent, code: ["void add(int i, int delta) {", "  for (; i <= n; i += i & -i)", "    bit[i] += delta;", "}", "long long prefix(int i) { long long s=0;", "  for (; i > 0; i -= i & -i) s += bit[i];", "  return s; }"], invariant: "bit[i] \u5132\u5B58\u9577\u5EA6 lowbit(i) \u7684\u53F3\u7AEF\u5340\u9593\u7E3D\u548C\uFF0C\u5373 (i-lowbit(i), i]\uFF1B\u9019\u4E9B\u5340\u9593\u662F\u4E8C\u9032\u4F4D\u7D22\u5F15\u81EA\u7136\u5F62\u6210\u7684\u5206\u7D44\u3002", transition: "\u55AE\u9EDE add \u6CBF i += lowbit(i) \u66F4\u65B0\u6240\u6709\u5305\u542B\u8A72\u4F4D\u7F6E\u7684\u5206\u7D44\uFF1Bprefix \u5247\u6CBF i -= lowbit(i) \u62C6\u51FA\u4E92\u65A5\u5340\u9593\uFF0C\u6070\u597D\u8986\u84CB [1,i]\u3002", result: "\u6BCF\u6B21\u7D22\u5F15\u6700\u4F4E\u4F4D\u5143\u81F3\u5C11\u5411\u66F4\u9AD8\u4F4D\u9032\u4F4D\u6216\u88AB\u6E05\u9664\uFF0C\u6700\u591A O(log n) \u6B65\u3002\u5340\u9593\u548C\u53EF\u7531 prefix(r)-prefix(l-1) \u5F97\u5230\u3002", states: [{ lowbit: "i & -i", bit: "bit[4] covers [1,4]" }, { operation: "add position 3", path: ["3", "4", "8"] }, { query: "sum [2,6]", formula: "prefix(6)-prefix(1)" }] }),
+  make3({ id: "lazy-segment-tree", index: "46", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Lazy Segment Tree", zhTitle: "\u61F6\u60F0\u6A19\u8A18\u7DDA\u6BB5\u6A39", description: "\u5B8C\u6574\u8986\u84CB\u6642\u5EF6\u5F8C\u5411\u5B50\u7BC0\u9EDE\u50B3\u905E\u4FEE\u6539\u3002", complexity: "O(log n) per operation", accent: dsAccent, code: ["void apply(int p,int l,int r,long long x) {", "  tree[p] += x*(r-l+1); lazy[p] += x;", "}", "void push(int p,int l,int r) {", "  if (!lazy[p]) return;", "  apply(p*2,l,m,lazy[p]); apply(p*2+1,m+1,r,lazy[p]);", "  lazy[p]=0;", "}"], invariant: "tree[p] \u5FC5\u9808\u53CD\u6620\u7BC0\u9EDE\u5340\u9593\u5DF2\u5957\u7528\u7684\u6240\u6709\u4FEE\u6539\uFF1Blazy[p] \u8868\u793A\u9019\u4E9B\u4FEE\u6539\u5C1A\u672A\u50B3\u7D66\u5B50\u7BC0\u9EDE\uFF0C\u800C\u4E0D\u662F\u5C1A\u672A\u4F5C\u7528\u65BC p\u3002", transition: "\u66F4\u65B0\u5B8C\u6574\u8986\u84CB p \u6642\u76F4\u63A5 apply \u4E26\u505C\u6B62\u905E\u8FF4\u3002\u53EA\u6709\u5728\u9700\u8981\u9032\u5165\u5B50\u7BC0\u9EDE\u524D push\uFF0C\u5C07\u6A19\u8A18\u7B49\u50F9\u5730\u4F5C\u7528\u5230\u5169\u500B\u5B50\u5340\u9593\u5F8C\u6E05\u7A7A\u7236\u6A19\u8A18\u3002", result: "\u5EF6\u5F8C\u50B3\u905E\u4E0D\u6539\u8B8A\u4EFB\u4F55\u53EF\u89C0\u5BDF\u67E5\u8A62\u7D50\u679C\uFF1B\u4E00\u6B21\u64CD\u4F5C\u53EA\u9020\u8A2A O(log n) \u500B\u908A\u754C\u7BC0\u9EDE\u8207 O(log n) \u500B\u5B8C\u6574\u8986\u84CB\u7BC0\u9EDE\u3002", states: [{ node: "[1,8]", lazy: 0 }, { update: "[2,6] += 3", covered: ["[3,4]", "[5,6]"] }, { rootSum: "old + 15", pendingTags: ["[3,4]:+3", "[5,6]:+3"] }] }),
+  make3({ id: "persistent-segment-tree", index: "47", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u6301\u4E45\u5316\u8207\u52D5\u614B\u7D50\u69CB", title: "Persistent Segment Tree", zhTitle: "\u6301\u4E45\u5316\u7DDA\u6BB5\u6A39", description: "\u66F4\u65B0\u6642\u53EA\u8907\u88FD\u6839\u5230\u8449\u7684\u8DEF\u5F91\uFF0C\u4FDD\u7559\u820A\u7248\u672C\u3002", complexity: "O(log n) new nodes", accent: dsAccent, code: ["Node* update(Node* old,int l,int r,int pos,int x) {", "  Node* cur = new Node(*old);", "  if (l==r) { cur->value=x; return cur; }", "  if (pos<=m) cur->left=update(old->left,l,m,pos,x);", "  else cur->right=update(old->right,m+1,r,pos,x);", "  cur->value=merge(cur->left,cur->right); return cur;", "}"], invariant: "\u6BCF\u500B\u7248\u672C\u7684 root \u6307\u5411\u4E00\u68F5\u4E0D\u53EF\u8B8A\u6A39\uFF1B\u672A\u88AB\u6B64\u6B21\u66F4\u65B0\u8DEF\u5F91\u89F8\u53CA\u7684\u5B50\u6A39\u53EF\u4EE5\u5B89\u5168\u8207\u820A\u7248\u672C\u5171\u4EAB\u3002", transition: "\u66F4\u65B0\u4F4D\u7F6E pos \u6642\u8907\u88FD\u6BCF\u5C64\u7576\u524D\u7BC0\u9EDE\uFF0C\u53EA\u905E\u8FF4\u4E00\u500B\u5B50\u7BC0\u9EDE\uFF0C\u53E6\u4E00\u500B child pointer \u6CBF\u7528 old\uFF1B\u56DE\u7A0B\u91CD\u65B0 merge\u3002", result: "\u65B0\u7248\u672C\u50C5\u914D\u7F6E\u6A39\u9AD8 O(log n) \u500B\u7BC0\u9EDE\uFF0C\u820A root \u7684\u6240\u6709\u6307\u6A19\u672A\u6539\u8B8A\uFF0C\u56E0\u6B64\u53EF\u540C\u6642\u67E5\u8A62\u4EFB\u610F\u6B77\u53F2\u7248\u672C\u3002", states: [{ versions: ["root0"], sharedNodes: "all" }, { update: "version0 pos=5\u219210", copiedPath: ["[1,8]", "[5,8]", "[5,6]", "[5,5]"] }, { versions: ["root0", "root1"], newNodes: 4 }] }),
+  make3({ id: "sparse-table", index: "48", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Sparse Table", zhTitle: "\u7A00\u758F\u8868", description: "\u9810\u8655\u7406\u6240\u6709 2 \u7684\u51AA\u6B21\u5340\u9593\uFF0CO(1) \u56DE\u7B54\u51AA\u7B49\u67E5\u8A62\u3002", complexity: "Build O(n log n) \xB7 Query O(1)", accent: dsAccent, code: ["for (int i=0;i<n;++i) st[0][i]=a[i];", "for (int k=1;(1<<k)<=n;++k)", "  for (int i=0;i+(1<<k)<=n;++i)", "    st[k][i]=min(st[k-1][i],st[k-1][i+(1<<(k-1))]);", "int k=log2(r-l+1);", "return min(st[k][l],st[k][r-(1<<k)+1]);"], invariant: "st[k][i] \u5132\u5B58\u9577\u5EA6 2^k\u3001\u5DE6\u7AEF i \u7684\u5340\u9593\u7B54\u6848\uFF1B\u7531\u5169\u500B\u76F8\u9130 2^(k\u22121) \u5340\u9593\u5408\u4F75\u3002", transition: "\u5C0D RMQ \u9078 k=floor(log2(length))\uFF0C\u7528\u5F9E\u5DE6\u53F3\u7AEF\u958B\u59CB\u7684\u5169\u500B\u9577\u5EA6 2^k \u5340\u9593\u8986\u84CB\u67E5\u8A62\uFF1B\u5B83\u5011\u53EF\u4EE5\u91CD\u758A\u3002", result: "min/max/gcd \u5177\u6709\u51AA\u7B49\u6027\uFF0C\u91CD\u8907\u5143\u7D20\u4E0D\u5F71\u97FF\u7B54\u6848\uFF0C\u6240\u4EE5\u5169\u6B21\u67E5\u8868\u5373\u53EF\uFF1Bsum \u4E0D\u5177\u51AA\u7B49\u6027\uFF0C\u4E0D\u80FD\u4F7F\u7528\u91CD\u758A\u7248\u672C\u3002", states: [{ level0: ["2", "5", "1", "4", "9", "3", "7", "6"] }, { build: "st[2][2] = min([2,3],[4,5])", value: 1 }, { query: "min [2,6]", blocks: ["[2,5]", "[3,6]"], answer: 1 }] }),
   make3({ id: "sqrt-decomposition", index: "49", category: "DATA STRUCTURE", categoryId: "data-structures", subcategory: "\u5340\u9593\u8CC7\u6599\u7D50\u69CB", title: "Square Root Decomposition", zhTitle: "\u5206\u584A", description: "\u628A\u9663\u5217\u5207\u6210\u7D04 \u221An \u5927\u5C0F\u7684\u5340\u584A\u3002", complexity: "O(\u221An) per query", accent: dsAccent, code: ["int blockSize = sqrt(n) + 1;", "for (int i=0;i<n;++i) block[i/blockSize] += a[i];", "long long query(int l,int r) {", "  while (l<=r && l%blockSize) answer+=a[l++];", "  while (l+blockSize-1<=r) answer+=block[l/blockSize],l+=blockSize;", "  while (l<=r) answer+=a[l++];", "  return answer; }"], invariant: "\u6BCF\u500B block \u4FDD\u5B58\u6574\u500B\u56FA\u5B9A\u5340\u584A\u7684\u805A\u5408\u503C\uFF1B\u539F\u9663\u5217\u4ECD\u4FDD\u5B58\u500B\u5225\u5143\u7D20\u4EE5\u8655\u7406\u5DE6\u53F3\u4E0D\u5B8C\u6574\u5340\u584A\u3002", transition: "\u67E5\u8A62\u5148\u9010\u5143\u7D20\u8D70\u5230\u5340\u584A\u908A\u754C\uFF0C\u4E2D\u6BB5\u4E00\u6B21\u8DE8\u5B8C\u6574 block\uFF0C\u6700\u5F8C\u8655\u7406\u5C3E\u7AEF\uFF1B\u6700\u591A\u5169\u500B\u96F6\u788E\u5340\u52A0\u7D04 n/B \u500B\u5B8C\u6574\u5340\u3002", result: "\u9078 B\u2248\u221An \u5E73\u8861 B \u8207 n/B\uFF0C\u5F97\u5230 O(\u221An)\u3002\u7C21\u55AE\u3001\u5E38\u6578\u5C0F\uFF0C\u9069\u5408\u64CD\u4F5C\u4E0D\u5BB9\u6613\u5728\u7DDA\u6BB5\u6A39\u5408\u4F75\u7684\u60C5\u6CC1\u3002", states: [{ blockSize: 3, blocks: ["[0,2]", "[3,5]", "[6,7]"] }, { query: "[1,6]", parts: ["1..2", "block 1", "6"] }, { answer: 29, cost: "2+1 blocks+1" }] }),
   make3({ id: "mo-algorithm", index: "50", category: "OFFLINE", categoryId: "search-sort", subcategory: "\u96E2\u7DDA\u67E5\u8A62", title: "Mo's Algorithm", zhTitle: "\u83AB\u968A\u6F14\u7B97\u6CD5", description: "\u91CD\u65B0\u6392\u5E8F\u67E5\u8A62\uFF0C\u4F7F\u5340\u9593\u7AEF\u9EDE\u7E3D\u79FB\u52D5\u91CF\u53D7\u63A7\u3002", complexity: "O((n+q)\u221An)", accent: "#78d8ff", code: ["sort(queries.begin(),queries.end(),byBlockThenRight);", "int L=0,R=-1;", "for (auto [l,r,id] : queries) {", "  while (L>l) add(--L); while (R<r) add(++R);", "  while (L<l) remove(L++); while (R>r) remove(R--);", "  answer[id]=current;", "}"], invariant: "current \u6C38\u9060\u7B49\u65BC\u76EE\u524D\u7DAD\u8B77\u5340\u9593 [L,R] \u7684\u7B54\u6848\uFF1Badd/remove \u5FC5\u9808\u80FD\u5728\u7AEF\u9EDE\u79FB\u52D5\u4E00\u683C\u6642\u66F4\u65B0\u72C0\u614B\u3002", transition: "\u5148\u4F9D\u5DE6\u7AEF block \u6392\u5E8F\uFF0C\u518D\u4F9D\u53F3\u7AEF\u6392\u5E8F\uFF1B\u540C\u4E00 block \u4E2D L \u7E3D\u79FB\u52D5 O(\u221An)\uFF0CR \u55AE\u8ABF\u6383\u904E O(n)\u3002\u5947\u5076 block \u53EF\u53CD\u8F49 R \u964D\u4F4E\u5E38\u6578\u3002", result: "\u7B54\u6848\u4F9D\u539F id \u5BEB\u56DE\uFF0C\u4E0D\u53D7\u96E2\u7DDA\u9806\u5E8F\u5F71\u97FF\u3002\u6F14\u7B97\u6CD5\u9069\u5408\u7121\u4FEE\u6539\u3001\u53EF O(1) add/remove\u3001\u4F46\u4E0D\u6613\u505A\u5340\u9593\u5408\u4F75\u7684\u67E5\u8A62\u3002", states: [{ queries: ["[0,3]", "[2,6]", "[1,4]"], blockSize: 3 }, { current: "[0,3]\u2192[1,4]", moves: ["remove 0", "add 4"] }, { answers: "restored by id", totalMoves: "O((n+q)\u221An)" }] }),
   make3({ id: "treap", index: "51", category: "BST", categoryId: "data-structures", subcategory: "\u5E73\u8861\u641C\u5C0B\u6A39", title: "Treap", zhTitle: "\u96A8\u6A5F\u5E73\u8861\u641C\u5C0B\u6A39", description: "\u540C\u6642\u7DAD\u6301 Key \u7684 BST \u8207 Priority \u7684 Heap \u6027\u8CEA\u3002", complexity: "Expected O(log n)", accent: dsAccent, code: ["pair<Node*,Node*> split(Node* t,int key);", "Node* merge(Node* a,Node* b) {", "  if (!a||!b) return a?a:b;", "  if (a->priority < b->priority) { a->right=merge(a->right,b); return a; }", "  b->left=merge(a,b->left); return b;", "}"], invariant: "\u4E2D\u5E8F\u904D\u6B77\u4F9D key \u905E\u589E\uFF1Bpriority \u540C\u6642\u6EFF\u8DB3 heap\u3002\u96A8\u6A5F\u4E14\u4E92\u7570\u7684 priority \u7B49\u50F9\u65BC\u96A8\u6A5F BST \u5F62\u72C0\u3002", transition: "merge \u5047\u8A2D a \u6240\u6709 key<b\uFF1B\u6BD4\u8F03\u6839 priority \u6C7A\u5B9A\u65B0\u6839\uFF0C\u518D\u53EA\u905E\u8FF4\u4E00\u5074\u3002split \u4F9D key \u5C07\u6A39\u5207\u6210\u5169\u68F5\u4E26\u4FDD\u6301\u5169\u9805\u6027\u8CEA\u3002", result: "\u63D2\u5165\u53EF split \u6210 <key \u8207 \u2265key\uFF0Cmerge \u5DE6\u3001\u65B0\u7BC0\u9EDE\u3001\u53F3\uFF1B\u96A8\u6A5F\u9AD8\u5EA6\u671F\u671B O(log n)\uFF0C\u4F46\u4E0D\u662F\u6700\u58DE\u4FDD\u8B49\u3002", states: [{ inorder: ["1", "2", "4", "5", "7"], heap: "priority parent < child" }, { operation: "split key=4", left: ["1", "2"], right: ["4", "5", "7"] }, { operation: "merge", expectedHeight: "O(log n)" }] }),
@@ -988,7 +876,7 @@ var visualModelGroups = {
   "linear-recurrence": ["berlekamp-massey"]
 };
 var visualModelById = Object.fromEntries(
-  Object.entries(visualModelGroups).flatMap(([model, ids2]) => ids2.map((id) => [id, model]))
+  Object.entries(visualModelGroups).flatMap(([model, ids]) => ids.map((id) => [id, model]))
 );
 var cses = (title, task, note) => ({ judge: "CSES", title, url: `https://cses.fi/problemset/task/${task}`, note });
 var atcoder = (title, task, note) => ({ judge: "AtCoder", title, url: `https://atcoder.jp/contests/${task.split("/")[0]}/tasks/${task.split("/")[1]}`, note });
@@ -1485,12 +1373,12 @@ var ensureCodeCoverage = (lesson) => {
     return { ...frame, codeLine: teachingLine.line, codeLines: [.../* @__PURE__ */ new Set([...frame.codeLines, teachingLine.number])].sort((a, b) => a - b) };
   });
 };
-var buildStep = (lesson, frame, step, total) => {
+var buildStep = (lesson, frame, step, total2) => {
   const activeLines = frame.codeLines.map((lineNumber) => explainCppLine(lesson.code[lineNumber - 1] ?? "", lesson, lineNumber));
   const activeSource = frame.codeLines.map((lineNumber) => lesson.code[lineNumber - 1] ?? "").join(" ");
   const focus = [.../* @__PURE__ */ new Set([...frame.active ?? [], ...frame.queue ?? [], ...frame.priorityQueue ?? []])];
   const focusText = focus.length ? `\u5148\u627E\u756B\u9762\u9AD8\u4EAE\u7684 ${focus.slice(0, 5).join("\u3001")}\uFF1B\u9019\u662F\u672C\u6B65\u6703\u8B80\u53D6\u6216\u6539\u52D5\u7684\u8CC7\u6599\u3002` : "\u5148\u627E\u756B\u9762\u4E2D\u6700\u4EAE\u7684\u7BC0\u9EDE\u3001\u683C\u5B50\u6216\u5340\u9593\uFF0C\u518D\u5C0D\u7167\u53F3\u5074\u9AD8\u4EAE\u7A0B\u5F0F\u884C\u3002";
-  const finalStep = step === total - 1;
+  const finalStep = step === total2 - 1;
   const before = frame.state?.before ? humanizeStateValue(frame.state.before) : describeEntries(frame);
   const after = frame.state?.after ? humanizeStateValue(frame.state.after) : describeEntries(frame, true);
   const hasCondition = Boolean(frame.state?.condition) || /\b(if|while|for)\s*\(/.test(activeSource);
@@ -1582,18 +1470,18 @@ var buildCodeGuide = (lesson, frames) => meaningfulCodeLines(lesson).map(({ line
 var enrichPedagogy = (rawLesson) => {
   const lesson = prepareReadableTemplate(rawLesson);
   const coveredFrames = ensureCodeCoverage(lesson);
-  const total = coveredFrames.length;
+  const total2 = coveredFrames.length;
   const frames = coveredFrames.map((frame, step) => {
-    const progress = total <= 1 ? 1 : step / (total - 1);
+    const progress = total2 <= 1 ? 1 : step / (total2 - 1);
     const operation = String(frame.state?.operation ?? frame.title);
     const code = frame.codeLine.trim();
-    const mode = /讀取輸入|定位|準備/.test(operation) ? "observe" : /代入實際值|判斷/.test(operation) ? "evaluate" : /執行目前|寫入|更新|加入|移除|交換|合併/.test(operation) ? "mutate" : /比較執行前後|核對結果/.test(operation) ? "verify" : step === total - 1 || /回傳|答案|核對|完成/.test(operation) || /\breturn\b/.test(code) ? "verify" : /push|pop|swap|\+=|-=/.test(code) ? "mutate" : /if|while|for/.test(code) ? "evaluate" : "observe";
+    const mode = /讀取輸入|定位|準備/.test(operation) ? "observe" : /代入實際值|判斷/.test(operation) ? "evaluate" : /執行目前|寫入|更新|加入|移除|交換|合併/.test(operation) ? "mutate" : /比較執行前後|核對結果/.test(operation) ? "verify" : step === total2 - 1 || /回傳|答案|核對|完成/.test(operation) || /\breturn\b/.test(code) ? "verify" : /push|pop|swap|\+=|-=/.test(code) ? "mutate" : /if|while|for/.test(code) ? "evaluate" : "observe";
     const label = mode === "observe" ? "\u8B80\u53D6\u76EE\u524D\u7126\u9EDE" : mode === "evaluate" ? "\u4EE3\u5165\u689D\u4EF6\u5224\u65B7" : mode === "mutate" ? "\u66F4\u65B0\u9AD8\u4EAE\u72C0\u614B" : "\u6838\u5C0D\u4E0D\u8B8A\u91CF";
     return {
       ...frame,
       visualStep: step,
       visualProgress: progress,
-      beginner: buildStep(lesson, frame, step, total),
+      beginner: buildStep(lesson, frame, step, total2),
       visualCue: {
         mode,
         label,
@@ -2174,12 +2062,12 @@ var buildKnowledge = (lesson) => {
   };
 };
 var enrichKnowledgeCatalog = (lessons2) => {
-  const ids2 = new Set(lessons2.map((lesson) => lesson.id));
+  const ids = new Set(lessons2.map((lesson) => lesson.id));
   const withKnowledge = lessons2.map((lesson) => ({ ...lesson, knowledge: buildKnowledge(lesson) }));
   const extensionMap = /* @__PURE__ */ new Map();
   for (const lesson of withKnowledge) {
     for (const dependency of lesson.knowledge.prerequisites) {
-      if (!ids2.has(dependency.lessonId)) continue;
+      if (!ids.has(dependency.lessonId)) continue;
       const extensions = extensionMap.get(dependency.lessonId) ?? [];
       extensions.push({ lessonId: lesson.id, reason: `${lesson.zhTitle} \u5EFA\u7ACB\u5728\u672C\u8AB2\u6982\u5FF5\u4E4B\u4E0A\u3002` });
       extensionMap.set(dependency.lessonId, extensions);
@@ -2501,20 +2389,20 @@ var codeStepRole = (line) => {
 var conditionOf = (line) => line.match(/^(?:if|while|for)\s*\((.*)\)/)?.[1] ?? "\u4F9D\u76EE\u524D\u8CC7\u6599\u57F7\u884C\u9019\u4E00\u884C";
 var expandGuidedFrames = (lesson) => {
   const meaningful = meaningfulCodeLines2(lesson);
-  const total = Math.min(20, Math.max(10, meaningful.length));
+  const total2 = Math.min(20, Math.max(10, meaningful.length));
   const phases = lesson.frames;
   const firstInvariant = phases.find((frame) => frame.state?.invariant)?.state?.invariant ?? conciseSentence(phases[0]?.explanation ?? lesson.description);
-  const lineAssignments = Array.from({ length: total }, (_, step) => Math.floor(step * meaningful.length / total));
-  return Array.from({ length: total }, (_, step) => {
+  const lineAssignments = Array.from({ length: total2 }, (_, step) => Math.floor(step * meaningful.length / total2));
+  return Array.from({ length: total2 }, (_, step) => {
     const start = lineAssignments[step];
-    const end = Math.max(start + 1, Math.floor((step + 1) * meaningful.length / total));
+    const end = Math.max(start + 1, Math.floor((step + 1) * meaningful.length / total2));
     const occurrenceIndex = lineAssignments.slice(0, step + 1).filter((item) => item === start).length - 1;
     const occurrenceTotal = lineAssignments.filter((item) => item === start).length;
     const bucket = meaningful.slice(start, Math.min(meaningful.length, end));
     const selected = bucket.length ? bucket : [meaningful[Math.min(start, meaningful.length - 1)]].filter(Boolean);
     const codeLines = selected.map((item) => item.number);
     const primary = selected[0] ?? { line: lesson.code[0]?.trim() ?? "", number: 1 };
-    const phaseIndex = Math.min(phases.length - 1, Math.floor(step * phases.length / total));
+    const phaseIndex = Math.min(phases.length - 1, Math.floor(step * phases.length / total2));
     const phase = phases[phaseIndex];
     const previous = phases[Math.max(0, phaseIndex - 1)];
     const baseRole = codeStepRole(primary.line);
@@ -2530,7 +2418,7 @@ var expandGuidedFrames = (lesson) => {
     const completedAfter = `${phase.title}\uFF1A${conciseSentence(phase.explanation)}`;
     const after = occurrenceIndex < occurrenceTotal - 1 ? occurrenceIndex === 0 ? `\u5DF2\u5B9A\u4F4D\u9019\u884C\u8981\u8B80\u53D6\u7684\u8CC7\u6599\uFF0C\u5C1A\u672A\u6539\u8B8A\u539F\u72C0\u614B` : occurrenceIndex === 1 ? `\u5DF2\u5B8C\u6210\u4EE3\u5165\u300C${conditionOf(primary.line)}\u300D\uFF0C\u6E96\u5099\u57F7\u884C\u5C0D\u61C9\u5206\u652F` : `\u6B63\u5728\u628A\u672C\u884C\u9020\u6210\u7684\u8B8A\u5316\u5BEB\u5165\u9AD8\u4EAE\u8CC7\u6599` : completedAfter;
     const baseActive = phase.active ?? [];
-    const revealRatio = (step + 1) / total;
+    const revealRatio = (step + 1) / total2;
     const activeCount = Math.max(1, Math.ceil(baseActive.length * Math.min(1, revealRatio * 1.4)));
     const state = {
       algorithm: lesson.zhTitle,
@@ -2556,7 +2444,7 @@ var expandGuidedFrames = (lesson) => {
       high: phase.high ?? previous.high,
       mid: phase.mid,
       active: baseActive.slice(0, activeCount),
-      accepted: step === total - 1 ? phase.accepted ?? phase.active : phase.accepted,
+      accepted: step === total2 - 1 ? phase.accepted ?? phase.active : phase.accepted,
       muted: phase.muted,
       queue: phase.queue,
       priorityQueue: phase.priorityQueue,
@@ -2607,133 +2495,145 @@ var buildVisualTrace = (lesson, frame, step) => {
 var pedagogicalLessons = [...coreLessons, ...foundationLessons, ...graphTreeLessons, ...dataDpLessons, ...advancedLessons, ...completionLessons].map(ensureGuidedLesson).map(enrichLesson).map(enrichPedagogy).map((lesson) => ({ ...lesson, fidelity: lesson.animationVersion === 2 ? "concrete" : "semantic" })).map((lesson) => ({ ...lesson, frames: lesson.frames.map((frame, step) => ({ ...frame, trace: buildVisualTrace(lesson, frame, step) })) })).map((lesson, index) => ({ ...lesson, index: String(index + 1).padStart(3, "0") }));
 var lessons = enrichKnowledgeCatalog(pedagogicalLessons);
 
-// scripts/auditCatalog.ts
-var errors = [];
-var ids = /* @__PURE__ */ new Set();
-var traceSignatures = /* @__PURE__ */ new Set();
-var semanticTraces = /* @__PURE__ */ new Map();
-var categoryById = new Map(categories.map((category) => [category.id, category]));
-var allowedSourceHosts = /* @__PURE__ */ new Set(["pingchungchang.github.io", "app.notion.com", "usaco.guide"]);
-var allowedPracticeHosts = /* @__PURE__ */ new Set(["cses.fi", "atcoder.jp", "codeforces.com"]);
-var assignedVisualIds = Object.values(visualModelGroups).flat();
-var visualAssignmentCounts = /* @__PURE__ */ new Map();
-for (const id of assignedVisualIds) visualAssignmentCounts.set(id, (visualAssignmentCounts.get(id) ?? 0) + 1);
+// scripts/auditAllDimensions.ts
+import { spawnSync } from "node:child_process";
+var placeholderPatterns = [
+  /\.\.\./,
+  /for each/i,
+  /write n-1/i,
+  /random c/i,
+  /childContaining/i,
+  /merge pointers/i,
+  /solve\(points sorted/i,
+  /takeLeft\(\)/i,
+  /takeRight\(\)/i,
+  /copyMergedBack\(\)/i,
+  /fft\(/i
+];
+var results = [];
 for (const lesson of lessons) {
-  if (ids.has(lesson.id)) errors.push(`duplicate id: ${lesson.id}`);
-  ids.add(lesson.id);
-  const category = categoryById.get(lesson.categoryId);
-  if (!category) errors.push(`${lesson.id}: unknown category ${lesson.categoryId}`);
-  else if (!category.subcategories.includes(lesson.subcategory)) errors.push(`${lesson.id}: unlisted subcategory ${lesson.subcategory}`);
-  if (lesson.frames.length < 3) errors.push(`${lesson.id}: fewer than 3 frames`);
-  if (!lesson.code.length) errors.push(`${lesson.id}: empty code`);
-  if (lesson.animationVersion === 2) {
-    if (lesson.frames.length < 10 || lesson.frames.length > 20) errors.push(`${lesson.id}: guided animation must contain 10\u201320 frames`);
-    if (!lesson.sources?.length) errors.push(`${lesson.id}: guided animation has no content source`);
-  }
-  for (const source of lesson.sources ?? []) {
-    let host = "";
-    try {
-      host = new URL(source.url).hostname;
-    } catch {
-      errors.push(`${lesson.id}: invalid source URL`);
-    }
-    if (host && !allowedSourceHosts.has(host)) errors.push(`${lesson.id}: source is outside CPPBook, Notion, or USACO`);
-  }
-  if (!lesson.fidelity) errors.push(`${lesson.id}: missing visual fidelity`);
-  if (!lesson.visualModel) errors.push(`${lesson.id}: missing algorithm-specific visual model`);
-  if (visualModelById[lesson.id] !== lesson.visualModel) errors.push(`${lesson.id}: visual model assignment mismatch`);
-  if (visualAssignmentCounts.get(lesson.id) !== 1) errors.push(`${lesson.id}: visual model must be assigned exactly once`);
-  if (lesson.visualModel) {
-    const expectedVisual = lesson.id === "segment-tree" ? "segment-tree" : visualKindForModel(lesson.visualModel);
-    if (lesson.visual !== expectedVisual) errors.push(`${lesson.id}: visual family ${lesson.visual} does not match ${lesson.visualModel}`);
-  }
-  if (!lesson.usage || lesson.usage.length < 2 || lesson.usage.some((item) => item.length < 12)) errors.push(`${lesson.id}: incomplete usage guidance`);
-  if (!lesson.practice?.length) errors.push(`${lesson.id}: missing practice problem`);
-  for (const problem of lesson.practice ?? []) {
-    let host = "";
-    try {
-      host = new URL(problem.url).hostname;
-    } catch {
-      errors.push(`${lesson.id}: invalid practice URL`);
-    }
-    if (host && !allowedPracticeHosts.has(host)) errors.push(`${lesson.id}: practice problem is not from CSES, AtCoder, or Codeforces`);
-    if (!problem.title || !problem.note) errors.push(`${lesson.id}: incomplete practice problem metadata`);
-  }
-  if (lesson.animationVersion === 2 && lesson.fidelity !== "concrete") errors.push(`${lesson.id}: guided simulator is not concrete`);
-  if (lesson.animationVersion !== 2 && lesson.fidelity === "concrete") errors.push(`${lesson.id}: semantic lesson marked concrete`);
-  lesson.frames.forEach((frame, frameIndex) => {
-    if (frame.explanation.length < 28) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation too short`);
-    if (!frame.codeLines.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: no active code line`);
-    if (!frame.codeLine.trim() || /^[{}]+;?$/.test(frame.codeLine.trim()) || frame.codeLine.trim().startsWith("//")) errors.push(`${lesson.id} frame ${frameIndex + 1}: active code is not an executable teaching line`);
-    for (const line of frame.codeLines) if (line < 1 || line > lesson.code.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: code line ${line} out of range`);
-    if (!frame.trace) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing dedicated visual trace`);
-    else {
-      if (traceSignatures.has(frame.trace.signature)) errors.push(`${lesson.id} frame ${frameIndex + 1}: duplicate visual signature`);
-      traceSignatures.add(frame.trace.signature);
-      if (frame.trace.step !== frameIndex || frame.trace.totalSteps !== lesson.frames.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: trace timeline mismatch`);
-      if (frame.trace.activeCode !== frame.codeLine) errors.push(`${lesson.id} frame ${frameIndex + 1}: trace and code are not synchronized`);
-      if (frame.trace.nodes.length !== 3 || frame.trace.nodes.some((node) => !node.label || !node.value)) errors.push(`${lesson.id} frame ${frameIndex + 1}: incomplete visual nodes`);
-      if (new Set(frame.trace.nodes.map((node) => node.value)).size !== frame.trace.nodes.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: repeated visual node value`);
-      const semanticKey = frame.trace.nodes.map((node) => `${node.label}:${node.value}`).join("|");
-      const owner = semanticTraces.get(semanticKey);
-      if (owner && owner !== lesson.id) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual state duplicates ${owner}`);
-      semanticTraces.set(semanticKey, lesson.id);
-    }
-    if (frame.visualStep !== frameIndex) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual step is not deterministic`);
-    const expectedProgress = lesson.frames.length <= 1 ? 1 : frameIndex / (lesson.frames.length - 1);
-    if (frame.visualProgress === void 0 || Math.abs(frame.visualProgress - expectedProgress) > 1e-4) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual progress mismatch`);
-    if (!frame.visualCue) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing visible micro-animation cue`);
-    else if (frame.visualCue.progress !== frame.visualProgress || !frame.visualCue.label) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual cue is not synchronized`);
-    if (!frame.beginner) errors.push(`${lesson.id} frame ${frameIndex + 1}: missing beginner explanation`);
-    else {
-      for (const [key, value] of Object.entries(frame.beginner)) {
-        if (key !== "pitfall" && value.length < 18) errors.push(`${lesson.id} frame ${frameIndex + 1}: beginner ${key} is too short`);
-      }
-      if ((/* @__PURE__ */ new Set([frame.beginner.observe, frame.beginner.action, frame.beginner.reason, frame.beginner.result])).size !== 4) errors.push(`${lesson.id} frame ${frameIndex + 1}: beginner reasoning cards repeat each other`);
-      const activeSource = frame.codeLines.map((line) => lesson.code[line - 1] ?? "").join(" ");
-      const hasCondition = Boolean(frame.state?.condition) || /\b(if|while|for)\s*\(/.test(activeSource);
-      if (!hasCondition && frame.beginner.action.includes("\u4EE3\u5165\u300C\u9AD8\u4EAE\u7A0B\u5F0F\u884C")) errors.push(`${lesson.id} frame ${frameIndex + 1}: non-conditional line is explained as a condition`);
-    }
-    if (["math", "range", "dp", "transform"].includes(lesson.visual) && frame.active?.some((item) => /^[A-D]$/.test(item))) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual focus belongs to an unrelated graph template`);
+  const { id, title, zhTitle, category, subcategory, code, frames, visual, visualModel, fidelity, animationVersion, knowledge, practice, usage } = lesson;
+  const codeText = code.join("\n");
+  const compileCheck = spawnSync("c++", ["-x", "c++", "-std=c++17", "-fsyntax-only", "-"], {
+    input: codeText,
+    encoding: "utf8"
   });
-  if (!lesson.beginnerGuide) errors.push(`${lesson.id}: missing beginner guide`);
-  else {
-    if (lesson.beginnerGuide.walkthrough.length < 3) errors.push(`${lesson.id}: beginner walkthrough is incomplete`);
-    if (lesson.beginnerGuide.pitfalls.length < 2) errors.push(`${lesson.id}: beginner pitfalls are incomplete`);
-    if (lesson.beginnerGuide.glossary.length < 3 || new Set(lesson.beginnerGuide.glossary.map((item) => item.term)).size !== lesson.beginnerGuide.glossary.length) errors.push(`${lesson.id}: beginner glossary is incomplete`);
+  const compiles = compileCheck.status === 0;
+  const compileError = compiles ? void 0 : compileCheck.stderr.split("\n")[0];
+  const hasIncludes = code.some((l) => l.trim().startsWith("#include"));
+  const isFullTemplate = (codeText.includes("struct ") || codeText.includes("class ") || codeText.includes("main(")) && hasIncludes;
+  const foundPlaceholders = [];
+  code.forEach((line) => {
+    for (const pat of placeholderPatterns) {
+      if (pat.test(line)) foundPlaceholders.push(line.trim());
+    }
+  });
+  const teachingLines = code.map((line, idx) => ({ line: line.trim(), num: idx + 1 })).filter(({ line }) => line && !/^[{}]+;?$/.test(line) && !line.startsWith("//") && !line.startsWith("#include") && !/^using namespace\b/.test(line));
+  const explainedLineNums = new Set(frames.flatMap((f) => f.codeLines));
+  const unmappedTeachingLines = teachingLines.filter((l) => !explainedLineNums.has(l.num)).map((l) => l.num);
+  const guidedLineNums = new Set((lesson.codeGuide ?? []).map((g) => g.lineNumber));
+  const guidedCount = teachingLines.filter((l) => guidedLineNums.has(l.num)).length;
+  const codeGuideCoverage = teachingLines.length ? Math.round(guidedCount / teachingLines.length * 100) : 100;
+  const activeNodeIssues = [];
+  if (visual === "graph") {
+    frames.forEach((f, i) => {
+      if (f.active) {
+        for (const act of f.active) {
+          if (!/^[A-Z0-9]$/.test(act) && (act.includes("\u7BC0\u9EDE") || act.includes("\u908A") || act.includes("\u7B54\u6848"))) {
+            activeNodeIssues.push(`frame ${i + 1}: ${act}`);
+          }
+        }
+      }
+    });
   }
-  const meaningfulLines = lesson.code.map((line, index) => ({ line: line.trim(), number: index + 1 })).filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith("//") && !line.startsWith("#include") && !/^using namespace\b/.test(line));
-  for (const { line, number } of meaningfulLines) if (/\.\.\.|for each|write n-1|random c|childContaining/.test(line)) errors.push(`${lesson.id}: code line ${number} still contains pseudocode placeholder text`);
-  const explainedLines = new Set(lesson.frames.flatMap((frame) => frame.codeLines));
-  for (const { number } of meaningfulLines) if (!explainedLines.has(number)) errors.push(`${lesson.id}: code line ${number} is never explained`);
-  const guidedLines = new Set(lesson.codeGuide?.map((item) => item.lineNumber) ?? []);
-  for (const { number } of meaningfulLines) if (!guidedLines.has(number)) errors.push(`${lesson.id}: code line ${number} has no line-by-line guide`);
-  if (lesson.codeGuide?.some((item) => !item.syntax || !item.purpose || !item.effect)) errors.push(`${lesson.id}: incomplete line-by-line code guide`);
-  if (lesson.id === "meet-in-the-middle") {
-    if (lesson.code.length < 25) errors.push(`${lesson.id}: beginner implementation is too compressed`);
-    const sortGuide = lesson.codeGuide?.find((item) => lesson.code[item.lineNumber - 1]?.includes("sort(rightSums"));
-    if (!sortGuide?.purpose.includes("upper_bound")) errors.push(`${lesson.id}: sort step does not explain why binary search becomes valid`);
-    if (!sortGuide?.effect.includes("\u539F\u5730")) errors.push(`${lesson.id}: sort step does not explain the visible data mutation`);
-  }
-  if (new Set(lesson.frames.map((frame) => frame.title)).size !== lesson.frames.length) errors.push(`${lesson.id}: repeated step title`);
-  const teachingStates = lesson.frames.map((frame) => JSON.stringify({ code: frame.codeLine, state: Object.fromEntries(Object.entries(frame.state ?? {}).filter(([key]) => key !== "timelineStep")), active: frame.active, accepted: frame.accepted }));
-  if (new Set(teachingStates).size !== teachingStates.length) errors.push(`${lesson.id}: repeated teaching state does not create a real new step`);
+  const cuesCount = frames.filter((f) => Boolean(f.visualCue)).length;
+  const visualCueCoverage = Math.round(cuesCount / frames.length * 100);
+  const hasDedicated = Boolean(visualModel && visualModelById[id]);
+  const boilerplateKeywords = ["\u5EFA\u7ACB\u6B63\u78BA\u6027\u4E0D\u8B8A\u91CF", "\u5C1A\u672A\u57F7\u884C\u9019\u500B\u968E\u6BB5", "\u4F9D\u76EE\u524D\u8CC7\u6599\u57F7\u884C\u9019\u4E00\u884C"];
+  const hasGenericBoilerplate = frames.some(
+    (f) => boilerplateKeywords.some((kw) => f.explanation?.includes(kw) || JSON.stringify(f.state ?? {}).includes(kw))
+  );
+  results.push({
+    id,
+    title,
+    zhTitle,
+    category,
+    subcategory,
+    code: {
+      totalLines: code.length,
+      compiles,
+      compileError,
+      isFullTemplate,
+      hasIncludes,
+      placeholderCount: foundPlaceholders.length,
+      placeholders: foundPlaceholders,
+      unmappedTeachingLines,
+      codeGuideCoverage
+    },
+    animation: {
+      frameCount: frames.length,
+      animationVersion: animationVersion ?? 1,
+      visual,
+      visualModel: visualModel ?? "none",
+      fidelity: fidelity ?? "semantic",
+      hasDedicatedAdaptiveScene: hasDedicated,
+      hasActiveNodeIssues: activeNodeIssues.length > 0,
+      activeNodeIssues: activeNodeIssues.slice(0, 3),
+      visualCueCoverage,
+      hasSemanticDiagramFallback: !hasDedicated
+    },
+    pedagogy: {
+      prereqCount: knowledge?.prerequisites.length ?? 0,
+      extensionCount: knowledge?.extensions.length ?? 0,
+      hasGenericBoilerplate,
+      practiceProblemCount: practice?.length ?? 0,
+      practiceProblems: (practice ?? []).map((p) => ({ judge: p.judge, title: p.title })),
+      usageCount: usage?.length ?? 0
+    }
+  });
 }
-lessons.forEach((lesson, index) => {
-  const expected = String(index + 1).padStart(3, "0");
-  if (lesson.index !== expected) errors.push(`${lesson.id}: expected index ${expected}, got ${lesson.index}`);
-});
-for (const category of categories) {
-  for (const subcategory of category.subcategories) {
-    if (!lessons.some((lesson) => lesson.categoryId === category.id && lesson.subcategory === subcategory)) errors.push(`empty subcategory: ${category.id}/${subcategory}`);
-  }
-}
-var counts = Object.fromEntries(categories.map((category) => [category.id, lessons.filter((lesson) => lesson.categoryId === category.id).length]));
-var fidelity = {
-  concrete: lessons.filter((lesson) => lesson.fidelity === "concrete").length,
-  semantic: lessons.filter((lesson) => lesson.fidelity === "semantic").length
+var total = results.length;
+var compilingCount = results.filter((r) => r.code.compiles).length;
+var fullTemplateCount = results.filter((r) => r.code.isFullTemplate).length;
+var placeholderLessons = results.filter((r) => r.code.placeholderCount > 0);
+var unmappedLineLessons = results.filter((r) => r.code.unmappedTeachingLines.length > 0);
+var activeBugLessons = results.filter((r) => r.animation.hasActiveNodeIssues);
+var boilerplateLessons = results.filter((r) => r.pedagogy.hasGenericBoilerplate);
+var animationCoverageSummary = {
+  v2Guided: results.filter((r) => r.animation.animationVersion === 2).length,
+  concreteFidelity: results.filter((r) => r.animation.fidelity === "concrete").length,
+  avgFrames: Math.round(results.reduce((acc, r) => acc + r.animation.frameCount, 0) / total)
 };
-var guidedAnimations = lessons.filter((lesson) => lesson.animationVersion === 2).length;
-var visualModels = new Set(lessons.map((lesson) => lesson.visualModel)).size;
-console.log(JSON.stringify({ total: lessons.length, visualTraces: traceSignatures.size, fidelity, guidedAnimations, visualModels, counts, errors }, null, 2));
-if (errors.length) process.exitCode = 1;
+console.log(JSON.stringify({
+  totalLessons: total,
+  summary: {
+    code: {
+      compiling: `${compilingCount} / ${total} (${Math.round(compilingCount / total * 100)}%)`,
+      fullTemplates: `${fullTemplateCount} / ${total} (${Math.round(fullTemplateCount / total * 100)}%)`,
+      withPlaceholders: placeholderLessons.length,
+      withUnmappedLines: unmappedLineLessons.length
+    },
+    animation: {
+      v2Guided: `${animationCoverageSummary.v2Guided} / ${total}`,
+      concreteFidelity: `${animationCoverageSummary.concreteFidelity} / ${total}`,
+      avgFrames: animationCoverageSummary.avgFrames,
+      lessonsWithActiveNodeBugs: activeBugLessons.length
+    },
+    pedagogy: {
+      lessonsWithGenericBoilerplate: `${boilerplateLessons.length} / ${total} (${Math.round(boilerplateLessons.length / total * 100)}%)`
+    }
+  },
+  placeholderLessons: placeholderLessons.map((l) => ({ id: l.id, placeholders: l.code.placeholders })),
+  activeBugLessons: activeBugLessons.map((l) => ({ id: l.id, sampleIssues: l.animation.activeNodeIssues })),
+  compilingLessons: results.filter((r) => r.code.compiles).map((l) => l.id),
+  categoryBreakdown: categories.map((c) => {
+    const inCat = results.filter((r) => r.category === c.title);
+    return {
+      category: c.title,
+      total: inCat.length,
+      compiling: inCat.filter((r) => r.code.compiles).length,
+      fullTemplates: inCat.filter((r) => r.code.isFullTemplate).length,
+      boilerplateCount: inCat.filter((r) => r.pedagogy.hasGenericBoilerplate).length
+    };
+  })
+}, null, 2));

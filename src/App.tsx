@@ -54,14 +54,28 @@ function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }
     <svg viewBox="0 0 1000 430" aria-label={`${lesson.title} graph`}>
       {edges.map((edge, index) => {
         const from = point(edge.from), to = point(edge.to)
-        const lit = frame.active?.includes(edge.from) && frame.active?.includes(edge.to)
+        const lit = Boolean(
+          (frame.active?.includes(edge.from) && frame.active?.includes(edge.to)) ||
+          frame.active?.some((act) => 
+            act === `邊 ${edge.from}→${edge.to}` || act === `邊 ${edge.to}→${edge.from}` ||
+            act === `${edge.from}→${edge.to}` || act === `${edge.to}→${edge.from}` ||
+            act === `${edge.from}-${edge.to}` || act === '答案邊' || act === '樹邊' || act === '松弛' || act === '更新邊'
+          )
+        )
         return <g key={`${edge.from}-${edge.to}-${index}`}>
           <motion.line x1={from.x * 10} y1={from.y * 4.3} x2={to.x * 10} y2={to.y * 4.3} className={lit ? 'graph-edge lit' : 'graph-edge'} animate={{ opacity: lit ? 1 : .25 }} />
           {edge.weight !== undefined && <text x={(from.x + to.x) * 5} y={(from.y + to.y) * 2.15 - 9} className="edge-weight">{edge.weight}</text>}
         </g>
       })}
       {points.map((node) => {
-        const active = frame.active?.includes(node.id), accepted = frame.accepted?.includes(node.id)
+        const active = Boolean(
+          frame.active?.includes(node.id) ||
+          frame.active?.some((act) => act === `節點 ${node.id}` || act === `節點 ${node.label}` || act === node.label)
+        )
+        const accepted = Boolean(
+          frame.accepted?.includes(node.id) ||
+          frame.accepted?.some((acc) => acc === `節點 ${node.id}` || acc === `節點 ${node.label}` || acc === node.label)
+        )
         return <motion.g key={node.id} animate={{ scale: active ? 1.08 : 1 }} style={{ transformOrigin: `${node.x * 10}px ${node.y * 4.3}px` }}>
           <circle cx={node.x * 10} cy={node.y * 4.3} r="33" className={`graph-node ${active ? 'active' : ''} ${accepted ? 'accepted' : ''}`} style={{ '--lesson-accent': lesson.accent } as React.CSSProperties} />
           <text x={node.x * 10} y={node.y * 4.3 + 5} className="graph-label">{node.label}</text>
@@ -338,8 +352,7 @@ function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNaviga
   const unit=lesson.knowledge!
   return <section className={`knowledge-unit ${expanded?'expanded':'collapsed'}`}>
     <button type="button" className="knowledge-trigger" onClick={()=>setExpanded((value)=>!value)} aria-expanded={expanded} aria-controls={`knowledge-unit-${lesson.id}`}>
-      <Workflow/><div><span>COMPLETE KNOWLEDGE UNIT</span><h2>完整演算法體系</h2><p>{unit.operationFlow.map((item)=>item.replace(/^\d+\.\s*/, '').split('：')[0]).join(' → ')}</p></div>
-      <div className="knowledge-counts"><b>{unit.prerequisites.length} 先備</b><b>{unit.operations.length} 操作</b><b>{unit.extensions.length} 延伸</b></div>
+      <Workflow/><div><h2>完整演算法體系</h2><p>{unit.prerequisites.length} 先備 · {unit.operations.length} 操作 · {unit.extensions.length} 延伸</p></div>
       <span className="guide-toggle-label">{expanded?'收起':'展開'}<ChevronDown/></span>
     </button>
     <AnimatePresence initial={false}>{expanded&&<motion.div id={`knowledge-unit-${lesson.id}`} className="knowledge-content" initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:.24,ease:'easeOut'}}>
@@ -347,14 +360,7 @@ function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNaviga
         <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
         <section><header><BookOpen/><span>本頁會先定義</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
       </div>
-      <div className="knowledge-motivation">
-        <article><span>01 · PROBLEM</span><h3>要解決什麼</h3><p>{unit.motivation.problem}</p></article>
-        <article><span>02 · NAIVE</span><h3>直接做為什麼慢</h3><p>{unit.motivation.naive}</p></article>
-        <article><span>03 · CORE IDEA</span><h3>核心想法</h3><p>{unit.coreIdea}</p></article>
-      </div>
-      <section className="knowledge-section"><header><Boxes/><div><span>STRUCTURE / STATE</span><h3>每個狀態代表什麼</h3></div></header><div className="term-grid">{unit.structure.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
-      <section className="knowledge-section"><header><Workflow/><div><span>INITIALIZE → OPERATE → VERIFY</span><h3>操作 lifecycle</h3></div></header><div className="initialization-card"><b>{unit.initialization.goal}</b>{unit.initialization.steps.map((item)=><p key={item}>{item}</p>)}<small>{unit.initialization.result}</small></div><div className="operation-table"><header><span>操作</span><span>目的</span><span>讀取 / 寫入</span><span>複雜度</span></header>{unit.operations.map((operation,index)=><article key={`${operation.name}-${index}`}><b>{operation.name}</b><p>{operation.purpose}</p><p><span>讀：</span>{operation.reads}<br/><span>寫：</span>{operation.writes}</p><strong>{operation.complexity}</strong></article>)}</div></section>
-      <section className="knowledge-section"><header><Bug/><div><span>COMMON MISTAKES</span><h3>錯誤與邊界</h3></div></header><div className="mistake-list">{[...unit.mistakes,...unit.edgeCases].map((item)=><p key={item}><AlertTriangle/>{item}</p>)}</div></section>
+
       {unit.extensions.length>0&&<section className="knowledge-extensions"><header><Sparkles/><span>基礎完成後，再往這裡延伸</span></header><div>{unit.extensions.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div></section>}
     </motion.div>}</AnimatePresence>
   </section>
@@ -387,11 +393,7 @@ function SyncedCodePanel({lesson,frame,step,onSeek}:{lesson:AlgorithmLesson;fram
     <motion.section className="code-focus-card" key={`${lesson.id}-code-${step}`} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}>
       <header><span>正在執行</span><div>{activeGuides.map((guide)=><b key={guide.lineNumber}>第 {guide.lineNumber} 行</b>)}</div></header>
       <code><CppCode line={primaryGuide?.code??frame.codeLine}/></code>
-      <div className="code-focus-grid">
-        <article><span>為什麼現在做</span><p>{primaryGuide?.purpose??frame.explanation}</p></article>
-        <article><span>C++ 語法</span><p>{primaryGuide?.syntax??frame.beginner!.codeMeaning}</p></article>
-        <article><span>執行後真的改了什麼</span><p>{primaryGuide?.effect??frame.beginner!.result}</p></article>
-      </div>
+
     </motion.section>
   </aside>
 }
@@ -426,19 +428,19 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
       <article><header><BookOpen size={15}/><span>精選例題</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
     </section>
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate}/>
-    <BeginnerGuidePanel lesson={lesson} onStart={beginLesson}/>
+
     <section className="lesson-stage" ref={stageRef}>
       <div className="stage-top"><span>LIVE VISUALIZATION</span><span className="panel-size-hint"><Maximize2/>動畫、程式碼與解說視窗皆可拖曳調整</span><button className="reset-layout" onClick={resetLayout}><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? 'PLAYING' : 'PAUSED'}</span></div>
       <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
         <div className="visual-column">
           <AlgorithmScene lesson={lesson} frame={frame}/>
           <VisualStepStrip lesson={lesson} frame={frame}/>
-          <div className="state-inspector"><span>ALGORITHM STATE · 目前變數</span><div>{Object.entries(frame.state ?? {}).filter(([key])=>!['phase','algorithm','rationale','invariant','timelineStep'].includes(key)).slice(0,6).map(([key,value])=><dl key={key}><dt>{humanizeStateKey(key)}</dt><dd>{humanizeStateValue(value)}</dd></dl>)}</div></div>
+          <div className="state-inspector"><span>ALGORITHM STATE · 目前變數</span><div>{Object.entries(frame.state ?? {}).filter(([key])=>!['phase','algorithm','rationale','invariant','timelineStep','goal','before','condition','after'].includes(key)).slice(0,6).map(([key,value])=><dl key={key}><dt>{humanizeStateKey(key)}</dt><dd>{humanizeStateValue(value)}</dd></dl>)}</div></div>
         </div>
         <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><div className="reasoning-grid"><article><span><Eye size={14}/> 先看哪裡</span><p>{frame.beginner!.observe}</p></article><article><span><Zap size={14}/> 現在執行</span><p>{frame.beginner!.action}</p></article><article><span><ShieldCheck size={14}/> 為什麼正確</span><p>{frame.beginner!.reason}</p></article><article><span><CheckCircle2 size={14}/> 執行後得到</span><p>{frame.beginner!.result}</p></article></div><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
+      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
     </section>
     <footer className={`player-controls ${stageVisible?'visible':''}`} aria-hidden={!stageVisible}><div className="progress"><motion.i animate={{width:`${index/(lesson.frames.length-1)*100}%`}} /></div><span>{index+1} / {lesson.frames.length}</span><div><button aria-label="上一步" title="上一步" disabled={index===0} onClick={()=>{setPlaying(false);setIndex(index-1)}}><ChevronLeft/></button><button aria-label={playing?'暫停':'播放'} title={playing?'暫停':'播放'} className="play" onClick={()=>index===lesson.frames.length-1?restart():setPlaying(!playing)}>{playing?<Pause/>:<Play/>}</button><button aria-label="下一步" title="下一步" disabled={index===lesson.frames.length-1} onClick={()=>{setPlaying(false);setIndex(index+1)}}><ChevronRight/></button><button aria-label="重新播放" title="重新播放" onClick={restart}><RotateCcw/></button></div></footer>
   </main>
