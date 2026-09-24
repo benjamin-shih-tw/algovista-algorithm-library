@@ -9,6 +9,7 @@ const lessonContent = await read('public/ap325/lessonContent.js')
 const app = await read('public/ap325/app.js')
 const { guideByModule } = await import('../public/ap325/guides/index.js')
 const { guideArticles } = await import('../public/ap325/guideArticles.js')
+const { pdfSupplements, ap325SourceMap } = await import('../public/ap325/pdfSupplements.js')
 
 
 const moduleIds = [...curriculum.matchAll(/\{ id: '([^']+)', world:/g)].map(m => m[1])
@@ -62,6 +63,33 @@ for (const id of moduleIds) {
 }
 if(!process.exitCode) ok('all long-form narratives pass depth checks')
 
+if (ap325SourceMap.length < 50) fail(`expected >=50 AP325 source coverage rows, found ${ap325SourceMap.length}`)
+else ok(`${ap325SourceMap.length} AP325 source coverage rows`)
+
+const invalidCoverage = ap325SourceMap.filter(x => !moduleIds.includes(x.module))
+if (invalidCoverage.length) fail(`source map references unknown modules: ${invalidCoverage.map(x=>x.module).join(', ')}`)
+else ok('every source-map row points to a valid module')
+
+const requiredSourceTopics = [
+  ['Bitonic','2-binary-search'],
+  ['set-map','2-binary-search'],
+  ['Linked list','3-linear-structures'],
+  ['Top-down memoization','6-dp-mindset'],
+  ['2D1D','6-interval-advanced'],
+  ['adjacency list','7-graph-foundation'],
+  ['編譯器優化','0-danger-zone']
+]
+for (const [needle,module] of requiredSourceTopics) {
+  const row=ap325SourceMap.find(x=>x.title.includes(needle) && x.module===module)
+  if(!row) fail(`missing AP325 source topic mapping: ${needle} -> ${module}`)
+}
+if(!process.exitCode) ok('source coverage map includes formerly omitted AP325 subsections')
+
+for (const id of ['0-danger-zone','2-binary-search','3-linear-structures','6-dp-mindset','6-interval-advanced','7-graph-foundation']) {
+  if(!pdfSupplements[id]?.length) fail(`missing PDF supplement for ${id}`)
+}
+if(!process.exitCode) ok('PDF supplement lessons present for merged source sections')
+
 const duplicate = (arr) => arr.filter((x, i) => arr.indexOf(x) !== i)
 for (const [label, arr] of [['module',moduleIds],['problem',problemCodes],['lesson content',contentIds]]) {
   const d=[...new Set(duplicate(arr))]
@@ -95,7 +123,7 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["lessonContent", "guideByModule", "guideArticles", "guideArticle", "longformGuide", "quizPassed", "copy-guide-code", "moduleNav"]) {
+for (const token of ["lessonContent", "guideByModule", "guideArticles", "pdfSupplements", "ap325SourceMap", "guideArticle", "longformGuide", "questPanel", "moduleNotes", "coverageView", "quizPassed", "copy-guide-code", "moduleNav"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
 if(!process.exitCode) ok('AP325 Guide integration wiring present')
