@@ -8,6 +8,7 @@ const curriculum = await read('public/ap325/ap325Curriculum.js')
 const lessonContent = await read('public/ap325/lessonContent.js')
 const app = await read('public/ap325/app.js')
 const { guideByModule } = await import('../public/ap325/guides/index.js')
+const { guideArticles } = await import('../public/ap325/guideArticles.js')
 
 
 const moduleIds = [...curriculum.matchAll(/\{ id: '([^']+)', world:/g)].map(m => m[1])
@@ -44,6 +45,23 @@ for (const id of moduleIds) {
 }
 if(!process.exitCode) ok('all guide articles pass depth checks')
 
+const narrativeIds = Object.keys(guideArticles)
+if (narrativeIds.length !== 38) fail(`expected 38 long-form narrative articles, found ${narrativeIds.length}`)
+else ok('38 long-form narrative articles')
+
+const missingNarratives = moduleIds.filter(id => !guideArticles[id])
+if (missingNarratives.length) fail(`modules missing long-form narrative: ${missingNarratives.join(', ')}`)
+else ok('every module has a long-form narrative layer')
+
+for (const id of moduleIds) {
+  const a = guideArticles[id]
+  if (!a) continue
+  if (!a.objective || !a.prerequisites?.length || (a.sections||[]).length < 2 || !a.worked?.steps?.length || !a.correctness?.length || !a.checklist?.length) {
+    fail(`long-form narrative ${id} is incomplete`)
+  }
+}
+if(!process.exitCode) ok('all long-form narratives pass depth checks')
+
 const duplicate = (arr) => arr.filter((x, i) => arr.indexOf(x) !== i)
 for (const [label, arr] of [['module',moduleIds],['problem',problemCodes],['lesson content',contentIds]]) {
   const d=[...new Set(duplicate(arr))]
@@ -77,7 +95,7 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["lessonContent", "guideByModule", "guideArticle", "quizPassed", "copy-guide-code", "moduleNav"]) {
+for (const token of ["lessonContent", "guideByModule", "guideArticles", "guideArticle", "longformGuide", "quizPassed", "copy-guide-code", "moduleNav"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
 if(!process.exitCode) ok('AP325 Guide integration wiring present')
