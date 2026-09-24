@@ -175,12 +175,13 @@ function topicStartPage(m){
   return ps.length?Math.min(...ps.map(p=>p.page)):1
 }
 function topicSection(m){
+  const g=guideByModule[m.id]
   return `<section class="topic source-topic" id="${m.id}">
     <header class="topic-header source-topic-header">
       <span>AP325 ${esc(m.chapter)}</span>
-      <h2>AP325 ${esc(m.chapter)}</h2>
-      <a href="${getPdfUrl(topicStartPage(m))}" target="_blank" rel="noreferrer">開啟原教材對應頁 ↗</a>
+      <h2>${esc(g?.title||m.title)}</h2>
     </header>
+    <div class="source-text-slot" data-source-module="${m.id}"></div>
     ${problemRowsForModule(m)}
   </section>`
 }
@@ -205,9 +206,8 @@ function chapterView(id){
           <h1>${esc(chapterTitles[id]||w?.title||'')}</h1>
           <p>${done} / ${ps.length} problems solved</p>
         </header>
-        <section class="pdf-preview">
-          <div class="pdf-preview-head"><div><b>AP325 v1.3 原教材</b><span>從第 ${startPage} 頁開始；內容直接顯示原始 PDF，不改寫。</span></div><a href="${getPdfUrl(startPage)}" target="_blank" rel="noreferrer">新分頁開啟 ↗</a></div>
-          <iframe src="${AP325_PDF}#page=${startPage}&zoom=page-width" title="AP325 v1.3 Chapter ${id}"></iframe>
+        <section class="source-text-notice">
+          <p>本頁改為純文字閱讀模式。章節內容會直接顯示在這裡，不再嵌入 PDF。</p>
         </section>
         ${ms.map(topicSection).join('')}
         <nav class="chapter-nav">
