@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Audit AP325 Guide
+        run: npm run audit:ap325
       - name: Build
         run: npm run build
       - name: Configure Pages
