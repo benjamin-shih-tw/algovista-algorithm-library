@@ -7,6 +7,8 @@ const ok = (msg) => console.log('✓', msg)
 const curriculum = await read('public/ap325/ap325Curriculum.js')
 const lessonContent = await read('public/ap325/lessonContent.js')
 const app = await read('public/ap325/app.js')
+const { guideByModule } = await import('../public/ap325/guides/index.js')
+
 
 const moduleIds = [...curriculum.matchAll(/\{ id: '([^']+)', world:/g)].map(m => m[1])
 const problemCodes = [...curriculum.slice(curriculum.indexOf('const rawProblems = [')).matchAll(/\['([PQ]-\d+-[^']+)'/g)].map(m => m[1])
@@ -20,6 +22,27 @@ else ok('38 curriculum modules')
 
 if (problemCodes.length !== 122) fail(`expected 122 AP325 problems, found ${problemCodes.length}`)
 else ok('122 AP325 P/Q problems')
+
+const guideIds = Object.keys(guideByModule)
+if (guideIds.length !== 38) fail(`expected 38 full guide articles, found ${guideIds.length}`)
+else ok('38 full AP325 guide articles')
+
+const missingGuides = moduleIds.filter(id => !guideByModule[id])
+if (missingGuides.length) fail(`modules missing full guide article: ${missingGuides.join(', ')}`)
+else ok('every curriculum module has a full guide article')
+
+for (const id of moduleIds) {
+  const g = guideByModule[id]
+  if (!g) continue
+  const textBlocks = (g.blocks || []).filter(b => ['text','steps','example','code','table'].includes(b.type))
+  if (!g.intro || !g.objectives?.length || textBlocks.length < 2) {
+    fail(`guide ${id} is too shallow: requires intro, objectives, and >=2 instructional blocks`)
+  }
+  if (!g.checkpoints?.length || !g.mastery?.length) {
+    fail(`guide ${id} missing checkpoints/mastery`)
+  }
+}
+if(!process.exitCode) ok('all guide articles pass depth checks')
 
 const duplicate = (arr) => arr.filter((x, i) => arr.indexOf(x) !== i)
 for (const [label, arr] of [['module',moduleIds],['problem',problemCodes],['lesson content',contentIds]]) {
@@ -54,7 +77,7 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["lessonContent", "quizPassed", "copy-template", "moduleNav"]) {
+for (const token of ["lessonContent", "guideByModule", "guideArticle", "quizPassed", "copy-guide-code", "moduleNav"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
 if(!process.exitCode) ok('AP325 Guide integration wiring present')
