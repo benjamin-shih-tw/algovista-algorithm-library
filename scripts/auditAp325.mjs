@@ -123,10 +123,12 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["lessonContent", "guideByModule", "guideArticles", "pdfSupplements", "ap325SourceMap", "guideArticle", "longformGuide", "questPanel", "moduleNotes", "coverageView", "quizPassed", "copy-guide-code", "moduleNav"]) {
+for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSection", "renderBlock", "rich", "renderMathInElement", "hljs.highlightElement", "language-cpp"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
-if(!process.exitCode) ok('AP325 Guide integration wiring present')
+if(!app.includes("chapterTitles") || !app.includes("chapterModules")) fail("chapter-first AP325 reading flow missing")
+else ok("chapter-first AP325 reading flow present")
+if(!process.exitCode) ok('AP325 Guide rendering wiring present')
 
 if (process.exitCode) process.exit(process.exitCode)
 console.log('AP325 audit complete.')
