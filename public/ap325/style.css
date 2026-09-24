@@ -217,3 +217,6 @@
   .ap-longform-section{padding:26px 1px}
   .ap-longform-worked,.ap-proof-section,.ap-checklist-section{padding:20px 16px}
 }
+
+.ap-reading-progress{position:fixed;top:67px;left:0;right:0;z-index:49;height:2px;background:transparent;pointer-events:none}
+.ap-reading-progress i{display:block;width:0;height:100%;background:var(--world-accent);box-shadow:0 0 10px color-mix(in srgb,var(--world-accent) 55%,transparent);transition:width .08s linear}
