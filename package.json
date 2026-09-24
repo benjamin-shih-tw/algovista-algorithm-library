@@ -10,7 +10,8 @@
     "audit:templates": "esbuild scripts/reportTemplates.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-template-audit.mjs && node /tmp/algovista-template-audit.mjs",
     "audit:knowledge": "esbuild scripts/auditKnowledge.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-knowledge-audit.mjs && node /tmp/algovista-knowledge-audit.mjs",
     "audit:cpp": "esbuild scripts/auditCpp.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-cpp-audit.mjs && node /tmp/algovista-cpp-audit.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit:ap325": "node --check public/ap325/ap325Curriculum.js && node --check public/ap325/lessonContent.js && node --check public/ap325/app.js && node scripts/auditAp325.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
