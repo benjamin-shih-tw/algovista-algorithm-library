@@ -10,6 +10,7 @@ const app = await read('public/ap325/app.js')
 const { guideByModule } = await import('../public/ap325/guides/index.js')
 const { guideArticles } = await import('../public/ap325/guideArticles.js')
 const { pdfSupplements, ap325SourceMap } = await import('../public/ap325/pdfSupplements.js')
+const { tcircProblemIds } = await import('../public/ap325/judgeLinks.js')
 
 
 const moduleIds = [...curriculum.matchAll(/\{ id: '([^']+)', world:/g)].map(m => m[1])
@@ -90,6 +91,18 @@ for (const id of ['0-danger-zone','2-binary-search','3-linear-structures','6-dp-
 }
 if(!process.exitCode) ok('PDF supplement lessons present for merged source sections')
 
+if (Object.keys(tcircProblemIds).length !== 112) fail(`expected 112 direct TCIRC problem links, found ${Object.keys(tcircProblemIds).length}`)
+else ok('112 direct TCIRC problem links')
+
+const invalidJudgeCodes = Object.keys(tcircProblemIds).filter(code => !problemCodes.includes(code))
+if (invalidJudgeCodes.length) fail(`judge link map references unknown problem codes: ${invalidJudgeCodes.join(', ')}`)
+else ok('all direct judge links map to AP325 problems')
+
+for (const [code,id] of Object.entries(tcircProblemIds)) {
+  if (!/^d\d{3}$/.test(id)) fail(`invalid TCIRC problem id for ${code}: ${id}`)
+}
+if(!process.exitCode) ok('direct TCIRC problem link format valid')
+
 const duplicate = (arr) => arr.filter((x, i) => arr.indexOf(x) !== i)
 for (const [label, arr] of [['module',moduleIds],['problem',problemCodes],['lesson content',contentIds]]) {
   const d=[...new Set(duplicate(arr))]
@@ -123,7 +136,7 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSection", "renderBlock", "rich", "renderMathInElement", "hljs.highlightElement", "language-cpp"]) {
+for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSection", "renderBlock", "rich", "renderMathInElement", "hljs.highlightElement", "language-cpp", "getTcircProblemUrl"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
 if(!app.includes("chapterTitles") || !app.includes("chapterModules")) fail("chapter-first AP325 reading flow missing")
