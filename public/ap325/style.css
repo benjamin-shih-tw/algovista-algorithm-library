@@ -148,34 +148,8 @@ footer a{text-decoration:none}
   .all-problem-row{grid-template-columns:28px 1fr 45px}
   .all-problem-row>span{display:none}
 }
-/* Exact-source preview */
-.pdf-preview{margin:0 0 38px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
-.pdf-preview-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;border-bottom:1px solid var(--line);background:#fff}
-.pdf-preview-head>div{display:flex;flex-direction:column;gap:3px}
-.pdf-preview-head b{font-size:11px}
-.pdf-preview-head span{color:var(--muted);font-size:9px}
-.pdf-preview-head a{font-size:9px;text-decoration:none}
-.pdf-preview iframe{display:block;width:100%;height:760px;border:0;background:#eef2f7}
-.source-topic{padding-top:24px!important}
-.source-topic-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.source-topic-header>span{margin:0}
-.source-topic-header h2{margin:0;font-size:18px}
-.source-topic-header a{margin-left:auto;font-size:9px;text-decoration:none}
+.pdf-preview iframe{height:520px}.source-topic-header a{width:100%;margin-left:0}}
 
-/* Reliable C++ highlighting fallback */
-.code-wrap .hljs{display:block!important;background:transparent!important;color:#c9d1d9!important}
-.code-wrap .hljs-comment,.code-wrap .hljs-quote{color:#8b949e!important;font-style:italic}
-.code-wrap .hljs-keyword,.code-wrap .hljs-selector-tag,.code-wrap .hljs-literal,.code-wrap .hljs-section,.code-wrap .hljs-link{color:#ff7b72!important}
-.code-wrap .hljs-function .hljs-title,.code-wrap .hljs-title.function_,.code-wrap .hljs-title{color:#d2a8ff!important}
-.code-wrap .hljs-string,.code-wrap .hljs-doctag,.code-wrap .hljs-regexp{color:#a5d6ff!important}
-.code-wrap .hljs-number,.code-wrap .hljs-symbol,.code-wrap .hljs-bullet{color:#79c0ff!important}
-.code-wrap .hljs-built_in,.code-wrap .hljs-type,.code-wrap .hljs-class .hljs-title{color:#ffa657!important}
-.code-wrap .hljs-variable,.code-wrap .hljs-template-variable,.code-wrap .hljs-attr,.code-wrap .hljs-attribute{color:#ffa198!important}
-.code-wrap .hljs-meta,.code-wrap .hljs-meta .hljs-keyword{color:#8b949e!important}
-.code-wrap pre code:not(.hljs){color:#c9d1d9!important}
-
-/* KaTeX readability */
-.katex{color:#111827!important}
-.katex-display{padding:2px 0;overflow-x:auto;overflow-y:hidden}
-@media(max-width:860px){.pdf-preview iframe{height:620px}}
-@media(max-width:620px){.pdf-preview-head{align-items:flex-start;flex-direction:column}.pdf-preview iframe{height:520px}.source-topic-header a{width:100%;margin-left:0}}
+.source-text-notice{margin:0 0 28px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--muted);font-size:11px}
+.source-text-notice p{margin:0}
+.source-text-slot{min-height:12px}
