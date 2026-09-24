@@ -4,6 +4,7 @@ import {
 } from './ap325Curriculum.js'
 import { guideByModule } from './guides/index.js'
 import { pdfSupplements } from './pdfSupplements.js'
+import { getTcircProblemUrl } from './judgeLinks.js'
 
 const STORAGE_KEY='ap325-guide-progress-v1'
 const $=(s,r=document)=>r.querySelector(s)
@@ -125,7 +126,7 @@ function problemRowsForModule(m){
           <button class="solve-toggle" data-action="problem" data-code="${esc(p.code)}" title="標記完成">${solved?'✓':'○'}</button>
           <div class="problem-name"><code>${esc(p.code)}</code><strong>${esc(p.title)}</strong><small>PDF p.${p.page}${p.source?' · '+esc(p.source):''}</small></div>
           <span class="difficulty ${getProblemTone(p)}">${esc(getProblemLabel(p))}</span>
-          <div class="problem-links"><a href="${getPdfUrl(p.page)}" target="_blank" rel="noreferrer">PDF</a><a href="${AP325_JUDGE}" target="_blank" rel="noreferrer">Judge</a></div>
+          <div class="problem-links"><a href="${getPdfUrl(p.page)}" target="_blank" rel="noreferrer">PDF</a>${getTcircProblemUrl(p.code)?`<a href="${getTcircProblemUrl(p.code)}" target="_blank" rel="noreferrer">Judge</a>`:''}</div>
         </div>`
       }).join('')}
     </div>
@@ -169,17 +170,17 @@ function supplementBlocks(m){
     ${x.bullets?.length?`<ul>${x.bullets.map(b=>`<li>${rich(b)}</li>`).join('')}</ul>`:''}
   </section>`).join('')
 }
+function topicStartPage(m){
+  const ps=problemsByModule.get(m.id)||[]
+  return ps.length?Math.min(...ps.map(p=>p.page)):1
+}
 function topicSection(m){
-  const g=guideByModule[m.id]
-  if(!g)return''
-  return `<section class="topic" id="${m.id}">
-    <header class="topic-header">
+  return `<section class="topic source-topic" id="${m.id}">
+    <header class="topic-header source-topic-header">
       <span>AP325 ${esc(m.chapter)}</span>
-      <h2>${rich(g.title||m.title)}</h2>
-      <p>${rich(g.intro||m.overview)}</p>
+      <h2>AP325 ${esc(m.chapter)}</h2>
+      <a href="${getPdfUrl(topicStartPage(m))}" target="_blank" rel="noreferrer">開啟原教材對應頁 ↗</a>
     </header>
-    ${(g.blocks||[]).map(renderBlock).join('')}
-    ${supplementBlocks(m)}
     ${problemRowsForModule(m)}
   </section>`
 }
@@ -189,13 +190,14 @@ function chapterView(id){
   const ps=chapterProblems(id)
   const done=ps.filter(p=>progress.solvedProblems.includes(p.code)).length
   const prev=worlds.find(x=>x.id===id-1),next=worlds.find(x=>x.id===id+1)
+  const startPage=ps.length?Math.min(...ps.map(p=>p.page)):1
   return `<main class="chapter-page">
     <div class="breadcrumb"><button data-action="home">AP325</button><span>›</span><b>${id}. ${esc(chapterTitles[id]||w?.title||'')}</b></div>
     <div class="chapter-layout">
       <aside class="chapter-toc">
         <strong>${id}. ${esc(chapterTitles[id]||w?.title||'')}</strong>
-        ${ms.map(m=>`<a href="#${m.id}"><span>${esc(m.chapter)}</span>${esc(m.title)}</a>`).join('')}
-        <div class="toc-links"><a href="${AP325_PDF}" target="_blank" rel="noreferrer">原教材 PDF</a><a href="${AP325_JUDGE}" target="_blank" rel="noreferrer">AP325 Judge</a></div>
+        ${ms.map(m=>`<a href="#${m.id}"><span>${esc(m.chapter)}</span>AP325 ${esc(m.chapter)}</a>`).join('')}
+        <div class="toc-links"><a href="${AP325_PDF}" target="_blank" rel="noreferrer">原教材 PDF</a><a href="${AP325_JUDGE}" target="_blank" rel="noreferrer">AP325 題庫</a></div>
       </aside>
       <article class="chapter-article">
         <header class="chapter-header">
@@ -203,6 +205,10 @@ function chapterView(id){
           <h1>${esc(chapterTitles[id]||w?.title||'')}</h1>
           <p>${done} / ${ps.length} problems solved</p>
         </header>
+        <section class="pdf-preview">
+          <div class="pdf-preview-head"><div><b>AP325 v1.3 原教材</b><span>從第 ${startPage} 頁開始；內容直接顯示原始 PDF，不改寫。</span></div><a href="${getPdfUrl(startPage)}" target="_blank" rel="noreferrer">新分頁開啟 ↗</a></div>
+          <iframe src="${AP325_PDF}#page=${startPage}&zoom=page-width" title="AP325 v1.3 Chapter ${id}"></iframe>
+        </section>
         ${ms.map(topicSection).join('')}
         <nav class="chapter-nav">
           ${prev?`<button data-action="chapter" data-id="${prev.id}"><small>上一章</small><b>${prev.id}. ${esc(chapterTitles[prev.id]||prev.title)}</b></button>`:'<span></span>'}
@@ -234,7 +240,7 @@ function practiceView(){
         <button class="solve-toggle" data-action="problem" data-code="${esc(p.code)}">${solved?'✓':'○'}</button>
         <div><strong>${esc(p.code)} · ${esc(p.title)}</strong><small>${m.world}. ${esc(chapterTitles[m.world]||'')} · PDF p.${p.page}</small></div>
         <span>${esc(getProblemLabel(p))}</span>
-        <a href="${AP325_JUDGE}" target="_blank" rel="noreferrer">Judge</a>
+        ${getTcircProblemUrl(p.code)?`<a href="${getTcircProblemUrl(p.code)}" target="_blank" rel="noreferrer">Judge</a>`:''}
       </div>`
     }).join('')}</div>
   </main>`
