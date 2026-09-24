@@ -10,7 +10,20 @@ const STORAGE_KEY='ap325-guide-progress-v1'
 const $=(s,r=document)=>r.querySelector(s)
 const $$=(s,r=document)=>[...r.querySelectorAll(s)]
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
-function mathifyText(s){\n  return s\n    .replace(/\\bO\\(([^()]{1,60})\\)/g,(_,x)=>'$\\\\mathcal{O}('+x.replace(/×/g,'\\\\times ').replace(/≤/g,'\\\\le ').replace(/≥/g,'\\\\ge ')+')$')\n    .replace(/\\b2\\^\\(([^)]+)\\)/g,(_,x)=>'$2^{'+x+'}$')\n    .replace(/\\b2\\^([A-Za-z0-9_+\\/-]+)/g,(_,x)=>'$2^{'+x+'}$')\n}\nfunction rich(v){\n  let s=esc(v)\n    .replace(/`([^`]+)`/g,'<code class="inline-code">$1</code>')\n    .replace(/\\*\\*([^*]+)\\*\\*/g,'<strong>$1</strong>')\n  return s.split(/(<code class="inline-code">.*?<\\/code>)/g)\n    .map(part=>part.startsWith('<code')?part:mathifyText(part)).join('')\n}\nconst chapterTitles={
+function mathifyText(s){
+  return s
+    .replace(/\\bO\\(([^()]{1,60})\\)/g,(_,x)=>'$\\\\mathcal{O}('+x.replace(/×/g,'\\\\times ').replace(/≤/g,'\\\\le ').replace(/≥/g,'\\\\ge ')+')$')
+    .replace(/\\b2\\^\\(([^)]+)\\)/g,(_,x)=>'$2^{'+x+'}$')
+    .replace(/\\b2\\^([A-Za-z0-9_+\\/-]+)/g,(_,x)=>'$2^{'+x+'}$')
+}
+function rich(v){
+  let s=esc(v)
+    .replace(/`([^`]+)`/g,'<code class="inline-code">$1</code>')
+    .replace(/\\*\\*([^*]+)\\*\\*/g,'<strong>$1</strong>')
+  return s.split(/(<code class="inline-code">.*?<\\/code>)/g)
+    .map(part=>part.startsWith('<code')?part:mathifyText(part)).join('')
+}
+const chapterTitles={
   0:'教材說明與預備知識',
   1:'遞迴',
   2:'排序與二分搜',
