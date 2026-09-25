@@ -171,17 +171,17 @@ function colorizeCpp(code){
   const t=code.match(re)||[]
   return t.map((x,i)=>{
     const y=e(x)
-    if(/^\/\//.test(x)||/^\/\*/.test(x))return '<span class="tok-comment">'+y+'</span>'
-    if(/^["']/.test(x))return '<span class="tok-string">'+y+'</span>'
-    if(/^#/.test(x))return '<span class="tok-meta">'+y+'</span>'
-    if(/^\d/.test(x))return '<span class="tok-number">'+y+'</span>'
-    if(keywords.has(x))return '<span class="tok-keyword">'+y+'</span>'
-    if(types.has(x))return '<span class="tok-type">'+y+'</span>'
-    if(literals.has(x))return '<span class="tok-literal">'+y+'</span>'
+    if(/^\/\//.test(x)||/^\/\*/.test(x))return '<span class="tok-comment" style="color:var(--syn-comment,#6a737d)!important">'+y+'</span>'
+    if(/^["']/.test(x))return '<span class="tok-string" style="color:var(--syn-string,#032f62)!important">'+y+'</span>'
+    if(/^#/.test(x))return '<span class="tok-meta" style="color:var(--syn-meta,#6a737d)!important">'+y+'</span>'
+    if(/^\d/.test(x))return '<span class="tok-number" style="color:var(--syn-number,#005cc5)!important">'+y+'</span>'
+    if(keywords.has(x))return '<span class="tok-keyword" style="color:var(--syn-keyword,#d73a49)!important">'+y+'</span>'
+    if(types.has(x))return '<span class="tok-type" style="color:var(--syn-type,#e36209)!important">'+y+'</span>'
+    if(literals.has(x))return '<span class="tok-literal" style="color:var(--syn-keyword,#d73a49)!important">'+y+'</span>'
     if(/^[A-Za-z_]\w*$/.test(x)){
       let j=i+1
       while(j<t.length&&/^\s+$/.test(t[j]))j++
-      if(t[j]==='(')return '<span class="tok-function">'+y+'</span>'
+      if(t[j]==='(')return '<span class="tok-function" style="color:var(--syn-title,#6f42c1)!important">'+y+'</span>'
     }
     return y
   }).join('')
