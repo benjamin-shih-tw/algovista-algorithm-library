@@ -461,6 +461,20 @@ const requiredVocabularyById: Record<string, KnowledgeTerm[]> = {
 }
 
 const firstSentence = (text: string) => text.split(/(?<=[。！？])/).find((part) => part.trim())?.trim() ?? text
+// A6 fix：coreIdea 不再取中間 frame 的殘渣句子；改從課程描述＋不變量＋中段
+// 說明中挑最長的完整句子，併入轉移敘述，避免出現「mid=5+(8−5)/2=6。」這種碎片。
+const buildCoreIdea = (lesson: AlgorithmLesson, middle: Frame): string => {
+  const authored = coreIdeaById[lesson.id]
+  if (authored) return authored
+  const guide = lesson.beginnerGuide
+  const candidates = [
+    guide?.invariant,
+    middle.explanation.split(/(?<=[。！？])/).map((part) => part.trim()).filter((part) => part.length >= 18).sort((a, b) => b.length - a.length)[0],
+    lesson.description,
+  ].filter((value): value is string => Boolean(value && value.trim()))
+  const parts = [...new Set(candidates)].slice(0, 2)
+  return parts.join('') || middle.explanation
+}
 const cleanState = (frame: Frame) => Object.entries(frame.state ?? {})
   .filter(([key]) => !['phase', 'algorithm', 'timelineStep', 'microStep', 'microPhase'].includes(key))
   .slice(0, 3)
@@ -580,7 +594,7 @@ const buildKnowledge = (lesson: AlgorithmLesson): KnowledgeUnit => {
       why: `當輸入規模變大或同類操作重複出現時，需要用「${guide.invariant}」避免重做已能證明的工作。`,
       naive: naiveByCategory[lesson.categoryId],
     },
-    coreIdea: coreIdeaById[lesson.id] ?? firstSentence(middle.explanation),
+    coreIdea: buildCoreIdea(lesson, middle),
     mentalModel: guide.mentalModel,
     prerequisites: dependencies,
     localPrerequisites: localPrerequisiteByCategory[lesson.categoryId],

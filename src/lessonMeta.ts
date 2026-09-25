@@ -146,6 +146,14 @@ const practiceById: Record<string, PracticeProblem> = {
   'linear-search': atcoder('Buildings','abc353/abc353_a','從左到右找第一個符合條件的位置；不需要排序，也不能跳格。'),
   'binary-search': cses('Factory Machines','1620','先證明答案具有單調性，再二分最小可行時間。'),
   bfs: cses('Message Route','1667','用 FIFO queue 逐層找無權圖最短路並重建路徑。'),
+  // A4 fix：修正三個最明顯的例題錯置（原配題與演算法無關）。
+  'fibonacci-dp': cses('Dice Combinations','1633','遞迴只依賴前六項，是滾動 DP 的直接練習。'),
+  'stable-matching': cses('Tree Matching','1130','先用小圖理解「配對一旦成立不應被 blocking pair 破壞」的穩定概念，再練習最大匹配樹 DP。'),
+  'duval-lyndon': cses('Minimal Rotation','1110','用 Duval 演算法線性找出字典序最小旋轉。'),
+  'minimum-string-rotation': cses('Minimal Rotation','1110','同上，重點在線性時間比較循環同構。'),
+  'counting-sort': atcoder('Takahashi the Wallflower','typical90/typical90_o','值域有限時以頻率桶取代比較排序的情境。'),
+  'expression-evaluation': codeforces('Fox And Calculator','510-B','依運算優先序逐步化簡算式的模擬題。'),
+  'shunting-yard': codeforces('Fox And Calculator','510-B','把中綴式轉成可依序求值的形式再計算。'),
 }
 
 const usageById: Record<string, [string,string]> = {
@@ -153,6 +161,24 @@ const usageById: Record<string, [string,string]> = {
   'binary-search': ['資料已排序，或答案是否可行具有「先全部不行、之後全部可行」的單調性時。','資料量大且需要把搜尋次數從 O(n) 降到 O(log n)；使用前必須先說清楚左右邊界代表什麼。'],
   bfs: ['圖沒有邊權，或每條邊成本都相同，並且要找最少邊數時。','使用 FIFO queue 保證距離較小的節點先處理；若邊權不同，不能直接把 BFS 當 Dijkstra。'],
   'prefix-sum': ['同一個不變陣列上會反覆詢問區間總和時。','先用 O(n) 建立 prefix；之後每次查詢以 prefix[r+1]−prefix[l] 在 O(1) 完成，若陣列頻繁修改則不適合直接使用。'],
+  // A5 fix：為最容易被樣板文字誤導的課補上真正的「何時使用」判斷指引。
+  'fibonacci-dp': ['遞迴關係只依賴固定前幾項（如 F(i)=F(i−1)+F(i−2)）且要避免指數級重算時。','只需保留最後兩項即可滾動推進，空間 O(1)；這也是學習 DP 狀態與轉移的最小範例。'],
+  'stable-matching': ['有兩群人各自持有完整偏好排序，要找一組沒有 blocking pair 的配對時。','Gale–Shapley 由單側主動提議；結果偏向提議方，雙方角色互換會得到不同的穩定配對。'],
+  'duval-lyndon': ['要把字串分解成 Lyndon words，或需要線性時間找出所有旋轉中最小者時。','演算法維護目前 Lyndon word 的邊界指標；每個字元最多被處理常數次，總時間 O(n)。'],
+  'minimum-string-rotation': ['要在所有 n 個循環旋轉中找出字典序最小（BOJ 互質題、字串規範化）時。','用 Duval 演算法在 O(n) 內比較，不必真的生成全部旋轉；輸出起點索引即可重建答案。'],
+  'counting-sort': ['值域 k 很小（如成績、字元），要把整數排序且不需要比較時。','時間 O(n+k)、空間 O(k)；k 遠大於 n 時改用比較排序或先離散化。'],
+  'expression-evaluation': ['要直接計算中綴運算式的值，且運算子有優先序與括號時。','以兩個 stack 分別保存運算元與運算子；遇到新運算子時先清算優先序較高者。'],
+  'shunting-yard': ['要把中綴運算式轉成後綴（RPN）再交給直譯器或虛擬機時。','輸出佇列保存運算元順序，運算子 stack 處理優先序與括號；轉換後可線性求值。'],
+  'coin-change': ['給定幣值集合與金額，要問最少枚數（或方法數）且可重複使用時。','dp[a] 由 dp[a−coin] 轉移；求方法數時外層枚舉幣值、內層枚舉金額，方向不同語意不同。'],
+  'unbounded-knapsack': ['每種物品可無限重複選擇的背包變體時。','容量由小到大掃描允許本輪重複使用同一物品；反向掃描就會退化成 0/1 背包。'],
+  'subset-sum': ['要判斷能否從集合中選出總和恰為目標 S 的子集合時。','每個元素只能用一次，反向掃描避免本輪重複選取；值域大時考慮 bitset。'],
+  'probability-dp': ['狀態轉移帶有機率或期望值，且轉移圖是 DAG 時。','抵達機率用全機率公式前推；有環的期望值需解線性方程組而非直接遞迴。'],
+  'dp-reconstruction': ['除了最佳值之外，還要輸出一組達成該值的具體選擇方案時。','每次更新 dp 時同步保存 parent 與選擇；從終點沿 parent 回溯後反轉即為正向方案。'],
+  dijkstra: ['圖的邊權全部非負，要從單一起點求出所有點的最短距離時。','以 min-priority queue 取出最新候選並鬆弛出邊；遇到負邊必須改用 Bellman–Ford。'],
+  'negative-cycle-reconstruction': ['圖可能含負環，不但要偵測還要輸出環上的具體節點時。','在第 V 輪仍被鬆弛的節點沿 parent 回溯 n 步即可落入環中；先確認環從起點可達。'],
+  'push-relabel': ['需要比增廣路演算法更快處理稠密圖最大流，或要實作 highest-label 變體時。','以 preflow 與高度函數取代增廣路； excess 節點用 relabel 推流，最後回到守恆律。'],
+  'circulation-demands': ['網路帶有節點供需（下界流量）而非單純 s–t 最大流時。','加入超級源匯把供需轉成可行流問題；先判斷總供給等於總需求。'],
+  'zero-one-bfs': ['圖的邊權只有 0 與 1 兩種，要避免 log 因子的 priority queue 時。','0 邊 push_front、1 邊 push_back，deque 維持距離單調；每個節點可能被多次鬆弛。'],
 }
 
 const practiceByModel: Partial<Record<VisualModel, PracticeProblem>> = {

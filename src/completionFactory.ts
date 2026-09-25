@@ -18,10 +18,13 @@ export type CatalogSpec = {
 
 const numericSeed = (id: string) => [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0)
 
+// C7/C8 fix：陣列／線性畫面的 active/accepted 必須使用「索引字串」，
+// ArrayScene 與 LinearScene 才能命中高亮（舊版用「索引 0」這種版位文字，永遠不命中）。
+// 同時移除假的 low/high/mid 指標——它們與演算法無關，只會誤導。
 const visualFocus = (visual: VisualKind, phase: number, values: number[]) => {
   const focusByVisual: Record<VisualKind, string[][]> = {
-    array: [['索引 0','索引 1'],['索引 2','索引 3'],['索引 4','索引 5']],
-    linear: [[String(values[0]),String(values[1])],[String(values[2]),String(values[3])],[String(values[4]),String(values[5])]],
+    array: [['0','1'],['2','3'],['4','5']],
+    linear: [['0','1'],['2','3'],['4','5']],
     graph: [['節點 A','邊 A→B'],['節點 B','邊 B→D'],['節點 D','答案邊']],
     tree: [['根節點','第一層'],['目前子樹','父子邊'],['合併後的根','答案路徑']],
     'segment-tree': [['區間 [0,7]','根節點'],['區間 [0,3]','區間 [4,7]'],['被接受區間','合併答案']],
@@ -52,9 +55,6 @@ export const makeCatalogLesson = (spec: CatalogSpec): AlgorithmLesson => {
     codeLine: spec.code[lineGroups[phase][0] - 1]?.trim() ?? '',
     codeLines: lineGroups[phase],
     values,
-    low: phase,
-    high: Math.min(7, phase + 4),
-    mid: Math.min(7, phase * 2 + 1),
     active: visualFocus(spec.visual, phase, values),
     accepted: phase === 2 ? visualFocus(spec.visual, phase, values) : undefined,
     state: {

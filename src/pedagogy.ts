@@ -41,17 +41,24 @@ const meaningfulCodeLines = (lesson: AlgorithmLesson) => lesson.code
   .map((line, index) => ({ line: line.trim(), number: index + 1 }))
   .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//') && !line.startsWith('#include') && !/^using namespace\b/.test(line))
 
+// A2 fix：函式入口必須「以 { 開啟函式體」且不以控制流關鍵字開頭。
+// 呼叫敘述（如 sort(...);）以分號結尾、控制流（if/while/for）以關鍵字開頭，
+// 兩者都不會再被誤判成函式宣告。
+const CONTROL_FLOW_START = /^(?!\b(if|else|while|for|do|switch)\b)/
+const FUNCTION_ENTRY_RE = /^(?!\b(if|else|while|for|do|switch)\b)[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{/
+const FUNCTION_ENTRY_WITH_EARLY_RETURN_RE = /^(?!\b(if|else|while|for|do|switch)\b)[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{.*\bif\b.*\breturn\b/
+
 export const explainCppLine = (line: string, lesson: AlgorithmLesson, lineNumber: number) => {
   const code = cleanCode(line)
   const prefix = `第 ${lineNumber} 行「${code}」`
-  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{.*\bif\b.*\breturn\b/.test(code)) return `${prefix}同時做兩件事：先宣告 ${lesson.title} 的函式與輸入，再檢查能立刻判斷的特例；特例成立就直接回傳，否則才繼續一般流程。`
-  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?$/.test(code)) return `${prefix}是 ${lesson.title} 的函式入口；括號內是演算法收到的資料，函式內接下來會維護本課介紹的狀態。`
+  if (FUNCTION_ENTRY_WITH_EARLY_RETURN_RE.test(code)) return `${prefix}同時做兩件事：先宣告 ${lesson.title} 的函式與輸入，再檢查能立刻判斷的特例；特例成立就直接回傳，否則才繼續一般流程。`
+  if (/^while\s*\(/.test(code)) return `${prefix}檢查是否仍有工作要做；條件為真才進入下一輪，為假就表示這一階段已經完成。`
+  if (/^for\s*\(/.test(code)) return `${prefix}控制迭代範圍；每次迴圈只推進一個明確單位，畫面會同步標出本輪讀取的位置或物件。`
+  if (FUNCTION_ENTRY_RE.test(code)) return `${prefix}是 ${lesson.title} 的函式入口；括號內是演算法收到的資料，函式內接下來會維護本課介紹的狀態。`
   if (/^(using|typedef)\b/.test(code)) return `${prefix}替較長的資料型別取一個容易閱讀的名字；它不會建立資料，只讓後續宣告更清楚。`
   if (/\b(priority_queue|set|multiset|map|unordered_map)\b/.test(code)) return `${prefix}建立能快速取得或查找關鍵候選的容器；後面的操作都依賴這個容器保持指定順序。`
   if (/\b(queue|deque|stack)\s*</.test(code)) return `${prefix}建立本演算法的工作容器；容器的取出順序決定下一個會被處理的狀態。`
   if (/\bvector\b/.test(code) && /[=(]/.test(code)) return `${prefix}建立並初始化狀態陣列；初始值代表每個位置在演算法尚未處理前的意義。`
-  if (/^for\s*\(/.test(code)) return `${prefix}控制迭代範圍；每次迴圈只推進一個明確單位，畫面會同步標出本輪讀取的位置或物件。`
-  if (/^while\s*\(/.test(code)) return `${prefix}檢查是否仍有工作要做；條件為真才進入下一輪，為假就表示這一階段已經完成。`
   if (/^if\s*\(/.test(code)) {
     const condition = code.match(/^if\s*\((.*)\)/)?.[1] ?? '括號內條件'
     return `${prefix}判斷「${condition}」是否成立。程式會先讀取條件中的變數，只在結果為 true 時執行後面的敘述；這一行本身不會偷偷修改其他狀態。`
@@ -222,7 +229,82 @@ const expandReadableLine = (rawLine: string) => {
   return [rawLine]
 }
 
+// A3 fix：掃描 snippet 中未宣告卻被使用的常見競賽環境識別字，
+// 生成明確的環境宣告區塊。這讓「依賴外部環境的 snippet」變成
+// 「明確宣告環境後可閱讀、可編譯的模板」。
+const buildEnvDeclarations = (code: string[]): string[] => {
+  const joined = code.join('\n')
+  const declarations: string[] = []
+  const add = (line: string, used: boolean) => { if (used) declarations.push(line) }
+  const uses = (token: string) => new RegExp(`\\b${token}\\b`).test(joined)
+  const declared = (token: string) => new RegExp(`\\b(?:int|long long|auto|double|bool|char|vector<[^>]*>)\\s+${token}\\b`).test(joined)
+  // 注意：只在「未被宣告為變數」時補環境，避免把區域變數當全域。
+  // s 很常是函式參數或區域變數，這裡僅在 dist[s] 這種索引情境且無宣告時才補。
+  // range-for 的 `for (auto [u,v,w] : edges)` 不是對容器本身的宣告，先剝除再檢查。
+  const declaredScope = joined.replace(/for\s*\([^;:{}]*:[^;:{}]*\)/g, ' ')
+  const declaredAny = (token: string) => new RegExp(`\\b(?:int|long long|auto|double|bool|char|string|vector<[^>]*>)[^;{}()]*\\b${token}\\b\\s*(?:[=,;)\[]|$)`).test(declaredScope)
+  for (const token of ['n', 'm', 'q', 'k', 'INF']) {
+    if (uses(token) && !declaredAny(token)) {
+      if (token === 'INF') declarations.push('const long long INF = 4e18;')
+      else declarations.push(`int ${token}; // 依題目讀入`)
+    }
+  }
+  // s 在圖論課常是「起點節點索引」：出現在 dist[s]、parent[s]、q.push(s) 等
+  // 索引/佇列語境且未被宣告時，補 int s（不能誤補成 string s）。
+  if (uses('s') && !declaredAny('s') && /\w+\[s\]|\w+\(s\)|\w+\(s,/.test(joined)) declarations.push('int s; // 起點（節點索引）')
+  if (uses('graph')) {
+    if (/\bgraph\[\w+\]\s*;/.test(joined) || /for\s*\(\s*auto\s*\[\w+,\s*\w+\]\s*:\s*graph/.test(joined) && /int\s+\w+\s*=\s*\w+\.first|pair/.test(joined)) declarations.push('vector<vector<pair<int,long long>>> graph; // 帶權鄰接表')
+    else if (/\bvector<vector<int>>\s*graph\b/.test(joined)) declarations.push('vector<vector<int>> graph; // 無權鄰接表')
+    else if (/for\s*\(\s*int\s+\w+\s*:\s*graph\[/.test(joined) || /for\s*\(\s*auto\s+\w+\s*:\s*graph\[/.test(joined)) declarations.push('vector<vector<int>> graph; // 無權鄰接表')
+    else declarations.push('vector<vector<pair<int,long long>>> graph; // 帶權鄰接表')
+  }
+  if (uses('dist')) {
+    if (/dist\[[^\]]+\]\[[^\]]+\]/.test(joined)) declarations.push('vector<vector<long long>> dist; // 點對距離矩陣')
+    else declarations.push('vector<long long> dist; // 距離陣列')
+  }
+  if (uses('visited') && !declaredAny('visited')) declarations.push('vector<bool> visited;')
+  if (uses('parent') && !declaredAny('parent')) declarations.push('vector<int> parent;')
+  if (uses('indegree') && !declaredAny('indegree')) declarations.push('vector<int> indegree;')
+  if (uses('edges') && !declaredAny('edges')) declarations.push('vector<tuple<int,int,long long>> edges; // {u, v, w}')
+  if (uses('negativeCycle') && !declaredAny('negativeCycle')) declarations.push('bool negativeCycle = false;')
+  if (uses('prefix') && !declaredAny('prefix')) declarations.push('vector<long long> prefix; // 前綴和')
+  if (uses('a') && !declaredAny('a') && /\ba\[[^]]*\]/.test(joined)) declarations.push('vector<long long> a; // 輸入陣列')
+  // 高頻的未宣告型別／運算輔助：幾何、DP 與常見容器
+  if (uses('Point') && !/\bstruct\s+Point|\bclass\s+Point/.test(joined)) declarations.push('struct Point { long long x, y; };')
+  if (uses('Edge') && !/\bstruct\s+Edge|\bclass\s+Edge/.test(joined)) declarations.push('struct Edge { int u, v; long long w; };')
+  if (uses('Node') && !/\bstruct\s+Node|\bclass\s+Node/.test(joined)) declarations.push('struct Node { long long sum = 0; Node *left = nullptr, *right = nullptr; };')
+  if (uses('ll') && !/\btypedef\s+long\s+long\s+ll|\busing\s+ll\s*=/.test(joined)) declarations.push('using ll = long long;')
+  if (uses('EPS') && !declared('EPS')) declarations.push('const double EPS = 1e-9;')
+  if (/\bcross\s*\(/.test(joined) && !/\bcross\s*\([^)]*\)\s*\{/.test(joined) && uses('Point')) declarations.push('long long cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }')
+  if (/\bcross\s*\([^,)]+,[^,)]+,[^)]+\)/.test(joined) && !/\blong\s+long\s+cross\s*\(\s*Point\s+\w+,\s*Point\s+\w+,\s*Point/.test(joined) && uses('Point')) declarations.push('long long cross(Point o, Point a, Point b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); }')
+  if (/\blength\s*\(/.test(joined) && !/\blength\s*\([^)]*\)\s*\{/.test(joined) && uses('Point')) declarations.push('double length(Point p) { return sqrt((double)p.x * p.x + p.y * p.y); }')
+  return declarations
+}
+
+// A3 fix：偵測 snippet 是否以「裸敘述」開頭（如 selection-sort 直接以 for 開頭）。
+// 這種核心片段需要包進 main() 或函式才可能編譯；在此以 main 包裝並保留原行映射。
+const needsMainWrap = (code: string[]): boolean => {
+  let depth = 0
+  for (const rawLine of code) {
+    const line = rawLine.trim()
+    if (!line || line.startsWith('//') || line.startsWith('#')) continue
+    if (depth === 0 && !/^[{};]+$/.test(line)) {
+      const isDeclaration = /^(struct|class|typedef|using)\b/.test(line)
+        || /^(?!\b(if|else|while|for|do|switch|return)\b)[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?\s*$/.test(line)
+        || /^(template|constexpr|const\s+long\s+long|#)/.test(line)
+        || /^(int|void|bool|long long|auto|double|string|vector)\s+\w+\s*\([^;]*\)\s*\{/.test(line)
+        || /=|^\w+\s+\w+(\s*=|\s*,)/.test(line) && !/^for\b/.test(line) && !/^while\b/.test(line)
+      const isControlFlow = /^(for|while|if|else|do|switch|return)\b/.test(line) || /\bfor\b\s*\(/.test(line) || /\bwhile\b\s*\(/.test(line) || /\bif\b\s*\(/.test(line)
+      if (isControlFlow || !isDeclaration) return true
+    }
+    for (const ch of line) { if (ch === '{') depth += 1; else if (ch === '}') depth = Math.max(0, depth - 1) }
+  }
+  return false
+}
+
 const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
+  const envDeclarations = buildEnvDeclarations(lesson.code)
+  const wrapInMain = needsMainWrap(lesson.code)
   const code: string[] = [
     `// ${lesson.title}｜${lesson.zhTitle}`,
     `// Purpose: ${lesson.description}`,
@@ -232,12 +314,25 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
     'using namespace std;',
     '',
   ]
+  if (envDeclarations.length) {
+    code.push('// ── 競賽環境（本課 snippet 預設的外部狀態）──')
+    code.push(...envDeclarations)
+    code.push('')
+  }
   const lineMap = new Map<number, number[]>()
+  if (wrapInMain) {
+    code.push('int main() {')
+    code.push('  // 以下為本課核心流程片段')
+  }
   lesson.code.forEach((line, index) => {
     const expanded = expandReadableLine(line)
     const mapped = expanded.map((expandedLine) => { code.push(expandedLine); return code.length })
     lineMap.set(index + 1, mapped)
   })
+  if (wrapInMain) {
+    code.push('  return 0;')
+    code.push('}')
+  }
   const frames = lesson.frames.map((frame) => {
     const codeLines = [...new Set(frame.codeLines.flatMap((line) => lineMap.get(line) ?? []))]
     const firstMeaningful = codeLines.find((line) => code[line - 1]?.trim() && !/^[{}]+;?$/.test(code[line - 1].trim())) ?? codeLines[0]
@@ -249,10 +344,21 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
 const ensureCodeCoverage = (lesson: AlgorithmLesson) => {
   const frames = lesson.frames.map((frame) => ({ ...frame, codeLines: [...new Set(frame.codeLines)] }))
   const covered = new Set(frames.flatMap((frame) => frame.codeLines))
+  // A2 fix：未涵蓋行改為「分派給語意最接近的 frame」（以行號距離衡量），
+  // 舊版用整體比例分派，曾把 `return -1;` 塞進講「匹配成功」的 frame，
+  // 造成 code guide 的 effect 文字張冠李戴。
   for (const { number } of meaningfulCodeLines(lesson)) {
     if (covered.has(number)) continue
-    const target = Math.min(frames.length - 1, Math.round((number - 1) / Math.max(1, lesson.code.length - 1) * (frames.length - 1)))
-    frames[target].codeLines = [...new Set([...frames[target].codeLines, number])].sort((a, b) => a - b)
+    let bestIndex = -1
+    let bestDistance = Number.POSITIVE_INFINITY
+    frames.forEach((frame, frameIndex) => {
+      for (const existing of frame.codeLines) {
+        const distance = Math.abs(existing - number)
+        if (distance < bestDistance) { bestDistance = distance; bestIndex = frameIndex }
+      }
+    })
+    if (bestIndex < 0) bestIndex = Math.min(frames.length - 1, Math.round((number - 1) / Math.max(1, lesson.code.length - 1) * (frames.length - 1)))
+    frames[bestIndex].codeLines = [...new Set([...frames[bestIndex].codeLines, number])].sort((a, b) => a - b)
     covered.add(number)
   }
   return frames.map((frame, frameIndex) => {
@@ -269,12 +375,15 @@ const ensureCodeCoverage = (lesson: AlgorithmLesson) => {
 const buildStep = (lesson: AlgorithmLesson, frame: Frame, step: number, total: number): BeginnerStep => {
   const activeLines = frame.codeLines.map((lineNumber) => explainCppLine(lesson.code[lineNumber - 1] ?? '', lesson, lineNumber))
   const activeSource = frame.codeLines.map((lineNumber) => lesson.code[lineNumber - 1] ?? '').join(' ')
+  // A2 fix：入口／條件判定必須看「主教學行」這一行，而不是 join 後的字串；
+  // 多行高亮拼接會讓 `...while (x) reverse(...)` 看起來像函式宣告。
+  const primaryLineText = (frame.codeLines.map((lineNumber) => lesson.code[lineNumber - 1] ?? '').find((text) => text.trim() && !/^[{}]+;?$/.test(text.trim()) && !text.trim().startsWith('//')) ?? '').trim()
   const focus = [...new Set([...(frame.active ?? []), ...(frame.queue ?? []), ...(frame.priorityQueue ?? [])])]
   const focusText = focus.length ? `先找畫面高亮的 ${focus.slice(0, 5).join('、')}；這是本步會讀取或改動的資料。` : '先找畫面中最亮的節點、格子或區間，再對照右側高亮程式行。'
   const finalStep = step === total - 1
   const before = frame.state?.before ? humanizeStateValue(frame.state.before) : describeEntries(frame)
   const after = frame.state?.after ? humanizeStateValue(frame.state.after) : describeEntries(frame, true)
-  const hasCondition = Boolean(frame.state?.condition) || /\b(if|while|for)\s*\(/.test(activeSource)
+  const hasCondition = Boolean(frame.state?.condition) || /^\s*(if|while|for)\s*\(/.test(primaryLineText)
   const condition = frame.state?.condition ? humanizeStateValue(frame.state.condition) : '高亮程式行括號內的條件'
   const operation = frame.state?.operation ? humanizeStateValue(frame.state.operation) : frame.title
   const invariant = frame.state?.invariant ? humanizeStateValue(frame.state.invariant) : lesson.beginnerGuide?.invariant ?? lesson.description
@@ -283,7 +392,7 @@ const buildStep = (lesson: AlgorithmLesson, frame: Frame, step: number, total: n
   const observeEnding = hasCondition ? '先不要看結果，先用這些值判斷條件會是 true 還是 false。' : '先確認這些值接下來會被哪一行讀取或更新。'
   const actionLead = hasCondition
     ? `把目前數值代入「${condition}」，判斷成立後再執行「${operation}」。`
-    : /^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?/.test(activeSource.trim())
+    : FUNCTION_ENTRY_RE.test(primaryLineText)
       ? '先讀取函式收到的參數與回傳型別；函式入口本身不會修改資料。'
       : `依照高亮順序執行「${operation}」。`
   return {
@@ -323,8 +432,8 @@ const buildGuide = (lesson: AlgorithmLesson, frames: Frame[]): BeginnerGuide => 
 }
 
 const codeRole = (line: string) => {
-  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{.*\bif\b.*\breturn\b/.test(line)) return '函式入口＋特例'
-  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?$/.test(line)) return '函式入口'
+  if (FUNCTION_ENTRY_WITH_EARLY_RETURN_RE.test(line)) return '函式入口＋特例'
+  if (FUNCTION_ENTRY_RE.test(line)) return '函式入口'
   if (/\bif\b.*\breturn\b/.test(line)) return '特例提前回傳'
   if (/\breturn\b/.test(line)) return '輸出答案'
   if (/^if\s*\(/.test(line)) return '分支判斷'
@@ -352,7 +461,7 @@ const codeEffect = (line: string, fallback: string) => {
   if (/\breverse\s*\(/.test(line)) return `${container ?? '目標容器'} 的元素順序會被原地反轉，後續程式讀到的是新順序。`
   if (/^if\s*\(/.test(line)) return '這行只決定是否進入分支；條件成立後，分支內的敘述才會改變狀態。'
   if (/^(for|while)\s*\(/.test(line)) return '這行負責控制是否進入下一輪；真正的資料變化發生在迴圈本體。'
-  if (/^[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{?$/.test(line)) return '這是函式入口，只建立參數名稱與回傳規格，不會在這一行修改輸入。'
+  if (FUNCTION_ENTRY_RE.test(line)) return '這是函式入口，只建立參數名稱與回傳規格，不會在這一行修改輸入。'
   return fallback
 }
 
@@ -394,8 +503,20 @@ export const enrichPedagogy = (rawLesson: AlgorithmLesson): AlgorithmLesson => {
                   ? 'evaluate'
                   : 'observe'
     const label = mode === 'observe' ? '讀取目前焦點' : mode === 'evaluate' ? '代入條件判斷' : mode === 'mutate' ? '更新高亮狀態' : '核對不變量'
+    // A1 fix：expandGuidedFrames 產生的 explanation 只說「這一行負責…」；
+    // 現在 prepareReadableTemplate 已重編行號，可安全用最終 codeLines 取第一行補上
+    // 「第 N 行」，且該行號保證與畫面高亮行一致。
+    const finalCodeLines = [...new Set(frame.codeLines)].sort((a, b) => a - b)
+    const primaryLine = finalCodeLines.find((line) => {
+      const text = (lesson.code[line - 1] ?? '').trim()
+      return text && !/^[{}]+;?$/.test(text) && !text.startsWith('//')
+    }) ?? finalCodeLines[0]
+    const linePrefix = primaryLine && frame.codeLine.trim() === (lesson.code[primaryLine - 1] ?? '').trim() ? `第 ${primaryLine} 行` : ''
+    const explanation = linePrefix ? frame.explanation.replace(/^這一行負責/, `${linePrefix}負責`) : frame.explanation
     return {
       ...frame,
+      explanation,
+      codeLines: finalCodeLines,
       visualStep: step,
       visualProgress: progress,
       beginner: buildStep(lesson, frame, step, total),

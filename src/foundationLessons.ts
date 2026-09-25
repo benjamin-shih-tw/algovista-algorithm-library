@@ -237,8 +237,9 @@ export const foundationLessons: AlgorithmLesson[] = [
   ]}),
   make({ id:'binary-heap',index:'24',category:'HEAP',categoryId:'linear-structures',subcategory:'Heap',title:'Binary Heap',zhTitle:'二元堆積',description:'以完全二元樹維持父節點不大於子節點。',complexity:'Push/Pop O(log n)',accent:'#62e4d0',values:[2,5,3,9,8,7],code:['priority_queue<int, vector<int>, greater<int>> pq;','pq.push(x); // append then sift up','int minimum = pq.top();','pq.pop(); // move last to root, sift down'],phases:[
     {title:'陣列表示完全二元樹',explanation:'索引 i 的子節點為 2i+1、2i+2。Min-heap 只保證父≤子，不保證整個陣列排序。',lines:[1],state:{heap:['2','5','3','9','8','7'],minimum:2},accepted:[0]},
-    {title:'Push 後向上修復',explanation:'新值先放陣列尾端；若小於父節點就交換，直到到達根或父≤子，路徑長最多為樹高 O(log n)。',lines:[2],state:{incoming:1,path:['index 6','parent 2','root 0']},values:[1,5,2,9,8,7,3],active:[0,2,6]},
-    {title:'Pop Root 後向下修復',explanation:'移除最小值後把最後元素放到 root，再與較小子節點交換，恢復 heap invariant。',lines:[3,4],state:{removed:1,newMinimum:2},values:[2,5,3,9,8,7],accepted:[0]},
+    {title:'Push 後向上修復',explanation:'新值 1 先放陣列尾端；若小於父節點就交換，直到到達根或父≤子，路徑長最多為樹高 O(log n)。',lines:[2],state:{incoming:1,path:['index 6','parent 2','root 0']},values:[1,5,2,9,8,7,3],active:[0,2,6]},
+    {title:'Push 完成後的堆積狀態',explanation:'向上修復結束，1 成為新根；7 補到尾端空位。畫面與陣列 [1,5,2,9,8,7,3] 完全同步。',lines:[2],state:{result:'heap of 7 nodes',newMinimum:1},values:[1,5,2,9,8,7,3],accepted:[0]},
+    {title:'Pop Root 後向下修復',explanation:'移除最小值 1 後把最後元素 3 放到 root，再與較小子節點交換，恢復 heap invariant。',lines:[3,4],state:{removed:1,newMinimum:2},values:[2,5,3,9,8,7],accepted:[0]},
   ]}),
   make({ id:'monotonic-queue',index:'25',category:'QUEUE',categoryId:'linear-structures',subcategory:'Queue 與 Deque',title:'Monotonic Queue',zhTitle:'單調佇列',description:'Deque 同時移除過期索引與被支配候選。',complexity:'O(n)',accent:'#62e4d0',values:[1,3,-1,-3,5,3,6,7],code:['for (int i = 0; i < n; ++i) {','  while (!dq.empty() && dq.front() <= i-k) dq.pop_front();','  while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();','  dq.push_back(i);','  if (i >= k-1) answer.push_back(a[dq.front()]);','}'],phases:[
     {title:'移除已離開視窗的索引',explanation:'Deque 儲存索引。front≤i-k 代表該元素不在目前長度 k 視窗內，必須先從前端移除。',lines:[1,2],state:{i:3,k:3,expired:0,deque:['1(3)','2(-1)']},active:[0,3],low:1,high:3},

@@ -24,7 +24,10 @@ const IntervalScene = ({ lesson, frame }: Props) => {
 
 const MatrixScene = ({ lesson, frame, label = '2D STATE' }: Props & { label?: string }) => {
   const phase = phaseOf(frame), focus = cursorOf(frame, 24)
-  return <div className="scene intent-scene matrix-scene"><Badge>{label} · {lesson.zhTitle}</Badge><div className="intent-matrix">{Array.from({length:25},(_,i)=><motion.div key={i} className={`${i<=focus?'filled':''} ${i===focus?'focus':''}`} animate={{opacity:i<=focus?1:.22}}><small>{Math.floor(i/5)},{i%5}</small><b>{(i*7+3)%19}</b></motion.div>)}</div><div className="matrix-guides"><i/><i/><span>{lesson.visualModel === 'prefix-2d' ? '四個角值相加減回答矩形' : '目前列／欄是唯一被更新的狀態'}</span></div></div>
+  // C6 fix：格值吃 frame.values，與課程資料一致，不再用寫死公式。
+  const values = frame.values ?? []
+  const valueAt = (i: number) => values[i % Math.max(1, values.length)] ?? (i * 7 + 3) % 19
+  return <div className="scene intent-scene matrix-scene"><Badge>{label} · {lesson.zhTitle}</Badge><div className="intent-matrix">{Array.from({length:25},(_,i)=><motion.div key={i} className={`${i<=focus?'filled':''} ${i===focus?'focus':''}`} animate={{opacity:i<=focus?1:.22}}><small>{Math.floor(i/5)},{i%5}</small><b>{valueAt(i)}</b></motion.div>)}</div><div className="matrix-guides"><i/><i/><span>{lesson.visualModel === 'prefix-2d' ? '四個角值相加減回答矩形' : '目前列／欄是唯一被更新的狀態'}</span></div></div>
 }
 
 const BucketScene = ({ lesson, frame }: Props) => {

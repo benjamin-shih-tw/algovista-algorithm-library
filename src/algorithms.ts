@@ -210,7 +210,7 @@ const geometryPoints: Point[] = [
   { id: 'P7', x: 90, y: 70, label: '7' }, { id: 'P8', x: 44, y: 82, label: '8' },
 ]
 const hullFrames: Frame[] = [
-  { title: '依字典序排序', explanation: '先按 x、再按 y 排序。最左與最右的極端點必定位於凸包，排序也讓上下鏈可以單向掃描。', codeLine: 'sort(p.begin(), p.end());', codeLines: [2], state: { order: ['P1','P2','P3','P4','P8','P5','P6','P7'], lowerStack: ['P1'] }, active: ['P1'], hull: ['P1'] },
+  { title: '依字典序排序', explanation: '先按 x、再按 y 排序。最左與最右的極端點必定位於凸包，排序也讓上下鏈可以單向掃描。', codeLine: 'sort(p.begin(), p.end());', codeLines: [2], state: { order: ['P1','P2','P3','P8','P4','P5','P6','P7'], lowerStack: ['P1'] }, active: ['P1'], hull: ['P1'] },
   { title: '維持下凸包左轉不變量', explanation: '依序加入點。lower 中任意連續三點必須嚴格逆時針；cross>0 表示左轉，因此目前候選可保留。', codeLine: 'lower.push_back(p);', codeLines: [4,5,7], state: { lowerStack: ['P1','P2','P4'], cross: '+840', decision: 'push P4' }, active: ['P1','P2','P4'], hull: ['P1','P2','P4'] },
   { title: '遇到非左轉就移除中點', explanation: '新點使最後三點 cross≤0，表示右轉或共線。中央點位於新線段內側，不可能成為最外層邊界，因此 pop。', codeLine: 'lower.pop_back();', codeLines: [5,6], state: { lowerStack: ['P1','P2','P4','P6'], cross: '-520', decision: 'pop interior point' }, active: ['P2','P4','P6'], hull: ['P1','P2','P4','P6'] },
   { title: '完成由左至右的下鏈', explanation: '掃描至最右點後，lower 的每個轉向都為左轉，得到凸包的下半部。', codeLine: 'for (Point p : points)', codeLines: [4,5,6,7], state: { lowerStack: ['P1','P2','P4','P6','P7'], invariant: 'all cross > 0' }, active: ['P7'], hull: ['P1','P2','P4','P6','P7'] },
@@ -420,7 +420,10 @@ const expandGuidedFrames = (lesson: AlgorithmLesson): Frame[] => {
     const baseActive = phase.active ?? []
     const revealRatio = (step + 1) / total
     const activeCount = Math.max(1, Math.ceil(baseActive.length * Math.min(1, revealRatio * 1.4)))
+    // C5/C6 fix：保留來源課程的原始資料（如 tsp 的 mask/cost、計數排序的桶值）。
+    // 欄位可被本幀的派生 state 覆蓋（after/condition/operation 是逐幀更新）。
     const state = {
+      ...phase.state,
       algorithm: lesson.zhTitle,
       goal: phase.title,
       before,
@@ -435,7 +438,10 @@ const expandGuidedFrames = (lesson: AlgorithmLesson): Frame[] => {
     return {
       ...phase,
       title: `${String(step + 1).padStart(2, '0')}．${role}`,
-      explanation: `第 ${primary.number} 行負責「${role}」，目前屬於「${phase.title}」。${phase.explanation} 執行前是 ${before}；完成這行後應得到 ${after}。`,
+      // A1 fix: 不在展開時寫死行號。此時的行號是「舊編號」，enrichPedagogy 的
+      // prepareReadableTemplate 會插入檔頭並重編行號。改為只在 explanation 描述
+      // 「本行扮演的角色」，真正的行號文字由 enrichPedagogy 在新編號確定後補上。
+      explanation: `這一行負責「${role}」，目前屬於「${phase.title}」。${phase.explanation} 執行前是 ${before}；完成這行後應得到 ${after}。`,
       codeLine: primary.line,
       codeLines,
       state,

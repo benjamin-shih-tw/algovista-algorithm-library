@@ -59,7 +59,7 @@ function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }
           frame.active?.some((act) => 
             act === `邊 ${edge.from}→${edge.to}` || act === `邊 ${edge.to}→${edge.from}` ||
             act === `${edge.from}→${edge.to}` || act === `${edge.to}→${edge.from}` ||
-            act === `${edge.from}-${edge.to}` || act === '答案邊' || act === '樹邊' || act === '松弛' || act === '更新邊'
+            act === `${edge.from}-${edge.to}` || act === '答案邊' || act === '樹邊' || act === '鬆弛' || act === '更新邊'
           )
         )
         return <g key={`${edge.from}-${edge.to}-${index}`}>
@@ -178,6 +178,27 @@ function SegmentScene({ frame }: { frame: Frame }) {
 const framePhase = (frame: Frame) => Math.min(2, Math.floor(Math.min(.999999, frame.visualProgress ?? 0) * 3))
 const progressIndex = (frame: Frame, max: number) => Math.min(max, Math.max(0, Math.round((frame.visualProgress ?? 0) * max)))
 const stateWords = (frame: Frame) => Object.entries(frame.state ?? {}).slice(0, 4).map(([key, value]) => ({ key, value: Array.isArray(value) ? value.join(' · ') : String(value) }))
+// C5/C6 fix：從 frame.state 取第一個可解析的數值（如 tsp 的 cost、flow 的 flow 值），
+// 讓場景呈現課程真實資料而非寫死公式。只接受純數字或數字型字串（'1101,3' 這種 mask
+// 字串不能被拆成 1101.3 誤用）；phase/timelineStep 是 metadata 也不可當演算法數值。
+const STATE_META_KEYS = new Set(['phase', 'timelineStep'])
+const stateNumber = (frame: Frame, fallback: number) => {
+  for (const [key, value] of Object.entries(frame.state ?? {})) {
+    if (STATE_META_KEYS.has(key)) continue
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    const text = String(value).trim()
+    if (/^-?\d+(\.\d+)?$/.test(text)) return Number(text)
+  }
+  return fallback
+}
+// 從 frame.state 的字串/陣列值中取字串做文字型狀態顯示
+const stateText = (frame: Frame, keys: string[]) => {
+  for (const key of keys) {
+    const value = frame.state?.[key]
+    if (value !== undefined) return Array.isArray(value) ? value.join(' · ') : String(value)
+  }
+  return undefined
+}
 
 type DiagramPoint = { x: number; y: number }
 const horizontalPoints: DiagramPoint[] = [{x:15,y:52},{x:50,y:52},{x:85,y:52}]
@@ -237,7 +258,7 @@ function LinearScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame 
   const isStack = /stack|括號|histogram|expression|shunting/i.test(`${lesson.title} ${lesson.zhTitle}`)
   if (isHeap) return <div className="scene structure-scene heap-scene"><div className="structure-title">BINARY HEAP · EXTREME AT ROOT</div><svg viewBox="0 0 1000 430">
     {[[500,80],[300,190],[700,190],[190,315],[410,315],[590,315],[810,315]].slice(1).map(([x,y],i)=>{const p=i<2?[500,80]:i<4?[300,190]:[700,190];return <motion.line key={i} x1={p[0]} y1={p[1]} x2={x} y2={y} className={`structure-link ${i<=cursor?'lit':''}`} animate={{opacity:i<=cursor?1:.2}}/>})}
-    {[[500,80],[300,190],[700,190],[190,315],[410,315],[590,315],[810,315]].map(([x,y],i)=><motion.g key={i} animate={{scale:i===cursor?1.12:1}} style={{transformOrigin:`${x}px ${y}px`}}><rect x={x-45} y={y-28} width="90" height="56" rx="16" className={`structure-node ${i===cursor?'active':''}`}/><text x={x} y={y+6} className="structure-value">{values[i%values.length]}</text></motion.g>)}
+    {[[500,80],[300,190],[700,190],[190,315],[410,315],[590,315],[810,315]].map(([x,y],i)=><motion.g key={i} animate={{scale:i===cursor?1.12:1}} style={{transformOrigin:`${x}px ${y}px`}}><rect x={x-45} y={y-28} width="90" height="56" rx="16" className={`structure-node ${i===cursor?'active':''} ${i>=values.length?'empty':''}`}/><text x={x} y={y+6} className="structure-value">{i<values.length?values[i]:'—'}</text></motion.g>)}
   </svg></div>
   return <div className={`scene structure-scene ${isStack?'stack-layout':'queue-layout'}`}><div className="structure-title">{isStack?'LIFO · TOP':'FIFO · FRONT → BACK'}</div><div className="structure-items">{values.slice(0,Math.max(1,values.length-phase)).map((value,index)=><motion.div layout key={`${index}-${value}`} className={`structure-card ${frame.active?.includes(String(index))?'active':''} ${frame.accepted?.includes(String(index))?'accepted':''}`} initial={{opacity:0,scale:.85}} animate={{opacity:1,scale:1}}><small>{isStack&&index===values.length-phase-1?'TOP':String(index).padStart(2,'0')}</small><strong>{value}</strong></motion.div>)}</div><div className="motion-arrow"><i/><span>{phase===0?'PUSH / ENQUEUE':phase===1?'INSPECT FRONTIER':'POP / DEQUEUE'}</span></div></div>
 }
@@ -270,7 +291,11 @@ function DPScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = DPAdaptiveScene({ lesson, frame })
   if (adaptive) return adaptive
   const phase=framePhase(frame), limit=Math.max(1,progressIndex(frame,39)+1)
-  return <div className="scene dp-scene"><div className="scene-badge">STATE TABLE · {lesson.zhTitle}</div><div className="dp-axis"><span>STATE</span><span>TRANSITION ORDER →</span></div><div className="dp-grid">{Array.from({length:40},(_,i)=><motion.div key={i} className={`${i<limit?'filled':''} ${i===limit-1?'current':''}`} animate={{opacity:i<limit?1:.2,scale:i===limit-1?1.08:1}}><small>{Math.floor(i/8)},{i%8}</small>{i<limit&&<b>{(i*3+phase*5)%17}</b>}</motion.div>)}</div><div className="dp-formula"><span>DEPENDENCIES</span><strong>{stateWords(frame)[phase%Math.max(1,stateWords(frame).length)]?.value??frame.codeLine}</strong></div></div>
+  // C5 fix：格值吃 frame.values 與 frame.state 錨點值（如 tsp 的 cost），不再用寫死公式。
+  const values=frame.values??[]
+  const anchor=stateNumber(frame, values[0] ?? 0)
+  const cellValue=(i:number)=>i===limit-1?anchor:(values[i%Math.max(1,values.length)]??(i*3+phase*5)%17)
+  return <div className="scene dp-scene"><div className="scene-badge">STATE TABLE · {lesson.zhTitle}</div><div className="dp-axis"><span>STATE</span><span>TRANSITION ORDER →</span></div><div className="dp-grid">{Array.from({length:40},(_,i)=><motion.div key={i} className={`${i<limit?'filled':''} ${i===limit-1?'current':''}`} animate={{opacity:i<limit?1:.2,scale:i===limit-1?1.08:1}}><small>{Math.floor(i/8)},{i%8}</small>{i<limit&&<b>{cellValue(i)}</b>}</motion.div>)}</div><div className="dp-formula"><span>DEPENDENCIES</span><strong>{stateWords(frame)[phase%Math.max(1,stateWords(frame).length)]?.value??frame.codeLine}</strong></div></div>
 }
 
 const stringExample=(id:string)=>id.includes('suffix')||id.includes('lcp')?'BANANA$':id.includes('pal')||id.includes('manacher')?'ABACABA':id.includes('aho')||id.includes('trie')?'SHEHERS':'ABABACA'
@@ -285,15 +310,23 @@ function FlowScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame })
   const adaptive = FlowAdaptiveScene({ lesson, frame })
   if (adaptive) return adaptive
   const phase=framePhase(frame),cursor=progressIndex(frame,7),matching=lesson.subcategory==='匹配'
+  // C6 fix：容量吃 frame.values（每條邊固定），流量吃 frame.state 錨點（瓶頸值），
+  // 呈現「沿增廣路送出瓶頸流量」的真實語意，不再用寫死公式。
+  const capValues=frame.values??[3,4,2,5,3,4,6,2]
+  const capacityOf=(i:number)=>capValues[i%capValues.length]
+  const bottleneck=stateNumber(frame,Math.min(...capValues))
   if(matching) return <div className="scene flow-scene matching-scene"><div className="scene-badge">BIPARTITE MATCHING · ALTERNATING PATH</div><svg viewBox="0 0 1000 430">{[0,1,2,3].map((i)=><g key={`l${i}`}><circle cx="220" cy={75+i*88} r="27" className="flow-node"/><text x="220" y={80+i*88} className="flow-label">L{i+1}</text><circle cx="780" cy={75+i*88} r="27" className="flow-node"/><text x="780" y={80+i*88} className="flow-label">R{i+1}</text></g>)}{[[0,0],[0,1],[1,1],[1,2],[2,0],[2,3],[3,2]].map(([a,b],i)=><motion.line key={i} x1="247" y1={75+a*88} x2="753" y2={75+b*88} className={`flow-edge ${i<=cursor?'lit':''}`} animate={{pathLength:i<=cursor?1:.2}}/>)}</svg></div>
-  return <div className="scene flow-scene"><div className="scene-badge">RESIDUAL NETWORK · FLOW / CAPACITY</div><svg viewBox="0 0 1000 430"><defs><marker id="flowArrow" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" className="arrow-head"/></marker></defs>{[[150,215,380,100],[150,215,380,330],[380,100,650,100],[380,100,650,330],[380,330,650,100],[380,330,650,330],[650,100,860,215],[650,330,860,215]].map(([x1,y1,x2,y2],i)=>{const edge=clipSegmentToNodeRadii(x1,y1,x2,y2,34,42),label=edgeLabelPosition(x1,y1,x2,y2,i===4?-18:18);return <g key={i}><motion.line {...edge} className={`flow-edge ${i<=cursor?'lit':''}`} markerEnd="url(#flowArrow)" animate={{opacity:i<=cursor?1:.18}}/><text x={label.x} y={label.y} className="flow-cap">{Math.min(i+phase,5)}/{i%4+3}</text></g>})}{[[150,215,'S'],[380,100,'A'],[380,330,'B'],[650,100,'C'],[650,330,'D'],[860,215,'T']].map(([x,y,label])=><g key={String(label)}><circle cx={Number(x)} cy={Number(y)} r="30" className="flow-node"/><text x={Number(x)} y={Number(y)+5} className="flow-label">{label}</text></g>)}</svg></div>
+  return <div className="scene flow-scene"><div className="scene-badge">RESIDUAL NETWORK · FLOW / CAPACITY</div><svg viewBox="0 0 1000 430"><defs><marker id="flowArrow" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" className="arrow-head"/></marker></defs>{[[150,215,380,100],[150,215,380,330],[380,100,650,100],[380,100,650,330],[380,330,650,100],[380,330,650,330],[650,100,860,215],[650,330,860,215]].map(([x1,y1,x2,y2],i)=>{const edge=clipSegmentToNodeRadii(x1,y1,x2,y2,34,42),label=edgeLabelPosition(x1,y1,x2,y2,i===4?-18:18);return <g key={i}><motion.line {...edge} className={`flow-edge ${i<=cursor?'lit':''}`} markerEnd="url(#flowArrow)" animate={{opacity:i<=cursor?1:.18}}/><text x={label.x} y={label.y} className="flow-cap">{i<=cursor?`${Math.min(capacityOf(i),bottleneck)}/`:''}{capacityOf(i)}</text></g>})}{[[150,215,'S'],[380,100,'A'],[380,330,'B'],[650,100,'C'],[650,330,'D'],[860,215,'T']].map(([x,y,label])=><g key={String(label)}><circle cx={Number(x)} cy={Number(y)} r="30" className="flow-node"/><text x={Number(x)} y={Number(y)+5} className="flow-label">{label}</text></g>)}</svg></div>
 }
 
 function MathScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = MathAdaptiveScene({ lesson, frame })
   if (adaptive) return adaptive
   const phase=framePhase(frame),cursor=progressIndex(frame,11), matrix=/matrix|gaussian|linear/i.test(`${lesson.title} ${lesson.category}`)
-  return <div className="scene math-scene"><div className="scene-badge">{matrix?'MATRIX OPERATIONS':'NUMBER STATE'} · {lesson.zhTitle}</div>{matrix?<div className="matrix-visual">{Array.from({length:16},(_,i)=><motion.div key={i} className={`${i===progressIndex(frame,15)?'pivot active':''}`} animate={{opacity:i<=progressIndex(frame,15)?1:.35}}>{(i*2+3)%11}</motion.div>)}</div>:<><div className="bit-rail">{Array.from({length:12},(_,i)=><motion.div key={i} className={i===cursor?'active':i<cursor?'accepted':''} animate={{height:35+((i*17)%6)*12,opacity:i<=cursor?1:.2}}><span>{i+1}</span></motion.div>)}</div><div className="math-equation">{stateWords(frame).map((item,i)=><motion.span key={item.key} animate={{opacity:i<=phase?1:.25}}>{item.value}</motion.span>)}</div></>}</div>
+  // C6 fix：矩陣格值與 rail 高度吃 frame.values，數值來源與課程資料一致。
+  const values=frame.values??[]
+  const valueAt=(i:number)=>values[i%Math.max(1,values.length)]??(i*2+3)%11
+  return <div className="scene math-scene"><div className="scene-badge">{matrix?'MATRIX OPERATIONS':'NUMBER STATE'} · {lesson.zhTitle}</div>{matrix?<div className="matrix-visual">{Array.from({length:16},(_,i)=><motion.div key={i} className={`${i===progressIndex(frame,15)?'pivot active':''}`} animate={{opacity:i<=progressIndex(frame,15)?1:.35}}>{valueAt(i)}</motion.div>)}</div>:<><div className="bit-rail">{Array.from({length:12},(_,i)=><motion.div key={i} className={i===cursor?'active':i<cursor?'accepted':''} animate={{height:35+(valueAt(i)%6)*12,opacity:i<=cursor?1:.2}}><span>{valueAt(i)}</span></motion.div>)}</div><div className="math-equation">{stateWords(frame).map((item,i)=><motion.span key={item.key} animate={{opacity:i<=phase?1:.25}}>{item.value}</motion.span>)}</div></>}</div>
 }
 
 function TransformScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
@@ -362,6 +395,16 @@ function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNaviga
       </div>
 
       {unit.extensions.length>0&&<section className="knowledge-extensions"><header><Sparkles/><span>基礎完成後，再往這裡延伸</span></header><div>{unit.extensions.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div></section>}
+
+      <section className="knowledge-detail"><header><Workflow/><span>操作生命週期</span></header><div className="knowledge-table-wrap"><table className="knowledge-table"><thead><tr><th>操作</th><th>目的</th><th>讀取</th><th>寫入</th><th>複雜度</th></tr></thead><tbody>{unit.operations.map((operation)=><tr key={operation.name}><td><b>{operation.name}</b></td><td>{operation.purpose}</td><td>{operation.reads}</td><td>{operation.writes}</td><td>{operation.complexity}</td></tr>)}</tbody></table></div>{unit.operationFlow.length>0&&<ol className="knowledge-flow">{unit.operationFlow.map((step)=><li key={step}>{step.replace(/^\d+\. /,'')}</li>)}</ol>}</section>
+
+      <section className="knowledge-detail"><header><Clock3/><span>分項複雜度</span></header><dl className="knowledge-complexity"><div><dt>預處理</dt><dd>{unit.complexity.preprocessing}</dd></div><div><dt>查詢</dt><dd>{unit.complexity.query}</dd></div><div><dt>更新</dt><dd>{unit.complexity.update}</dd></div><div><dt>記憶體</dt><dd>{unit.complexity.memory}</dd></div></dl><p className="knowledge-note">{unit.complexity.note}</p></section>
+
+      <section className="knowledge-detail"><header><Layers3/><span>輸入／輸出契約</span></header><dl className="knowledge-contract"><div><dt>INPUT</dt><dd>{unit.implementation.input}</dd></div><div><dt>OUTPUT</dt><dd>{unit.implementation.output}</dd></div></dl>{unit.implementation.assumptions.length>0&&<ul className="knowledge-assumptions">{unit.implementation.assumptions.map((item)=><li key={item}>{item}</li>)}</ul>}<p className="knowledge-note">{unit.implementation.relationship}</p></section>
+
+      <section className="knowledge-detail"><header><Eye/><span>例題流程</span></header><dl className="knowledge-example"><div><dt>輸入</dt><dd>{unit.example.input}</dd></div></dl><ol className="knowledge-flow">{unit.example.steps.map((step)=><li key={step}>{step}</li>)}</ol><dl className="knowledge-example"><div><dt>輸出</dt><dd>{unit.example.output}</dd></div></dl></section>
+
+      <section className="knowledge-detail"><header><AlertTriangle/><span>常見錯誤與邊界</span></header><ul className="knowledge-mistakes">{unit.mistakes.map((item)=><li key={item}>{item}</li>)}</ul><ul className="knowledge-mistakes">{unit.edgeCases.map((item)=><li key={item}>{item}</li>)}</ul></section>
     </motion.div>}</AnimatePresence>
   </section>
 }
