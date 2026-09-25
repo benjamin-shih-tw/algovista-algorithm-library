@@ -54,7 +54,12 @@ function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }
     <svg viewBox="0 0 1000 430" aria-label={`${lesson.title} graph`}>
       {edges.map((edge, index) => {
         const from = point(edge.from), to = point(edge.to)
+        // 洪泛語意（連通分量）：state.component 存在時，端點都已 seen（accepted）的邊
+        // 屬於已洪泛分量的內部結構，點亮它們呈現「一個極大連通區」。
+        const floodLit = typeof frame.state?.component === 'number'
+          && frame.accepted?.includes(edge.from) && frame.accepted?.includes(edge.to)
         const lit = Boolean(
+          floodLit ||
           (frame.active?.includes(edge.from) && frame.active?.includes(edge.to)) ||
           frame.active?.some((act) => 
             act === `邊 ${edge.from}→${edge.to}` || act === `邊 ${edge.to}→${edge.from}` ||

@@ -2,9 +2,36 @@ import { makeCatalog, type CatalogSpec } from './completionFactory'
 
 const graph='#a994ff', tree='#8bc7ff', flow='#ff7f96'
 const specs: CatalogSpec[] = [
-  {id:'connected-components',categoryId:'graph',subcategory:'圖的遍歷',category:'GRAPH',title:'Connected Components',zhTitle:'連通分量',description:'由每個未訪節點展開一個極大連通區。',complexity:'O(V+E)',visual:'graph',accent:graph,code:['int components=0;','for(int u=0;u<n;++u) if(!seen[u]) {','  ++components; dfs(u);','}'],concepts:['每次從未訪節點 u 開始 DFS，所到達的恰是 u 的整個連通分量；不同啟動點得到的集合互斥。','DFS 標記所有可達點；已標記節點不再成為新起點，因此每個點與邊只被掃描常數次。','外迴圈結束時每個節點都屬於且只屬於一個分量，啟動 DFS 的次數就是連通分量數。'],states:['unvisited roots','flood one component','all vertices partitioned']},
-  {id:'bipartite-coloring',categoryId:'graph',subcategory:'圖的遍歷',category:'GRAPH',title:'Bipartite Coloring',zhTitle:'二分圖染色',description:'沿每條邊配置相反顏色並偵測奇環。',complexity:'O(V+E)',visual:'graph',accent:graph,code:['queue<int> q; color[s]=0; q.push(s);','while(!q.empty()){ int u=q.front(); q.pop();','  for(int v:g[u]) if(color[v]==-1) color[v]=color[u]^1, q.push(v);','  else if(color[v]==color[u]) return false;','} return true;'],concepts:['二分圖存在一個 0/1 染色，使每條邊兩端顏色相反；每個新連通分量可任選起點顏色。','BFS 遇到未染色鄰點就給相反色；若遇到同色邊，該邊與 BFS tree 路徑形成奇環。','沒有衝突時兩個顏色集合就是合法二分；有奇環若且唯若無法二分。'],states:['color source 0','assign opposite colors','conflict iff odd cycle']},
-  {id:'cycle-detection',categoryId:'graph',subcategory:'有向圖',category:'GRAPH',title:'Cycle Detection',zhTitle:'環偵測',description:'以 DFS 三色狀態辨認指向祖先的回邊。',complexity:'O(V+E)',visual:'graph',accent:graph,code:['bool dfs(int u){ color[u]=1;','  for(int v:g[u]) { if(color[v]==1) return true;','    if(color[v]==0 && dfs(v)) return true; }','  color[u]=2; return false;','}'],concepts:['白色未進入、灰色在目前遞迴堆疊、黑色已完成；只有指向灰色節點的邊能回到目前祖先。','進入 u 設灰，離開設黑。掃邊 u→v 時若 v 灰色，就得到一條回邊與有向環。','所有 DFS 都無灰色衝突則圖為 DAG；黑色節點的後續子圖已完整驗證，不必重做。'],states:['white / gray / black','detect back edge','DAG or cycle witness']},
+  {id:'connected-components',categoryId:'graph',subcategory:'圖的遍歷',category:'GRAPH',title:'Connected Components',zhTitle:'連通分量',description:'由每個未訪節點展開一個極大連通區。',complexity:'O(V+E)',visual:'graph',accent:graph,
+    // 兩個分量 {A,B,C} 與 {D,E,F}，互不相連——用連通圖無法演示本課。
+    points:[{id:'A',x:12,y:26,label:'A'},{id:'B',x:30,y:14,label:'B'},{id:'C',x:30,y:40,label:'C'},{id:'D',x:66,y:60,label:'D'},{id:'E',x:84,y:48,label:'E'},{id:'F',x:84,y:76,label:'F'}],
+    edges:[{from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'C'},{from:'D',to:'E'},{from:'D',to:'F'}],
+    focus:[
+      {active:['A'],accepted:[],state:{root:'A',component:1,seen:'{A}',components:'1'}},
+      {active:['D','E','F'],accepted:['A','B','C'],state:{root:'D',component:2,seen:'{A,B,C}',components:'2'}},
+      {active:['A','B','C','D','E','F'],accepted:['A','B','C','D','E','F'],state:{root:'—',component:'2 total',seen:'{A,…,F}',components:'2'}},
+    ],
+    code:['int components=0;','for(int u=0;u<n;++u) if(!seen[u]) {','  ++components; dfs(u);','}'],concepts:['每次從未訪節點 u 開始 DFS，所到達的恰是 u 的整個連通分量；不同啟動點得到的集合互斥。','DFS 標記所有可達點；已標記節點不再成為新起點，因此每個點與邊只被掃描常數次。','外迴圈結束時每個節點都屬於且只屬於一個分量，啟動 DFS 的次數就是連通分量數。'],states:['unvisited roots','flood one component','all vertices partitioned']},
+  {id:'bipartite-coloring',categoryId:'graph',subcategory:'圖的遍歷',category:'GRAPH',title:'Bipartite Coloring',zhTitle:'二分圖染色',description:'沿每條邊配置相反顏色並偵測奇環。',complexity:'O(V+E)',visual:'graph',accent:graph,
+    // 偶環拓樸（4+2 節點），BFS 依層 0/1 交替染色；終幀呈現合法二分。
+    points:[{id:'A',x:14,y:50,label:'A'},{id:'B',x:38,y:18,label:'B'},{id:'C',x:38,y:82,label:'C'},{id:'D',x:62,y:18,label:'D'},{id:'E',x:62,y:82,label:'E'},{id:'F',x:86,y:50,label:'F'}],
+    edges:[{from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},{from:'C',to:'E'},{from:'D',to:'F'},{from:'E',to:'F'}],
+    focus:[
+      {active:['A'],accepted:[],state:{colorA:'0',queue:'A'}},
+      {active:['B','C'],accepted:['A'],state:{colors:'A=0, B=C=1',queue:'B, C'}},
+      {active:['D','E','F'],accepted:['A','B','C'],state:{colors:'A=D=F=0, B=C=E=1',result:'legal bipartition'}},
+    ],
+    code:['queue<int> q; color[s]=0; q.push(s);','while(!q.empty()){ int u=q.front(); q.pop();','  for(int v:g[u]) if(color[v]==-1) color[v]=color[u]^1, q.push(v);','  else if(color[v]==color[u]) return false;','} return true;'],concepts:['二分圖存在一個 0/1 染色，使每條邊兩端顏色相反；每個新連通分量可任選起點顏色。','BFS 遇到未染色鄰點就給相反色；若遇到同色邊，該邊與 BFS tree 路徑形成奇環。','沒有衝突時兩個顏色集合就是合法二分；有奇環若且唯若無法二分。'],states:['color source 0','assign opposite colors','conflict iff odd cycle']},
+  {id:'cycle-detection',categoryId:'graph',subcategory:'有向圖',category:'GRAPH',title:'Cycle Detection',zhTitle:'環偵測',description:'以 DFS 三色狀態辨認指向祖先的回邊。',complexity:'O(V+E)',visual:'graph',accent:graph,
+    // 有向圖 A→B→C→A 含一個環；回邊 C→A 在終幀點亮，對應 color[v]==1 的偵測。
+    points:[{id:'A',x:16,y:50,label:'A'},{id:'B',x:42,y:16,label:'B'},{id:'C',x:68,y:50,label:'C'}],
+    edges:[{from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'}],
+    focus:[
+      {active:['A'],accepted:[],state:{colorA:'gray',stack:'A'}},
+      {active:['B','C'],accepted:['A'],state:{colors:'A gray, B C gray',stack:'A, B, C'}},
+      {active:['A','C'],accepted:['A','B','C'],state:{backEdge:'C → A',verdict:'cycle detected'}},
+    ],
+    code:['bool dfs(int u){ color[u]=1;','  for(int v:g[u]) { if(color[v]==1) return true;','    if(color[v]==0 && dfs(v)) return true; }','  color[u]=2; return false;','}'],concepts:['白色未進入、灰色在目前遞迴堆疊、黑色已完成；只有指向灰色節點的邊能回到目前祖先。','進入 u 設灰，離開設黑。掃邊 u→v 時若 v 灰色，就得到一條回邊與有向環。','所有 DFS 都無灰色衝突則圖為 DAG；黑色節點的後續子圖已完整驗證，不必重做。'],states:['white / gray / black','detect back edge','DAG or cycle witness']},
   {id:'functional-graph',categoryId:'graph',subcategory:'有向圖',category:'GRAPH',title:'Functional Graph',zhTitle:'函數圖',description:'利用每點唯一出邊分解成環與入樹。',complexity:'O(V)',visual:'graph',accent:graph,code:['for(int s=0;s<n;++s) if(state[s]==0){','  int u=s; while(state[u]==0) state[u]=s+1, u=next[u];','  if(state[u]==s+1) recordCycle(u);','  u=s; while(state[u]==s+1) state[u]=-1, u=next[u];','}'],concepts:['每個點出度恰為 1，所以沿 next 不斷前進必重訪；每個弱連通分量恰含一個有向環。','用本次搜尋編號標記路徑；若走到同編號節點，從該點到自身就是新環；走到已完成點則匯入舊結構。','清理本次路徑後，每個點只進出常數次，並得到環長、到環距離與入樹結構。'],states:['follow unique successor','first repeated node forms cycle','cycle plus in-trees']},
   {id:'dag-shortest-path',categoryId:'graph',subcategory:'最短路徑',category:'SHORTEST PATH',title:'DAG Shortest Path',zhTitle:'DAG 最短路',description:'依拓樸序一次鬆弛所有出邊。',complexity:'O(V+E)',visual:'graph',accent:graph,code:['vector<int> order=topologicalSort(); dist[s]=0;','for(int u:order) if(dist[u]!=INF)','  for(auto [v,w]:g[u])','    dist[v]=min(dist[v],dist[u]+w);'],concepts:['拓樸序保證處理 u 前，所有能進入 u 的前驅都已處理，因此 dist[u] 已是最短距離。','依序鬆弛 u 的出邊，即使權重為負也安全，因 DAG 不存在回頭再改善前驅的環。','每條邊只鬆弛一次，完成後所有從來源可達節點距離正確；不可達者維持無限大。'],states:['topological order','relax outgoing edges once','all reachable distances final']},
   {id:'negative-cycle-reconstruction',categoryId:'graph',subcategory:'最短路徑',category:'SHORTEST PATH',title:'Negative Cycle Reconstruction',zhTitle:'負環重建',description:'從第 V 輪被更新節點回溯出負環。',complexity:'O(VE)',visual:'graph',accent:graph,code:['int x=-1; for(int i=0;i<n;++i)','  for(auto [u,v,w]:edges) if(dist[u]+w<dist[v]) dist[v]=dist[u]+w,parent[v]=u,x=v;','if(x!=-1){ for(int i=0;i<n;++i) x=parent[x];','  for(int v=x;;v=parent[v]) { cycle.push_back(v); if(v==x&&cycle.size()>1) break; }','}'],concepts:['第 V 輪仍被鬆弛的節點，其改善祖先鏈必包含至少一個負權環，但該節點本身可能在環外。','沿 parent 回退 V 次必進入環內；再沿 parent 走到起點重現即可收集完整環。','反轉收集結果得到邊方向一致的負環證據；若第 V 輪無更新則不存在來源可達負環。'],states:['vertex updated on pass V','walk parent V times','close and output cycle']},

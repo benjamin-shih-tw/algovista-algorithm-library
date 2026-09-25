@@ -1,4 +1,4 @@
-import type { AlgorithmLesson, CategoryId, Frame, VisualKind } from './algorithms'
+import type { AlgorithmLesson, CategoryId, Frame, VisualKind, Point, Edge } from './algorithms'
 
 export type CatalogSpec = {
   id: string
@@ -14,6 +14,11 @@ export type CatalogSpec = {
   code: string[]
   concepts: [string, string, string]
   states: [string, string, string]
+  // 圖課專用：提供真實拓撲與每幀焦點，讓 GraphScene 呈現本課語意
+  //（如 connected-components 必須是不連通圖），不再依賴預設的 A–F 連通圖。
+  points?: Point[]
+  edges?: Edge[]
+  focus?: { active?: string[]; accepted?: string[]; state?: Record<string, string | number | string[]> }[]
 }
 
 const numericSeed = (id: string) => [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0)
@@ -49,22 +54,26 @@ export const makeCatalogLesson = (spec: CatalogSpec): AlgorithmLesson => {
     [Math.max(1, lineCount - 1), lineCount],
   ].map((group) => [...new Set(group)])
   const titles = ['建立正確性不變量', '執行核心轉移', '完成並驗證答案']
-  const frames: Frame[] = spec.concepts.map((explanation, phase) => ({
-    title: titles[phase],
-    explanation,
-    codeLine: spec.code[lineGroups[phase][0] - 1]?.trim() ?? '',
-    codeLines: lineGroups[phase],
-    values,
-    active: visualFocus(spec.visual, phase, values),
-    accepted: phase === 2 ? visualFocus(spec.visual, phase, values) : undefined,
-    state: {
-      phase,
-      invariant: spec.concepts[0],
-      operation: spec.concepts[phase],
-      technicalState: spec.states[phase],
-      status: phase === 2 ? 'verified' : 'running',
-    },
-  }))
+  const frames: Frame[] = spec.concepts.map((explanation, phase) => {
+    const focus = spec.focus?.[phase]
+    return {
+      title: titles[phase],
+      explanation,
+      codeLine: spec.code[lineGroups[phase][0] - 1]?.trim() ?? '',
+      codeLines: lineGroups[phase],
+      values,
+      active: focus?.active ?? visualFocus(spec.visual, phase, values),
+      accepted: focus?.accepted ?? (phase === 2 ? visualFocus(spec.visual, phase, values) : undefined),
+      state: {
+        phase,
+        invariant: spec.concepts[0],
+        operation: spec.concepts[phase],
+        technicalState: spec.states[phase],
+        status: phase === 2 ? 'verified' : 'running',
+        ...focus?.state,
+      },
+    }
+  })
   return { ...spec, index: '000', frames }
 }
 
