@@ -141,6 +141,8 @@ for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSec
 }
 if(!app.includes("chapterTitles") || !app.includes("chapterModules")) fail("chapter-first AP325 reading flow missing")
 else ok("chapter-first AP325 reading flow present")
+if (!app.includes("$('pre code.language-cpp').forEach")) fail("C++ highlighter must iterate NodeList with $()")
+else ok('C++ highlighter iterates all code blocks')
 if(!process.exitCode) ok('AP325 Guide rendering wiring present')
 
 if (process.exitCode) process.exit(process.exitCode)
