@@ -287,11 +287,47 @@ function enhanceRenderedContent(){
       ignoredTags:['script','noscript','style','textarea','pre','code']
     })
   }
-  if(window.hljs){
-    $$('pre code.language-cpp').forEach(el=>{
-      if(!el.dataset.highlighted) window.hljs.highlightElement(el)
-    })
-  }
+  highlightCppBlocks()
+}
+function highlightCppFallback(code){
+  const escape=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+  const keywords=new Set(['alignas','alignof','and','asm','auto','break','case','catch','class','const','constexpr','continue','default','delete','do','else','enum','explicit','export','extern','for','friend','goto','if','inline','mutable','namespace','new','noexcept','not','operator','or','private','protected','public','register','return','sizeof','static','struct','switch','template','this','throw','try','typedef','typename','union','using','virtual','volatile','while'])
+  const types=new Set(['bool','char','double','float','int','long','short','signed','unsigned','void','string','vector','queue','deque','stack','map','set','multiset','unordered_map','unordered_set','pair','tuple','size_t'])
+  const literals=new Set(['true','false','nullptr','NULL'])
+  const re=/(\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[ \t]*[A-Za-z_][^\n]*|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b|\s+|.)/g
+  const tokens=code.match(re)||[]
+  return tokens.map((tok,i)=>{
+    const e=escape(tok)
+    if(/^\/\//.test(tok)||/^\/\*/.test(tok))return '<span class="hljs-comment">'+e+'</span>'
+    if(/^["']/.test(tok))return '<span class="hljs-string">'+e+'</span>'
+    if(/^#/.test(tok))return '<span class="hljs-meta">'+e+'</span>'
+    if(/^\d/.test(tok))return '<span class="hljs-number">'+e+'</span>'
+    if(keywords.has(tok))return '<span class="hljs-keyword">'+e+'</span>'
+    if(types.has(tok))return '<span class="hljs-type">'+e+'</span>'
+    if(literals.has(tok))return '<span class="hljs-literal">'+e+'</span>'
+    if(/^[A-Za-z_]\w*$/.test(tok)){
+      let j=i+1
+      while(j<tokens.length && /^\s+$/.test(tokens[j]))j++
+      if(tokens[j]==='(')return '<span class="hljs-title function_">'+e+'</span>'
+    }
+    return e
+  }).join('')
+}
+function highlightCppBlocks(){
+  $('pre code.language-cpp').forEach(el=>{
+    const code=el.textContent||''
+    try{
+      if(window.hljs?.highlight && window.hljs.getLanguage?.('cpp')){
+        el.innerHTML=window.hljs.highlight(code,{language:'cpp',ignoreIllegals:true}).value
+      }else{
+        el.innerHTML=highlightCppFallback(code)
+      }
+    }catch{
+      el.innerHTML=highlightCppFallback(code)
+    }
+    el.classList.add('hljs')
+    el.dataset.highlighted='yes'
+  })
 }
 function render(scrollTop=true){
   document.body.innerHTML=topbar()+(state.chapter!==null?chapterView(state.chapter):state.view==='practice'?practiceView():homeView())+footer()
