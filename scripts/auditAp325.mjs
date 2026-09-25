@@ -136,7 +136,7 @@ const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.include
 if(invalidModuleRefs.length) fail(`problems reference unknown modules: ${invalidModuleRefs.join(', ')}`)
 else ok('every problem maps to a valid module')
 
-for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSection", "renderBlock", "rich", "renderMathInElement", "hljs.highlightElement", "language-cpp", "getTcircProblemUrl"]) {
+for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSection", "renderBlock", "rich", "renderMathInElement", "highlightCppBlocks", "highlightCppFallback", "hljs.highlight", "language:'cpp'", "language-cpp", "getTcircProblemUrl"]) {
   if(!app.includes(token)) fail(`app.js missing integration token: ${token}`)
 }
 if(!app.includes("chapterTitles") || !app.includes("chapterModules")) fail("chapter-first AP325 reading flow missing")
