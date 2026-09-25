@@ -182,3 +182,13 @@ footer a{text-decoration:none}
   .all-problem-row>span{display:none}
 }
 
+
+/* Deterministic local C++ token colors */
+.code-wrap .tok-comment{color:var(--syn-comment)!important;font-style:italic}
+.code-wrap .tok-keyword,.code-wrap .tok-literal{color:var(--syn-keyword)!important}
+.code-wrap .tok-function{color:var(--syn-title)!important}
+.code-wrap .tok-string{color:var(--syn-string)!important}
+.code-wrap .tok-number{color:var(--syn-number)!important}
+.code-wrap .tok-type{color:var(--syn-type)!important}
+.code-wrap .tok-meta{color:var(--syn-meta)!important}
+.code-wrap .code-colored{color:var(--code-fg)!important}
