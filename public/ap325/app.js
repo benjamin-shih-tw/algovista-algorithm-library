@@ -7,6 +7,21 @@ import { pdfSupplements } from './pdfSupplements.js'
 import { getTcircProblemUrl } from './judgeLinks.js'
 
 const STORAGE_KEY='ap325-guide-progress-v1'
+const CODE_THEME_KEY='ap325-code-theme-v1'
+const CODE_THEMES=[
+  ['github-light','GitHub Classic · Light'],
+  ['github-dark','GitHub Classic · Dark'],
+  ['vscode-light','VS Code Classic 2019 · Light'],
+  ['vscode-dark','VS Code Classic 2019 · Dark']
+]
+function getCodeTheme(){
+  try{return localStorage.getItem(CODE_THEME_KEY)||'github-light'}catch{return'github-light'}
+}
+function setCodeTheme(theme){
+  const valid=CODE_THEMES.some(([id])=>id===theme)?theme:'github-light'
+  document.documentElement.dataset.codeTheme=valid
+  try{localStorage.setItem(CODE_THEME_KEY,valid)}catch{}
+}
 const $=(s,r=document)=>r.querySelector(s)
 const $$=(s,r=document)=>[...r.querySelectorAll(s)]
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -88,6 +103,12 @@ function topbar(){
     <nav>
       <button data-action="home">Chapters</button>
       <button data-action="view" data-view="practice">Problems</button>
+      <label class="code-theme-picker" title="Code theme">
+        <span>Code theme</span>
+        <select id="code-theme-select" aria-label="Code theme">
+          ${CODE_THEMES.map(([id,label])=>`<option value="${id}" ${getCodeTheme()===id?'selected':''}>${label}</option>`).join('')}
+        </select>
+      </label>
       <a href="${AP325_PDF}" target="_blank" rel="noreferrer">AP325 PDF</a>
       <a href="${AP325_JUDGE}" target="_blank" rel="noreferrer">Judge</a>
     </nav>
@@ -292,6 +313,7 @@ function bind(){
   $('#search')?.addEventListener('input',e=>{state.query=e.target.value;render(false)})
   $('#chapter-filter')?.addEventListener('change',e=>{state.chapterFilter=e.target.value;render(false)})
   $('#status-filter')?.addEventListener('change',e=>{state.status=e.target.value;render(false)})
+  $('#code-theme-select')?.addEventListener('change',e=>setCodeTheme(e.target.value))
 }
 window.addEventListener('load',enhanceRenderedContent)
 render()
