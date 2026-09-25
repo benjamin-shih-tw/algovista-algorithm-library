@@ -162,6 +162,31 @@ function problemRowsForModule(m){
     </div>
   </div>`
 }
+function colorizeCpp(code){
+  const e=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+  const keywords=new Set(['alignas','alignof','and','asm','auto','break','case','catch','class','const','constexpr','continue','default','delete','do','else','enum','explicit','export','extern','for','friend','goto','if','inline','mutable','namespace','new','noexcept','not','operator','or','private','protected','public','register','return','sizeof','static','struct','switch','template','this','throw','try','typedef','typename','union','using','virtual','volatile','while'])
+  const types=new Set(['bool','char','double','float','int','long','short','signed','unsigned','void','string','vector','queue','deque','stack','map','set','multiset','unordered_map','unordered_set','pair','tuple','size_t'])
+  const literals=new Set(['true','false','nullptr','NULL'])
+  const re=/(\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[ \t]*[A-Za-z_][^\n]*|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b|\s+|.)/g
+  const t=code.match(re)||[]
+  return t.map((x,i)=>{
+    const y=e(x)
+    if(/^\/\//.test(x)||/^\/\*/.test(x))return '<span class="tok-comment">'+y+'</span>'
+    if(/^["']/.test(x))return '<span class="tok-string">'+y+'</span>'
+    if(/^#/.test(x))return '<span class="tok-meta">'+y+'</span>'
+    if(/^\d/.test(x))return '<span class="tok-number">'+y+'</span>'
+    if(keywords.has(x))return '<span class="tok-keyword">'+y+'</span>'
+    if(types.has(x))return '<span class="tok-type">'+y+'</span>'
+    if(literals.has(x))return '<span class="tok-literal">'+y+'</span>'
+    if(/^[A-Za-z_]\w*$/.test(x)){
+      let j=i+1
+      while(j<t.length&&/^\s+$/.test(t[j]))j++
+      if(t[j]==='(')return '<span class="tok-function">'+y+'</span>'
+    }
+    return y
+  }).join('')
+}
+
 function renderBlock(block){
   if(!block)return''
   if(block.type==='text')return `<section id="${esc(block.id||'')}" class="lesson-block">
@@ -184,7 +209,7 @@ function renderBlock(block){
   if(block.type==='code')return `<section id="${esc(block.id||'')}" class="lesson-block">
     <h3>${rich(block.title)}</h3>
     ${block.intro?`<p>${rich(block.intro)}</p>`:''}
-    <div class="code-wrap"><button data-action="copy-code" data-code="${encodeURIComponent(block.code||'')}">Copy</button><pre><code class="language-cpp">${esc(block.code||'')}</code></pre></div>
+    <div class="code-wrap"><button data-action="copy-code" data-code="${encodeURIComponent(block.code||'')}">Copy</button><pre><code class="language-cpp code-colored">${colorizeCpp(block.code||'')}</code></pre></div>
     ${block.notes?.length?`<ul class="code-notes">${block.notes.map(x=>`<li>${rich(x)}</li>`).join('')}</ul>`:''}
   </section>`
   if(block.type==='table')return `<section id="${esc(block.id||'')}" class="lesson-block">
@@ -287,47 +312,6 @@ function enhanceRenderedContent(){
       ignoredTags:['script','noscript','style','textarea','pre','code']
     })
   }
-  highlightCppBlocks()
-}
-function highlightCppFallback(code){
-  const escape=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
-  const keywords=new Set(['alignas','alignof','and','asm','auto','break','case','catch','class','const','constexpr','continue','default','delete','do','else','enum','explicit','export','extern','for','friend','goto','if','inline','mutable','namespace','new','noexcept','not','operator','or','private','protected','public','register','return','sizeof','static','struct','switch','template','this','throw','try','typedef','typename','union','using','virtual','volatile','while'])
-  const types=new Set(['bool','char','double','float','int','long','short','signed','unsigned','void','string','vector','queue','deque','stack','map','set','multiset','unordered_map','unordered_set','pair','tuple','size_t'])
-  const literals=new Set(['true','false','nullptr','NULL'])
-  const re=/(\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[ \t]*[A-Za-z_][^\n]*|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\b[A-Za-z_]\w*\b|\s+|.)/g
-  const tokens=code.match(re)||[]
-  return tokens.map((tok,i)=>{
-    const e=escape(tok)
-    if(/^\/\//.test(tok)||/^\/\*/.test(tok))return '<span class="hljs-comment">'+e+'</span>'
-    if(/^["']/.test(tok))return '<span class="hljs-string">'+e+'</span>'
-    if(/^#/.test(tok))return '<span class="hljs-meta">'+e+'</span>'
-    if(/^\d/.test(tok))return '<span class="hljs-number">'+e+'</span>'
-    if(keywords.has(tok))return '<span class="hljs-keyword">'+e+'</span>'
-    if(types.has(tok))return '<span class="hljs-type">'+e+'</span>'
-    if(literals.has(tok))return '<span class="hljs-literal">'+e+'</span>'
-    if(/^[A-Za-z_]\w*$/.test(tok)){
-      let j=i+1
-      while(j<tokens.length && /^\s+$/.test(tokens[j]))j++
-      if(tokens[j]==='(')return '<span class="hljs-title function_">'+e+'</span>'
-    }
-    return e
-  }).join('')
-}
-function highlightCppBlocks(){
-  $('pre code.language-cpp').forEach(el=>{
-    const code=el.textContent||''
-    try{
-      if(window.hljs?.highlight && window.hljs.getLanguage?.('cpp')){
-        el.innerHTML=window.hljs.highlight(code,{language:'cpp',ignoreIllegals:true}).value
-      }else{
-        el.innerHTML=highlightCppFallback(code)
-      }
-    }catch{
-      el.innerHTML=highlightCppFallback(code)
-    }
-    el.classList.add('hljs')
-    el.dataset.highlighted='yes'
-  })
 }
 function render(scrollTop=true){
   document.body.innerHTML=topbar()+(state.chapter!==null?chapterView(state.chapter):state.view==='practice'?practiceView():homeView())+footer()
