@@ -7,6 +7,20 @@ import { pdfSupplements } from './pdfSupplements.js'
 import { getTcircProblemUrl } from './judgeLinks.js'
 
 const STORAGE_KEY='ap325-guide-progress-v1'
+const SITE_THEME_KEY='ap325-site-theme-v1'
+function getSiteTheme(){
+  try{return localStorage.getItem(SITE_THEME_KEY)||'light'}catch{return'light'}
+}
+function setSiteTheme(theme){
+  const next=theme==='dark'?'dark':'light'
+  document.documentElement.dataset.siteTheme=next
+  try{localStorage.setItem(SITE_THEME_KEY,next)}catch{}
+  const btn=document.getElementById('site-theme-toggle')
+  if(btn){
+    btn.textContent=next==='dark'?'☀ Light':'☾ Dark'
+    btn.setAttribute('aria-label',next==='dark'?'Switch to light mode':'Switch to dark mode')
+  }
+}
 const CODE_THEME_KEY='ap325-code-theme-v1'
 const CODE_THEMES=[
   ['github-light','GitHub Classic · Light'],
@@ -103,6 +117,7 @@ function topbar(){
     <nav>
       <button data-action="home">Chapters</button>
       <button data-action="view" data-view="practice">Problems</button>
+      <button class="site-theme-toggle" id="site-theme-toggle" data-action="site-theme" aria-label="${getSiteTheme()==='dark'?'Switch to light mode':'Switch to dark mode'}">${getSiteTheme()==='dark'?'☀ Light':'☾ Dark'}</button>
       <label class="code-theme-picker" title="Code theme">
         <span>Code theme</span>
         <select id="code-theme-select" aria-label="Code theme">
@@ -325,6 +340,7 @@ function bind(){
     if(a==='view'){state.chapter=null;state.view=el.dataset.view;render()}
     if(a==='chapter')openChapter(Number(el.dataset.id))
     if(a==='problem')toggleProblem(el.dataset.code)
+    if(a==='site-theme')setSiteTheme(getSiteTheme()==='dark'?'light':'dark')
     if(a==='copy-code'){
       try{await navigator.clipboard.writeText(decodeURIComponent(el.dataset.code||''));el.textContent='Copied'}
       catch{el.textContent='Copy failed'}
