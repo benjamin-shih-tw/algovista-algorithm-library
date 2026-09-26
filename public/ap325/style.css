@@ -192,3 +192,163 @@ footer a{text-decoration:none}
 .code-wrap .tok-type{color:var(--syn-type)!important}
 .code-wrap .tok-meta{color:var(--syn-meta)!important}
 .code-wrap .code-colored{color:var(--code-fg)!important}
+
+/* Site appearance themes */
+html[data-site-theme="light"]{color-scheme:light}
+html[data-site-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1117;
+  --surface:#161b22;
+  --surface2:#21262d;
+  --line:#30363d;
+  --line2:#484f58;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --faint:#6e7681;
+  --link:#58a6ff;
+  --green:#3fb950;
+  --yellow:#d29922;
+  --red:#f85149;
+  --purple:#bc8cff;
+}
+
+body,.topbar,.chapter-row,.problem-row,.all-problem-row,.chapter-nav button,
+.code-theme-picker select,.filters input,.filters select,.solve-toggle,
+.inline-code,.example,.note,.table-wrap th,.table-wrap td{
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease;
+}
+
+.site-theme-toggle{
+  min-width:62px;
+  padding:7px 9px!important;
+  border:1px solid var(--line)!important;
+  border-radius:6px!important;
+  background:var(--surface)!important;
+  color:var(--text)!important;
+  white-space:nowrap;
+}
+.site-theme-toggle:hover{background:var(--surface2)!important}
+
+html[data-site-theme="dark"] body{background:var(--bg);color:var(--text)}
+html[data-site-theme="dark"] .topbar{
+  background:rgba(13,17,23,.94);
+  border-bottom-color:var(--line)
+}
+html[data-site-theme="dark"] .brand{color:var(--text)}
+html[data-site-theme="dark"] .topbar nav button,
+html[data-site-theme="dark"] .topbar nav a{color:#c9d1d9}
+html[data-site-theme="dark"] .topbar nav button:hover,
+html[data-site-theme="dark"] .topbar nav a:hover{background:var(--surface2);color:#f0f6fc}
+
+html[data-site-theme="dark"] .code-theme-picker{color:var(--muted)}
+html[data-site-theme="dark"] .code-theme-picker select,
+html[data-site-theme="dark"] .filters input,
+html[data-site-theme="dark"] .filters select{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--line2)
+}
+
+html[data-site-theme="dark"] .chapter-row,
+html[data-site-theme="dark"] .problem-row,
+html[data-site-theme="dark"] .all-problem-row,
+html[data-site-theme="dark"] .chapter-nav button{
+  background:var(--bg);
+  color:var(--text);
+  border-color:var(--line)
+}
+html[data-site-theme="dark"] .chapter-row:hover,
+html[data-site-theme="dark"] .chapter-nav button:hover{background:var(--surface)}
+
+html[data-site-theme="dark"] .chapter-no{
+  border-color:var(--line2);
+  color:#c9d1d9;
+  background:var(--surface)
+}
+html[data-site-theme="dark"] .breadcrumb b,
+html[data-site-theme="dark"] .topic-header p,
+html[data-site-theme="dark"] .lesson-block>p,
+html[data-site-theme="dark"] .lesson-block li,
+html[data-site-theme="dark"] .steps li,
+html[data-site-theme="dark"] .problem-name strong,
+html[data-site-theme="dark"] .all-problem-row strong{
+  color:#c9d1d9
+}
+
+html[data-site-theme="dark"] .inline-code{
+  background:#161b22;
+  border-color:#30363d;
+  color:#ff7b72
+}
+
+html[data-site-theme="dark"] .example{
+  background:#0d2236;
+  border-left-color:#388bfd
+}
+html[data-site-theme="dark"] .example-result{border-top-color:#1f6feb}
+
+html[data-site-theme="dark"] .note{
+  background:#161b22;
+  border-left-color:#8b949e
+}
+html[data-site-theme="dark"] .note.warning{
+  background:#2d240b;
+  border-left-color:#d29922
+}
+html[data-site-theme="dark"] .note.tip{
+  background:#0f2d1d;
+  border-left-color:#3fb950
+}
+html[data-site-theme="dark"] .note p{color:#c9d1d9}
+
+html[data-site-theme="dark"] .table-wrap th{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--line)
+}
+html[data-site-theme="dark"] .table-wrap td{
+  background:var(--bg);
+  color:#c9d1d9;
+  border-color:var(--line)
+}
+
+html[data-site-theme="dark"] .problem-row.solved,
+html[data-site-theme="dark"] .all-problem-row.solved{background:#0f2418}
+html[data-site-theme="dark"] .solve-toggle{
+  background:var(--surface);
+  color:var(--faint);
+  border-color:var(--line2)
+}
+html[data-site-theme="dark"] .problem-row.solved .solve-toggle,
+html[data-site-theme="dark"] .all-problem-row.solved .solve-toggle{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff
+}
+
+html[data-site-theme="dark"] .difficulty{
+  background:#21262d;
+  color:#8b949e
+}
+html[data-site-theme="dark"] .difficulty.challenge{
+  background:#3b161b;
+  color:#ff7b72
+}
+html[data-site-theme="dark"] .difficulty.beyond{
+  background:#271b3d;
+  color:#d2a8ff
+}
+
+html[data-site-theme="dark"] .chapter-list,
+html[data-site-theme="dark"] .chapter-header,
+html[data-site-theme="dark"] .topic+.topic,
+html[data-site-theme="dark"] .toc-links,
+html[data-site-theme="dark"] .problem-table,
+html[data-site-theme="dark"] .all-problems,
+html[data-site-theme="dark"] .chapter-nav,
+html[data-site-theme="dark"] footer{
+  border-color:var(--line)
+}
+
+html[data-site-theme="dark"] .katex{color:var(--text)!important}
+html[data-site-theme="dark"] footer{color:var(--muted)}
