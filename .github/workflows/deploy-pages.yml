@@ -31,6 +31,13 @@ jobs:
         run: npm run audit:ap325
       - name: Audit animation structure
         run: npm run audit:animation:stage1
+      - name: Upload animation audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage1-animation-audit
+          path: |
+            .tmp/stage1-animation-audit.json
+            .tmp/stage1-animation-audit.md
       - name: Build
         run: npm run build
       - name: Configure Pages
