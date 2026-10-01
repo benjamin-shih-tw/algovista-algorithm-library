@@ -2,6 +2,7 @@ import type { AlgorithmLesson, Frame } from './algorithms'
 import { eventFrame } from './traceAuthoring'
 import { applyS2StringsMathOverride } from './s2ExecutionOverridesStringsMath'
 import { applyS2GraphTreeOverride } from './s2ExecutionOverridesGraphTree'
+import { applyS2DataDpOverride } from './s2ExecutionOverridesDataDp'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
@@ -135,7 +136,9 @@ export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLess
   }
   const stringsMath=applyS2StringsMathOverride(lesson)
   if(stringsMath!==lesson) return stringsMath
-  return applyS2GraphTreeOverride(lesson)
+  const graphTree=applyS2GraphTreeOverride(lesson)
+  if(graphTree!==lesson) return graphTree
+  return applyS2DataDpOverride(lesson)
 }
 
 export const s2ExecutionOverrideIds=Object.freeze(Object.keys(overrides))
