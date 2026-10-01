@@ -24,6 +24,21 @@ const targets = [
   'extended-euclid',
   'rotating-calipers',
   'fft',
+  'linear-search',
+  'sliding-window',
+  'dsu',
+  'floyd-warshall',
+  'heavy-light-decomposition',
+  'persistent-segment-tree',
+  'sparse-table',
+  'bitmask-dp',
+  'suffix-array',
+  'manacher',
+  'kuhn-matching',
+  'miller-rabin',
+  'chinese-remainder-theorem',
+  'sweep-line',
+  'ntt',
 ]
 
 const hiddenStateKeys = new Set([
