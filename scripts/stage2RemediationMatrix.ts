@@ -245,3 +245,18 @@ mkdirSync('.tmp',{recursive:true})
 writeFileSync('.tmp/stage2-remediation-matrix.json',JSON.stringify({summary,rows},null,2))
 writeFileSync('.tmp/stage2-remediation-matrix.md',md)
 console.log(JSON.stringify(summary,null,2))
+
+const unreviewed = rows.filter((row) => row.animation === 'UNREVIEWED')
+const orphanReviews = Object.keys(reviewed).filter((id) => !lessons.some((lesson) => lesson.id === id))
+
+if (unreviewed.length || orphanReviews.length) {
+  if (unreviewed.length) {
+    console.error('Stage 2 semantic review is incomplete. UNREVIEWED lessons:')
+    for (const row of unreviewed) console.error(`- ${row.id}`)
+  }
+  if (orphanReviews.length) {
+    console.error('Stage 2 matrix contains review entries that are not in the catalog:')
+    for (const id of orphanReviews) console.error(`- ${id}`)
+  }
+  process.exitCode = 1
+}
