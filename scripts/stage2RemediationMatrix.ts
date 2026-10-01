@@ -206,6 +206,7 @@ const reviewed: Record<string,{animation:Grade;codeSync:Grade;repair:Repair;note
   'voronoi-diagram': {animation:'D',codeSync:'D',repair:'S3',note:'Needs concrete sites, sweep line, beach-line arcs, site/circle events, disappearing arcs, bisectors, and Voronoi vertices.'},
   'delaunay-triangulation': {animation:'D',codeSync:'D',repair:'S3',note:'Needs concrete points, current triangulation, circumcircles, conflict cavity, boundary edges, and retriangulation.'},
   'fast-walsh-hadamard-transform': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete coefficient array, bit dimension, butterfly pairs, u/v values, transformed values, pointwise product, or inverse.'},
+  'minkowski-sum': {animation:'D',codeSync:'D',repair:'S3',note:'Needs two concrete convex polygons, cyclic edge vectors, cross-angle comparisons, i/j merge progression, accumulated output vertices, and the final A+B polygon.'},
 }
 
 const rows=lessons.map((lesson)=>({
