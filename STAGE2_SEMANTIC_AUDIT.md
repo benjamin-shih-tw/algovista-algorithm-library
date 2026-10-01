@@ -669,3 +669,52 @@ These lessons do not currently contain enough concrete per-step data to recover 
 **Recommended treatment: S2/S3.** Add real examples, state values, and algorithm events; add richer renderer/state support where the domain requires it.
 
 This distinction is important because it prevents wasting time rewriting lessons that already contain salvageable semantic material.
+
+
+---
+
+## Calibration batch 3 — common algorithm families and advanced structures
+
+| Lesson | Animation | Code Sync | Main finding | Repair class |
+|---|:---:|:---:|---|:---:|
+| Linear Search | A | A | One continuous input, one moving index, concrete comparisons, and direct return. | S0 |
+| Sliding Window | A | B | Concrete l/r/sum/answer evolution; a few mutations still map to loop headers. | S0 |
+| DSU | C | C | Useful parent/find/merge snapshots, but path compression and union are not executed continuously. | S1 |
+| Floyd–Warshall | C | C | One concrete B→E via C relaxation exists; the matrix does not evolve across k. | S1 |
+| Heavy-Light Decomposition | C | C | Heavy/light edges and path segments are meaningful, but chain jumps are only snapshots. | S1 |
+| Persistent Segment Tree | C | C | Version roots and copied path are useful; copied nodes/shared subtrees are not animated step by step. | S1 |
+| Sparse Table | C | C | Real input, one build cell, and one RMQ block decomposition exist; table construction is not continuous. | S1 |
+| Bitmask DP | C | C | Real mask and one transition exist; dp values and mask-DAG progression are not executed. | S1 |
+| Suffix Array | D | D | Only abstract rank phases; no string, suffixes, rank pairs, sorted order, or rank updates. | S2 |
+| Manacher | D | D | Only conceptual phases; no concrete string, mirror, radius, center, or [l,r] progression. | S2 |
+| Kuhn Matching | D | D | No actual bipartite graph or alternating-path flip. | S3 |
+| Miller–Rabin | D | D | No concrete n, d, s, base, modular power, or squaring chain. | S2 |
+| Chinese Remainder Theorem | D | D | No concrete congruences, gcd compatibility arithmetic, or final residue construction. | S2 |
+| Sweep Line | D | D | No concrete events, active intervals, covered length, strip width, or accumulated answer. | S3 |
+| NTT | D | D | No modular coefficient values, root powers, or butterfly arithmetic. | S2 |
+
+### What batch 3 changes in the diagnosis
+
+Stage 2 has now manually reviewed **37 lessons**.
+
+The strongest pattern is no longer just “authored vs generated”. There are now three practical content states:
+
+1. **Continuous execution already exists**  
+   Examples: Linear Search, Sliding Window, Binary Search, BFS, Dijkstra, Segment Tree.  
+   Work is mainly synchronization and cleanup.
+
+2. **Correct algorithm-specific snapshots exist, but they are not a timeline**  
+   Examples: DSU, Fenwick, Tarjan SCC, LCA, HLD, Sparse Table, Persistent Segment Tree, LIS.  
+   These should preserve their raw semantic material and be rebuilt as continuous events.
+
+3. **Only algorithm concepts are present, not executable state**  
+   Examples: KMP, Digit DP, Dinic, Aho–Corasick, Suffix Array, Manacher, Miller–Rabin, CRT, FFT/NTT.  
+   These need concrete examples and per-step values before the animation can become useful.
+
+A fourth special case is emerging:
+
+4. **The domain needs richer dedicated visuals**  
+   Examples: Dinic / Min-Cost Max-Flow / Kuhn Matching / Sweep Line.  
+   Merely adding more state fields to a generic graph or geometry scene will not be enough if the scene cannot distinguish residual edges, matching states, event lines, or active interval structures.
+
+This is the main Stage 2 planning split for the remaining lessons.
