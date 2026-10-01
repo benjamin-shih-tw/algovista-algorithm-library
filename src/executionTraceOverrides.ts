@@ -86,6 +86,17 @@ const codeOverrides: Record<string, string[]> = {
     '  return result;',
     '}',
   ],
+  'tsp-dp': [
+    'dp[1 << start][start] = 0;',
+    'for (int mask = 0; mask < (1 << n); ++mask)',
+    '  for (int u = 0; u < n; ++u) if (mask >> u & 1)',
+    '    for (int v = 0; v < n; ++v) if (!(mask >> v & 1))',
+    '      dp[mask | (1 << v)][v] = min(dp[mask | (1 << v)][v], dp[mask][u] + w[u][v]);',
+    'int full = (1 << n) - 1, answer = INF;',
+    'for (int u = 0; u < n; ++u)',
+    '  answer = min(answer, dp[full][u] + w[u][start]);',
+    'return answer;',
+  ],
 }
 
 const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
@@ -114,6 +125,30 @@ const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
       {from:'A',to:'B',weight:3},{from:'A',to:'C',weight:10},
       {from:'A',to:'D',weight:20},{from:'B',to:'C',weight:2},
       {from:'B',to:'D',weight:8},{from:'C',to:'D',weight:1},
+    ],
+  },
+  'euler-circuit': {
+    edges: [
+      {from:'A',to:'B'},{from:'B',to:'D'},{from:'D',to:'F'},
+      {from:'F',to:'E'},{from:'E',to:'C'},{from:'C',to:'A'},
+    ],
+  },
+  'tree-diameter': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'lca-binary-lifting': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'euler-tour-flattening': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
     ],
   },
 }
@@ -428,6 +463,89 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'dp[amount]=min','Amount=5：最少 2 枚','最佳可以是 1+4 或 4+1，因此 dp[5]=2。',{amount:5,choices:['coin1→2','coin3→3','coin4→2'],best:2,dp:['0','1','2','1','1','2','∞'],operation:'fill dp[5]'},{values:[0,1,2,1,1,2,0],active:['5']}),
     eventFrame(lesson,'dp[amount]=min','Amount=6：3+3 最好','coin1→3、coin3→dp[3]+1=2、coin4→dp[2]+1=3，所以 dp[6]=2。',{amount:6,choices:['coin1→3','coin3→2','coin4→3'],best:2,dp:['0','1','2','1','1','2','2'],operation:'fill dp[6]'},{values:[0,1,2,1,1,2,2],active:['6'],accepted:['3','6']}),
     eventFrame(lesson,'return dp[W]','回傳 2','湊出 6 的最少硬幣數是 2，可用 3+3。',{W:6,result:2,example:'3+3',operation:'return answer'},{values:[0,1,2,1,1,2,2],accepted:['3','6']}),
+  ],
+
+
+  'longest-common-subsequence': (lesson) => [
+    eventFrame(lesson,'for (int i=1','使用 A="ABC"、B="BAC"','dp[i][j] 表示兩個前綴的 LCS 長度；第 0 列與第 0 欄都是 0。',{A:'ABC',B:'BAC',table:['0 0 0 0','0 · · ·','0 · · ·','0 · · ·'],operation:'initialize table'}),
+    eventFrame(lesson,'else dp[i][j]=max','dp[1][1]：A vs B 不同','A[0]=A、B[0]=B 不同，取上方與左方 max(0,0)=0。',{cell:'dp[1][1]',chars:'A vs B',value:0,table:['0 0 0 0','0 0 · ·','0 · · ·','0 · · ·'],operation:'mismatch transition'}),
+    eventFrame(lesson,'if (a[i-1]==b[j-1])','dp[1][2]：A == A','字元相同，取左上 dp[0][1]+1=1。',{cell:'dp[1][2]',chars:'A == A',value:1,table:['0 0 0 0','0 0 1 ·','0 · · ·','0 · · ·'],operation:'diagonal plus one'}),
+    eventFrame(lesson,'else dp[i][j]=max','dp[1][3]：A vs C','不同，max(dp[0][3],dp[1][2])=1。',{cell:'dp[1][3]',chars:'A vs C',value:1,table:['0 0 0 0','0 0 1 1','0 · · ·','0 · · ·'],operation:'mismatch transition'}),
+    eventFrame(lesson,'if (a[i-1]==b[j-1])','dp[2][1]：B == B','相同，dp[2][1]=dp[1][0]+1=1。',{cell:'dp[2][1]',chars:'B == B',value:1,table:['0 0 0 0','0 0 1 1','0 1 · ·','0 · · ·'],operation:'diagonal plus one'}),
+    eventFrame(lesson,'else dp[i][j]=max','完成第 2 列','B vs A、C 都不相同；dp[2][2]=1、dp[2][3]=1。',{row:2,values:['1','1','1'],table:['0 0 0 0','0 0 1 1','0 1 1 1','0 · · ·'],operation:'finish row 2'}),
+    eventFrame(lesson,'else dp[i][j]=max','dp[3][1], dp[3][2] 都是 1','C 與 B、A 都不相同，因此沿上/左保留最佳值 1。',{row:3,prefixValues:['1','1'],table:['0 0 0 0','0 0 1 1','0 1 1 1','0 1 1 ·'],operation:'carry best prefix'}),
+    eventFrame(lesson,'if (a[i-1]==b[j-1])','dp[3][3]：C == C','最後字元相同，dp[3][3]=dp[2][2]+1=2。',{cell:'dp[3][3]',chars:'C == C',value:2,table:['0 0 0 0','0 0 1 1','0 1 1 1','0 1 1 2'],operation:'diagonal plus one'}),
+    eventFrame(lesson,'return dp[n][m]','LCS 長度 = 2','ABC 與 BAC 的 LCS 長度為 2，例如 AC 或 BC。',{result:2,examples:['AC','BC'],operation:'return answer'}),
+  ],
+
+  'edit-distance': (lesson) => [
+    eventFrame(lesson,'dp[i][0]=i','初始化 "ab" → "acb" 邊界','空字串轉成長度 j 只能插入 j 次；長度 i 轉空字串只能刪除 i 次。',{source:'ab',target:'acb',table:['0 1 2 3','1 · · ·','2 · · ·'],operation:'initialize borders'}),
+    eventFrame(lesson,'int cost=','dp[1][1]：a == a，cost=0','三種操作中，左上 dp[0][0]+0=0 最小。',{cell:'dp[1][1]',chars:'a==a',choices:['delete2','insert2','match0'],value:0,operation:'compute cost'}),
+    eventFrame(lesson,'dp[i][j]=min','dp[1][2]：a → ac','要把 a 變 ac，最佳是在已匹配 a 後插入 c，所以值 1。',{cell:'dp[1][2]',choices:['delete3','insert1','replace2'],value:1,operation:'take minimum'}),
+    eventFrame(lesson,'dp[i][j]=min','dp[1][3]：a → acb','再多一個 b，最佳需要 2 次插入。',{cell:'dp[1][3]',value:2,row:['0','1','2'],operation:'finish row 1'}),
+    eventFrame(lesson,'dp[i][j]=min','dp[2][1]：ab → a','刪除尾端 b 即可，值 1。',{cell:'dp[2][1]',value:1,operation:'delete transition'}),
+    eventFrame(lesson,'int cost=','dp[2][2]：b vs c，cost=1','刪除、插入、替換三種候選都是從已完成子問題出發；替換給 1。',{cell:'dp[2][2]',chars:'b!=c',choices:['2','2','1'],value:1,operation:'replace transition'}),
+    eventFrame(lesson,'dp[i][j]=min','dp[2][3]：b == b','字元相同，沿左上 dp[1][2]=1，不增加成本。',{cell:'dp[2][3]',chars:'b==b',value:1,table:['0 1 2 3','1 0 1 2','2 1 1 1'],operation:'match transition'}),
+    eventFrame(lesson,'return dp[n][m]','編輯距離 = 1','只要在 a 與 b 中間插入 c：ab → acb。',{result:1,script:['insert c at index 1'],operation:'return answer'}),
+  ],
+
+  'bitmask-dp': (lesson) => [
+    eventFrame(lesson,'for (int mask=0','n=3，從 Mask 000 開始','dp[000]=0，其餘狀態先為 INF。第 x 位 1 代表元素 x 已處理。',{n:3,dp0:0,operation:'initialize mask DAG'}),
+    eventFrame(lesson,'if (!(mask>>x&1))','從 000 可選 0、1、2','三個 bit 都是 0，因此三個元素都可作下一步。',{mask:'000',available:['0','1','2'],operation:'enumerate unset bits'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','000 → 001，選 0','示例 cost(000,0)=4，所以 dp[001]=4。',{from:'000',choose:0,to:'001',candidate:4,operation:'relax subset'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','000 → 010，選 1','cost(000,1)=2，得到 dp[010]=2。',{from:'000',choose:1,to:'010',candidate:2,operation:'relax subset'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','010 → 110，加入 2','從 dp[010]=2 加 cost(010,2)=1，得到 dp[110]=3。',{from:'010',choose:2,to:'110',candidate:'2+1=3',operation:'relax subset'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','011 → 111 先得到 7','另一條路徑可能先把 full mask 更新成 7。',{from:'011',choose:2,to:'111',before:'∞',after:7,operation:'first full-mask candidate'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','110 → 111 改善成 4','dp[110]=3，再加入元素 0 的成本 1，候選 4 比 7 好，因此覆寫。',{from:'110',choose:0,to:'111',before:7,after:4,operation:'improve full mask'}),
+    eventFrame(lesson,'for (int mask=0','所有 Mask 依 Popcount 向前','每次轉移都把 0 bit 變成 1，狀態圖沒有環；最終 dp[111]=4。',{target:'111',result:4,operation:'finish subset DP'}),
+  ],
+
+  'tsp-dp': (lesson) => [
+    eventFrame(lesson,'dp[1 << start][start] = 0','從城市 0 出發','n=4，初始 state 是 mask=0001、u=0，cost=0。',{state:'0001,u=0',cost:0,operation:'initialize TSP'}),
+    eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 1','w[0][1]=2，所以 dp[0011][1]=2。',{from:'0001,0',edge:'0→1',to:'0011,1',candidate:2,operation:'visit city 1'}),
+    eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 2','另一個候選 dp[0101][2]=9。',{from:'0001,0',edge:'0→2',to:'0101,2',candidate:9,operation:'visit city 2'}),
+    eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 3','dp[1001][3]=10。',{from:'0001,0',edge:'0→3',to:'1001,3',candidate:10,operation:'visit city 3'}),
+    eventFrame(lesson,'dp[mask | (1 << v)][v]','0011,1 → 1011,3','已走 0→1 成本 2，再走 1→3 成本 4，得到 state 1011,3 的成本 6。',{from:'0011,1',edge:'1→3 (4)',to:'1011,3',candidate:'2+4=6',operation:'extend path'}),
+    eventFrame(lesson,'dp[mask | (1 << v)][v]','1011,3 → 1111,2','再走 3→2 成本 3，完整拜訪所有城市時落在 2，成本 9。',{from:'1011,3',edge:'3→2 (3)',to:'1111,2',candidate:'6+3=9',operation:'complete visit mask'}),
+    eventFrame(lesson,'answer = min(answer','加上回到 Start 的最後一邊','從城市 2 回 0 的成本是 9，因此 tour 候選為 9+9=18。',{state:'1111,2',returnEdge:'2→0 (9)',tourCost:18,operation:'close tour'}),
+    eventFrame(lesson,'return answer','最短巡迴成本 18','另一方向 0→2→3→1→0 也得到 18；答案為 18。',{result:18,tour:'0→1→3→2→0',operation:'return tour cost'}),
+  ],
+
+  'euler-circuit': (lesson) => [
+    eventFrame(lesson,'stack<int> st; st.push(start)','從 A 開始','底圖現在就是 6-cycle：A-B-D-F-E-C-A，每個節點度數 2，所有非零度節點連通。',{stack:['A'],unusedEdges:6,operation:'push start'},{active:['A']}),
+    eventFrame(lesson,'takeUnusedEdge(u); st.push(v)','走 A→B','取走一條未使用邊並把 B push 到 stack。',{edge:'A-B',stack:['A','B'],unusedEdges:5,operation:'consume edge'},{active:['A','B']}),
+    eventFrame(lesson,'takeUnusedEdge(u); st.push(v)','沿 B→D→F 繼續','只要 top 還有未使用邊就繼續前進，stack 形成當前 trail。',{edges:['B-D','D-F'],stack:['A','B','D','F'],unusedEdges:3,operation:'extend trail'},{active:['B','D','F']}),
+    eventFrame(lesson,'takeUnusedEdge(u); st.push(v)','再走 F→E→C→A','最後一條 C→A 用掉後，stack 成為 A,B,D,F,E,C,A，所有 6 條邊都已使用。',{edges:['F-E','E-C','C-A'],stack:['A','B','D','F','E','C','A'],unusedEdges:0,operation:'consume remaining edges'},{active:['A','C','E','F']}),
+    eventFrame(lesson,'circuit.push_back(u); st.pop()','Top A 無未使用邊：開始回退','把 A 加到 circuit 後 pop；接著 C、E、F、D、B、A 都會依序進 circuit。',{deadEnd:'A',circuit:['A'],stack:['A','B','D','F','E','C'],operation:'append on dead end'},{active:['A'],accepted:['A']}),
+    eventFrame(lesson,'circuit.push_back(u); st.pop()','整條 Trail 逆序寫入 Circuit','回退完成後 circuit=[A,C,E,F,D,B,A]，這是走訪順序的反向。',{circuit:['A','C','E','F','D','B','A'],stack:[],operation:'finish backtracking'},{accepted:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'reverse(circuit.begin()','反轉得到 Euler Circuit','反轉後 A→B→D→F→E→C→A，剛好每條邊一次。',{result:['A','B','D','F','E','C','A'],allEdgesUsed:'true',operation:'reverse circuit'},{accepted:['A','B','C','D','E','F']}),
+  ],
+
+  'tree-diameter': (lesson) => [
+    eventFrame(lesson,'farthest(0)','第一次搜尋從 A 開始','真正的樹邊是 A-B、A-C、B-D、B-E、D-F。從 A 計算距離。',{start:'A',distances:'A0 B1 C1 D2 E2 F3',operation:'first traversal'},{active:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'farthest(0)','最遠點是 F','F 距離 A 為 3，是第一輪找到的直徑端點候選。',{start:'A',farthest:'F',distance:3,operation:'choose endpoint'},{active:['A','B','D','F'],accepted:['F']}),
+    eventFrame(lesson,'farthest(x)','第二次從 F 搜尋','從 F 出發，距離依序 F0、D1、B2、A3、E3、C4。',{start:'F',distances:'F0 D1 B2 A3 E3 C4',operation:'second traversal'},{active:['F','D','B','A','C']}),
+    eventFrame(lesson,'farthest(x)','最遠點 C，距離 4','F→D→B→A→C 是樹上的唯一路徑，長度 4。',{start:'F',farthest:'C',diameter:4,path:['F','D','B','A','C'],operation:'find opposite endpoint'},{active:['F','D','B','A','C'],accepted:['F','C']}),
+    eventFrame(lesson,'max_tree_diameter = diameter','直徑完成','第二次最遠距離就是樹直徑 4。',{result:4,path:['F','D','B','A','C'],operation:'store diameter'},{accepted:['A','B','C','D','F']}),
+  ],
+
+  'lca-binary-lifting': (lesson) => [
+    eventFrame(lesson,'if (depth[u] < depth[v])','Query LCA(F,C)','F 深度 3、C 深度 1，因此 F 是較深節點，準備先抬高 F。',{u:'F(depth3)',v:'C(depth1)',operation:'compare depths'},{active:['F','C']}),
+    eventFrame(lesson,'if (depth[up[u][k]] >= depth[v])','用 2¹ 祖先把 F 跳到 B','F 的 2-step ancestor 是 B，depth(B)=1，剛好與 C 同深。',{k:1,jump:'F→B',u:'B(depth1)',v:'C(depth1)',operation:'lift deeper node'},{active:['F','D','B','C']}),
+    eventFrame(lesson,'if (u == v) return u','B 與 C 不相同','同步深度後兩點仍不同，所以要一起往上找 LCA 的下一層。',{u:'B',v:'C',equal:'false',operation:'check same node'},{active:['B','C']}),
+    eventFrame(lesson,'if (up[u][k] != up[v][k])','最大可跳祖先已相同','B 與 C 的更高祖先都會到 A，因此不存在能讓兩者祖先仍不同的大跳躍。',{u:'B',v:'C',commonParent:'A',operation:'skip equal ancestors'},{active:['A','B','C']}),
+    eventFrame(lesson,'return up[u][0]','回傳 Parent(B)=A','此時 u、v 位於 LCA 的兩個直接子樹，parent[B]=parent[C]=A。',{LCA:'A',operation:'return parent'},{active:['A','B','C'],accepted:['A']}),
+  ],
+
+  'euler-tour-flattening': (lesson) => [
+    eventFrame(lesson,'tin[u] = timer++','進入 A：tin[A]=0','Preorder 進入節點時記錄 tin 並遞增 timer。',{current:'A',timer:'0→1',tin:'A=0',order:['A'],operation:'enter A'},{active:['A']}),
+    eventFrame(lesson,'order.push_back(u)','依 DFS 進入 B','A 的第一個 child 是 B，因此 order=[A,B]、tin[B]=1。',{current:'B',timer:2,tin:'A0 B1',order:['A','B'],operation:'enter B'},{active:['A','B']}),
+    eventFrame(lesson,'for (int v : tree[u])','B→D→F 深入','先走 D，再走 F；tin[D]=2、tin[F]=3。',{path:['B','D','F'],timer:4,tin:'D2 F3',order:['A','B','D','F'],operation:'dfs descendants'},{active:['B','D','F']}),
+    eventFrame(lesson,'tout[u] = timer','F 返回，tout[F]=4','F 沒有孩子，離開時 timer=4，因此 F 子樹對應 [3,4)。',{node:'F',tin:3,tout:4,range:'[3,4)',operation:'exit F'},{active:['F'],accepted:['F']}),
+    eventFrame(lesson,'order.push_back(u)','回到 B 再進入 E','D 完成後 B 的下一個 child E 取得 tin[E]=4；order=[A,B,D,F,E]。',{current:'E',tin:4,order:['A','B','D','F','E'],operation:'enter E'},{active:['B','E']}),
+    eventFrame(lesson,'tout[u] = timer','B 子樹完成：range [1,5)','E 返回後 timer=5，B 的所有後代剛好連續占 order[1..5)。',{node:'B',tin:1,tout:5,range:'[1,5)',subtree:['B','D','F','E'],operation:'close subtree'},{active:['B','D','E','F'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'order.push_back(u)','最後進入 C','回到 A 後處理 C，tin[C]=5，order 最終是 [A,B,D,F,E,C]。',{current:'C',tin:5,order:['A','B','D','F','E','C'],operation:'enter C'},{active:['A','C']}),
+    eventFrame(lesson,'tout[u] = timer','A 完成：整棵樹 [0,6)','timer=6，tout[A]=6；每個子樹都對應一個半開連續區間。',{tinA:0,toutA:6,range:'[0,6)',order:['A','B','D','F','E','C'],operation:'finish flattening'},{accepted:['A','B','C','D','E','F']}),
   ],
 }
 
