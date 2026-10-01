@@ -409,6 +409,7 @@ const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number)
     if (/交換|固定/.test(context) && /\bswap\s*\(/.test(line)) score += 35
   }
   if (lesson.id === 'bubble-sort') {
+    if (/比較/.test(context) && /if\s*\(a\[j\]\s*>\s*a\[j\+1\]\)/.test(line)) score += 45
     if (/第.*輪|不再碰|固定.*尾|n-pass/.test(context) && /for\s*\(int j.*n-pass/.test(line)) score += 30
     if (/交換|swap/.test(context) && /\bswap\s*\(/.test(line)) score += 35
   }
