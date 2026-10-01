@@ -106,7 +106,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'st.push(i)','i=3，3 入 Stack','3<5，不能解決 5，因此索引 3 入 Stack。',{i:3,value:3,stack:['2(5)','3(3)'],operation:'push index'},{values:[2,1,5,3,4],active:['2','3']}),
     eventFrame(lesson,'answer[st.top()]','i=4，4 解決索引 3','4>3，因此 NGE[3]=4。',{i:4,value:4,resolved:'NGE[3]=4',stack:['2(5)','3(3)'],operation:'resolve top'},{values:[2,1,5,3,4],active:['3','4'],accepted:['3']}),
     eventFrame(lesson,'st.push(i)','掃描結束','索引 2(5) 與 4(4) 右側沒有更大值，因此答案維持 -1。',{stack:['2(5)','4(4)'],answers:['5','5','-1','4','-1'],operation:'finish unresolved'},{values:[2,1,5,3,4],accepted:['0','1','2','3','4']}),
-  ],,
+  ],
 
   'dfs': (lesson) => [
     eventFrame(lesson,'visited[u] = true','進入 A：立即標記','DFS 一進入節點就標記 visited，避免沿環回到 A。',{current:'A',callStack:['A'],visited:['A'],operation:'mark A'},{active:['A'],accepted:['A']}),
