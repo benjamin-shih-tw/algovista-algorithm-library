@@ -8,10 +8,8 @@ const s0 = new Set([
   'quick-sort','convex-hull',
 ])
 
-const mutationRe = /交換|swap|寫回|更新|加入|移除|push|pop|前進|縮小|擴張|歸位|固定|relax|鬆弛|assign|set/i
-const compareRe = /比較|判斷|<|>|≤|≥|==|命中|左轉|右轉|cross/i
-const sourceMutationRe = /\b(swap|push|pop|insert|erase|relax)\b|\+\+|--|\+=|-=|\*=|\/=|=[^=]/i
-const sourceDecisionRe = /\b(if|while|for)\b|<|>|==|<=|>=|cross/i
+const specificSourceRe = /\b(if|else|return|swap|push|push_back|push_front|pop|pop_back|pop_front|insert|erase)\b|\bdist\s*\[|\bvisited\s*\[|\btree\s*\[|\+=|-=|\+\+|--|=[^=]|\bcross\s*\(/
+const genericHeaderRe = /^(?:for\s*\(|[\w:<>, &*]+\s+[A-Za-z_]\w*\s*\([^;]*\)\s*\{?$)/
 
 const rows = []
 for (const lesson of lessons.filter((lesson) => s0.has(lesson.id))) {
@@ -19,12 +17,13 @@ for (const lesson of lessons.filter((lesson) => s0.has(lesson.id))) {
     const frame=lesson.frames[i]
     const primaryLineNumber=frame.codeLines.find((number)=>lesson.code[number-1]?.trim()===frame.codeLine.trim()) ?? -1
     const unresolved=primaryLineNumber<0
-    const eventText=`${frame.title} ${frame.explanation}`
-    const wantsMutation=mutationRe.test(eventText)
-    const wantsDecision=compareRe.test(eventText)
     const line=frame.codeLine.trim()
-    const mutationMismatch=wantsMutation && !sourceMutationRe.test(line) && !sourceDecisionRe.test(line)
-    const decisionMismatch=wantsDecision && !sourceDecisionRe.test(line) && !sourceMutationRe.test(line)
+    const specificCandidates=frame.codeLines
+      .map((number)=>({number,line:(lesson.code[number-1]??'').trim()}))
+      .filter((candidate)=>candidate.line && specificSourceRe.test(candidate.line))
+    const genericHeaderPrimary=genericHeaderRe.test(line) &&
+      specificCandidates.some((candidate)=>candidate.number!==primaryLineNumber) &&
+      !/檢查|開始.*迭代|建立|確認.*設定|問題設定|函式|呼叫/.test(frame.title)
     rows.push({
       lessonId:lesson.id,
       step:i+1,
@@ -33,8 +32,8 @@ for (const lesson of lessons.filter((lesson) => s0.has(lesson.id))) {
       primaryCode:line,
       ownedCodeLines:frame.codeLines,
       unresolved,
-      mutationMismatch,
-      decisionMismatch,
+      genericHeaderPrimary,
+      specificCandidates,
     })
   }
 }
@@ -43,8 +42,8 @@ const summary={
   lessons:s0.size,
   frames:rows.length,
   unresolvedPrimary:rows.filter((r)=>r.unresolved).length,
-  heuristicMutationMismatch:rows.filter((r)=>r.mutationMismatch).length,
-  heuristicDecisionMismatch:rows.filter((r)=>r.decisionMismatch).length,
+  genericHeaderPrimary:rows.filter((r)=>r.genericHeaderPrimary).length,
+  framesWithSpecificCandidates:rows.filter((r)=>r.specificCandidates.length>0).length,
 }
 
 mkdirSync('.tmp',{recursive:true})
