@@ -147,9 +147,9 @@ const rows: AuditRow[] = lessons.map((lesson) => {
   if (!source) throw new Error(`No raw source registered for ${lesson.id}`)
   const raw = source.raw
   const originallyAnimationV2 = raw.animationVersion === 2 || source.sourceType === 'core-authored'
-  const expandedByGenericPipeline = !originallyAnimationV2
   const rawFrameCount = raw.frames.length
   const finalFrameCount = lesson.frames.length
+  const expandedByGenericPipeline = !originallyAnimationV2 && finalFrameCount > rawFrameCount
 
   const meaningful = meaningfulLines(lesson)
   const meaningfulNumbers = new Set(meaningful.map((line) => line.number))
@@ -270,8 +270,8 @@ const cohortSummary = [
     rows: rows.filter((row) => !row.expandedByGenericPipeline),
   },
   {
-    cohort: 'expanded-non-factory',
-    rows: rows.filter((row) => row.expandedByGenericPipeline && row.sourceType !== 'completion-factory'),
+    cohort: 'semantic-non-factory',
+    rows: rows.filter((row) => !row.originallyAnimationV2 && row.sourceType !== 'completion-factory'),
   },
   {
     cohort: 'completion-factory',
