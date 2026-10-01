@@ -26,6 +26,53 @@ export interface VisualTrace {
   focus: string[]
   activeCode: string
 }
+
+export type ExecutionView =
+  | {
+      kind: 'network'
+      title: string
+      nodes: { id: string; label?: string; x: number; y: number; value?: string; group?: string }[]
+      edges: { from: string; to: string; label?: string; active?: boolean; muted?: boolean; dashed?: boolean }[]
+      path?: string[]
+      badges?: string[]
+    }
+  | {
+      kind: 'matrix'
+      title: string
+      rowLabels?: string[]
+      colLabels?: string[]
+      cells: string[][]
+      activeCells?: string[]
+      pivot?: string
+      badges?: string[]
+    }
+  | {
+      kind: 'structure'
+      title: string
+      nodes: { id: string; label: string; x: number; y: number; meta?: string; active?: boolean; muted?: boolean }[]
+      edges: { from: string; to: string; label?: string; active?: boolean; dashed?: boolean }[]
+      sequence?: string[]
+      badges?: string[]
+    }
+  | {
+      kind: 'geometry'
+      title: string
+      points: { id: string; x: number; y: number; label?: string; active?: boolean }[]
+      segments?: { from: string; to: string; label?: string; active?: boolean; dashed?: boolean }[]
+      circles?: { x: number; y: number; r: number; label?: string; active?: boolean }[]
+      polygon?: string[]
+      sweepX?: number
+      badges?: string[]
+    }
+  | {
+      kind: 'table'
+      title: string
+      columns: string[]
+      rows: string[][]
+      activeRow?: number
+      activeCells?: string[]
+      badges?: string[]
+    }
 export interface BeginnerStep {
   observe: string
   action: string
@@ -74,6 +121,7 @@ export interface Frame {
   segmentStep?: ReturnType<typeof createQueryTrace>[number]
   codeLines: number[]
   state?: Record<string, string | number | string[]>
+  executionView?: ExecutionView
   trace?: VisualTrace
   visualStep?: number
   visualProgress?: number
