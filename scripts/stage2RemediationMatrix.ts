@@ -27,6 +27,21 @@ const reviewed: Record<string,{animation:Grade;codeSync:Grade;repair:Repair;note
   'extended-euclid': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete recursion or Bézout coefficient back-substitution.'},
   'rotating-calipers': {animation:'D',codeSync:'D',repair:'S2',note:'No polygon, antipodal pair, area comparison or pointer movement.'},
   'fft': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete coefficients, roots, butterfly values or transform stages.'},
+  'linear-search': {animation:'A',codeSync:'A',repair:'S0',note:'Concrete index-by-index execution on one array; state and comparison line remain aligned.'},
+  'sliding-window': {animation:'A',codeSync:'B',repair:'S0',note:'Concrete l/r/sum evolution on one input; some add steps map to loop headers rather than the exact sum mutation.'},
+  'dsu': {animation:'C',codeSync:'C',repair:'S1',note:'Parent/path-compression/merge snapshots exist, but generic expansion interrupts the actual find/unite sequence.'},
+  'floyd-warshall': {animation:'C',codeSync:'C',repair:'S1',note:'One concrete B→E via C relaxation exists; full matrix evolution across k is missing.'},
+  'heavy-light-decomposition': {animation:'C',codeSync:'C',repair:'S1',note:'Heavy/light edges and path segments exist, but chain jumps are not executed continuously.'},
+  'persistent-segment-tree': {animation:'C',codeSync:'C',repair:'S1',note:'Version roots and copied path are meaningful; node copying and shared-subtree changes need stepwise execution.'},
+  'sparse-table': {animation:'C',codeSync:'C',repair:'S1',note:'Real level-0 array, one build cell, and one RMQ decomposition exist; table levels are not built continuously.'},
+  'bitmask-dp': {animation:'C',codeSync:'C',repair:'S1',note:'Concrete mask and one transition exist, but dp values and a continuous state-DAG progression are absent.'},
+  'suffix-array': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete string, suffix list, rank pairs, sorted order, or rank-array evolution.'},
+  'manacher': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete string, center, mirror, radius values, or rightmost palindrome interval.'},
+  'kuhn-matching': {animation:'D',codeSync:'D',repair:'S3',note:'Needs an explicit bipartite graph with matched/unmatched alternating edges and augmenting-path flips.'},
+  'miller-rabin': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete n, d, s, base, modular power, or squaring-chain values are shown.'},
+  'chinese-remainder-theorem': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete pair of congruences, gcd compatibility test, reduced congruence, or final residue arithmetic.'},
+  'sweep-line': {animation:'D',codeSync:'D',repair:'S3',note:'Needs concrete x-events, active y-intervals, covered length, strip width, and accumulated area.'},
+  'ntt': {animation:'D',codeSync:'D',repair:'S2',note:'No concrete modular coefficients, root powers, butterfly values, or transform stages.'},
 }
 
 const rows=lessons.map((lesson)=>({
