@@ -104,7 +104,13 @@ const codeSnapshot = (frame: Frame) => JSON.stringify([...new Set(frame.codeLine
 
 const meaningfulLines = (lesson: AlgorithmLesson) => lesson.code
   .map((line, index) => ({ line: line.trim(), number: index + 1 }))
-  .filter(({ line }) => line && !/^[{}]+;?$/.test(line) && !line.startsWith('//'))
+  .filter(({ line }) =>
+    line &&
+    !/^[{}]+$/.test(line) &&
+    !line.startsWith('//') &&
+    !line.startsWith('#include') &&
+    !/^using namespace\b/.test(line)
+  )
 
 const genericTextRe = /這一行負責|執行前是|完成這行後應得到|讀取輸入，準備|代入實際值，判斷是否|執行目前敘述，開始|比較執行前後，確認|核對結果，完成/
 
