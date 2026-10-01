@@ -82,3 +82,7 @@ if (s1Remaining.length) {
   console.error('Stage 5 S1 execution gate failed:', s1Remaining)
   process.exitCode = 1
 }
+if (s2Remaining.length) {
+  console.error('Stage 6 S2 execution gate failed:', s2Remaining)
+  process.exitCode = 1
+}
