@@ -93,6 +93,7 @@ export interface AlgorithmLesson {
   visual: VisualKind
   fidelity?: VisualFidelity
   animationVersion?: 2
+  traceMode?: 'execution' | 'semantic'
   visualModel?: VisualModel
   beginnerGuide?: BeginnerGuide
   codeGuide?: CodeGuideLine[]
@@ -478,12 +479,16 @@ const expandGuidedFrames = (lesson: AlgorithmLesson): Frame[] => {
 }
 
 const ensureGuidedLesson = (lesson: AlgorithmLesson): AlgorithmLesson => {
-  if (lesson.animationVersion===2) return lesson
+  const authoredExecution = lesson.animationVersion === 2
   return {
     ...lesson,
     animationVersion: 2,
-    sources: lesson.sources?.length?lesson.sources:[cppBookSourceByCategory[lesson.categoryId]],
-    frames: expandGuidedFrames(lesson),
+    traceMode: lesson.traceMode ?? (authoredExecution ? 'execution' : 'semantic'),
+    sources: lesson.sources?.length ? lesson.sources : [cppBookSourceByCategory[lesson.categoryId]],
+    // Stage 4: never manufacture a fake 10–20 step timeline from code-line count.
+    // Until a lesson receives a real execution trace, preserve its authored semantic
+    // snapshots exactly as they are.
+    frames: lesson.frames,
   }
 }
 const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): VisualTrace => {
@@ -521,7 +526,7 @@ const pedagogicalLessons: AlgorithmLesson[] = [...coreLessons, ...foundationLess
   .map(ensureGuidedLesson)
   .map(enrichLesson)
   .map(enrichPedagogy)
-  .map((lesson) => ({ ...lesson, fidelity: lesson.animationVersion === 2 ? 'concrete' as const : 'semantic' as const }))
+  .map((lesson) => ({ ...lesson, fidelity: lesson.traceMode === 'execution' ? 'concrete' as const : 'semantic' as const }))
   .map((lesson) => ({ ...lesson, frames: lesson.frames.map((frame, step) => ({ ...frame, trace: buildVisualTrace(lesson, frame, step) })) }))
   .map((lesson, index) => ({ ...lesson, index: String(index + 1).padStart(3, '0') }))
 
