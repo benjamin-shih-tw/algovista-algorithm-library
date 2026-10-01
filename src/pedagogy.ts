@@ -341,36 +341,33 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
   return { ...lesson, code, frames }
 }
 
-const ensureCodeCoverage = (lesson: AlgorithmLesson) => {
-  const frames = lesson.frames.map((frame) => ({ ...frame, codeLines: [...new Set(frame.codeLines)] }))
-  const covered = new Set(frames.flatMap((frame) => frame.codeLines))
-  // A2 fix：未涵蓋行改為「分派給語意最接近的 frame」（以行號距離衡量），
-  // 舊版用整體比例分派，曾把 `return -1;` 塞進講「匹配成功」的 frame，
-  // 造成 code guide 的 effect 文字張冠李戴。
-  for (const { number } of meaningfulCodeLines(lesson)) {
-    if (covered.has(number)) continue
-    let bestIndex = -1
-    let bestDistance = Number.POSITIVE_INFINITY
-    frames.forEach((frame, frameIndex) => {
-      for (const existing of frame.codeLines) {
-        const distance = Math.abs(existing - number)
-        if (distance < bestDistance) { bestDistance = distance; bestIndex = frameIndex }
-      }
-    })
-    if (bestIndex < 0) bestIndex = Math.min(frames.length - 1, Math.round((number - 1) / Math.max(1, lesson.code.length - 1) * (frames.length - 1)))
-    frames[bestIndex].codeLines = [...new Set([...frames[bestIndex].codeLines, number])].sort((a, b) => a - b)
-    covered.add(number)
-  }
-  return frames.map((frame, frameIndex) => {
-    const candidates = frame.codeLines
-      .map((number) => ({ number, line: lesson.code[number - 1]?.trim() ?? '' }))
-      .filter(({ line }) => line && !/^[{}]+;?$/.test(line) && !line.startsWith('//'))
-    const fallback = meaningfulCodeLines(lesson)[Math.min(meaningfulCodeLines(lesson).length - 1, Math.round(frameIndex / Math.max(1, frames.length - 1) * Math.max(0, meaningfulCodeLines(lesson).length - 1)))]
-    const teachingLine = candidates[0] ?? fallback
-    if (!teachingLine) return frame
-    return { ...frame, codeLine: teachingLine.line, codeLines: [...new Set([...frame.codeLines, teachingLine.number])].sort((a, b) => a - b) }
+const normalizeFrameCodeOwnership = (lesson: AlgorithmLesson) => lesson.frames.map((frame, frameIndex) => {
+  // Animation code highlighting must describe the event that actually changes the frame.
+  // Do NOT attach unrelated uncovered source lines merely to reach 100% catalog coverage:
+  // code-guide coverage and animation-event ownership are different concerns.
+  const codeLines = [...new Set(frame.codeLines)]
+    .filter((number) => number >= 1 && number <= lesson.code.length)
+    .sort((a, b) => a - b)
+  const currentPrimary = frame.codeLine.trim()
+  const ownedPrimary = codeLines.find((number) => lesson.code[number - 1]?.trim() === currentPrimary)
+  const semanticPrimary = ownedPrimary ?? codeLines.find((number) => {
+    const line = lesson.code[number - 1]?.trim() ?? ''
+    return line && !/^[{}]+;?$/.test(line) && !line.startsWith('//')
   })
-}
+  const fallback = meaningfulCodeLines(lesson)[Math.min(
+    meaningfulCodeLines(lesson).length - 1,
+    Math.round(frameIndex / Math.max(1, lesson.frames.length - 1) * Math.max(0, meaningfulCodeLines(lesson).length - 1)),
+  )]
+  const teachingLine = semanticPrimary
+    ? { number: semanticPrimary, line: lesson.code[semanticPrimary - 1]?.trim() ?? currentPrimary }
+    : fallback
+  if (!teachingLine) return { ...frame, codeLines }
+  return {
+    ...frame,
+    codeLines,
+    codeLine: currentPrimary && ownedPrimary ? currentPrimary : teachingLine.line,
+  }
+})
 
 const buildStep = (lesson: AlgorithmLesson, frame: Frame, step: number, total: number): BeginnerStep => {
   const activeLines = frame.codeLines.map((lineNumber) => explainCppLine(lesson.code[lineNumber - 1] ?? '', lesson, lineNumber))
@@ -481,7 +478,7 @@ const buildCodeGuide = (lesson: AlgorithmLesson, frames: Frame[]): CodeGuideLine
 
 export const enrichPedagogy = (rawLesson: AlgorithmLesson): AlgorithmLesson => {
   const lesson = prepareReadableTemplate(rawLesson)
-  const coveredFrames = ensureCodeCoverage(lesson)
+  const coveredFrames = normalizeFrameCodeOwnership(lesson)
   const total = coveredFrames.length
   const frames = coveredFrames.map((frame, step) => {
     const progress = total <= 1 ? 1 : step / (total - 1)
