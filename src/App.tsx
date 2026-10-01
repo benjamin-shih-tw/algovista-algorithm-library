@@ -410,25 +410,16 @@ function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
   </motion.div>
 }
 
-function SyncedCodePanel({lesson,frame,step,onSeek}:{lesson:AlgorithmLesson;frame:Frame;step:number;onSeek:(step:number)=>void}) {
-  const activeGuides=(lesson.codeGuide??[]).filter((item)=>frame.codeLines.includes(item.lineNumber))
-  const primaryGuide=activeGuides[0]
+function SyncedCodePanel({lesson,frame,onSeek}:{lesson:AlgorithmLesson;frame:Frame;step:number;onSeek:(step:number)=>void}) {
   const [actionStatus,setActionStatus]=useState('')
   const templateText=lesson.code.join('\n')
   const copyTemplate=async()=>{try{await navigator.clipboard.writeText(templateText);setActionStatus('已複製');setTimeout(()=>setActionStatus(''),1600)}catch{setActionStatus('複製失敗')}}
   const downloadTemplate=()=>{const blob=new Blob([templateText],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`${lesson.id}.cpp`;anchor.click();URL.revokeObjectURL(url);setActionStatus('已下載')}
   return <aside className="code-panel">
-    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div><b>{lesson.knowledge?.implementation.scope==='extension'?'延伸實作 · 依賴先備課':'完整核心流程'} · 逐行同步</b></header>
-    <div className="code-contract"><span>INPUT</span><p>{lesson.knowledge?.implementation.input}</p><span>OUTPUT</span><p>{lesson.knowledge?.implementation.output}</p></div>
-    <div className="code-template-note"><span>點任一行，動畫會跳到第一次執行該行的步驟。</span><b>{lesson.code.length} LINES · {lesson.frames.length} STEPS</b></div>
+    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div></header>
     <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
-      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code>{targetStep>=0&&<small className="code-line-step">STEP {targetStep+1}</small>}</button></div>})}</pre>
+      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=frame.codeLines.includes(lineNumber),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></button></div>})}</pre>
     </div>
-    <motion.section className="code-focus-card" key={`${lesson.id}-code-${step}`} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}>
-      <header><span>正在執行</span><div>{activeGuides.map((guide)=><b key={guide.lineNumber}>第 {guide.lineNumber} 行</b>)}</div></header>
-      <code><CppCode line={primaryGuide?.code??frame.codeLine}/></code>
-
-    </motion.section>
   </aside>
 }
 
@@ -460,17 +451,15 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate}/>
 
     <section className="lesson-stage" ref={stageRef}>
-      <div className="stage-top"><span>LIVE VISUALIZATION</span><span className="panel-size-hint"><Maximize2/>動畫、程式碼與解說視窗皆可拖曳調整</span><button className="reset-layout" onClick={resetLayout}><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? 'PLAYING' : 'PAUSED'}</span></div>
+      <div className="stage-top"><span>過程</span><button className="reset-layout" onClick={resetLayout} title="重設動畫與程式碼寬度"><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? '播放中' : '已暫停'}</span></div>
       <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
         <div className="visual-column">
           <AlgorithmScene lesson={lesson} frame={frame}/>
-          <VisualStepStrip lesson={lesson} frame={frame}/>
-          <div className="state-inspector"><span>ALGORITHM STATE · 目前變數</span><div>{Object.entries(frame.state ?? {}).filter(([key])=>!['phase','algorithm','rationale','invariant','timelineStep','goal','before','condition','after'].includes(key)).slice(0,6).map(([key,value])=><dl key={key}><dt>{humanizeStateKey(key)}</dt><dd>{humanizeStateValue(value)}</dd></dl>)}</div></div>
         </div>
         <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
+      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p></motion.div></AnimatePresence></div>
     </section>
     <section className="lesson-context">
       <article><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
