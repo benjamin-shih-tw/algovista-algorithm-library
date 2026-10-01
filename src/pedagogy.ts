@@ -341,32 +341,63 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
   return { ...lesson, code, frames }
 }
 
+const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number) => {
+  const line = (lesson.code[number - 1] ?? '').trim()
+  const event = `${frame.title} ${frame.explanation} ${String(frame.state?.operation ?? '')}`.toLowerCase()
+  let score = 0
+
+  if (!line || /^[{}]+;?$/.test(line) || line.startsWith('//')) return -1000
+  if (/^(for|while)\s*\(/.test(line)) score += 1
+  if (/^(if|else if)\s*\(/.test(line) || /^else\b/.test(line)) score += 2
+  if (/\breturn\b/.test(line)) score += /回傳|return|答案|完成/.test(event) ? 10 : 1
+  if (/\bswap\s*\(/.test(line)) score += /交換|swap|歸位|pivot/.test(event) ? 14 : 4
+  if (/\b(push|push_back|push_front|insert|emplace)\b/.test(line)) score += /加入|入隊|push|放入|壓入|候選|保留/.test(event) ? 12 : 4
+  if (/\b(pop|pop_back|pop_front|erase)\b/.test(line)) score += /移除|出隊|pop|淘汰|略過|刪除/.test(event) ? 12 : 4
+  if (/\bdist\s*\[.*\]\s*=/.test(line)) score += /距離|鬆弛|改善|發現|到達/.test(event) ? 14 : 5
+  if (/\bvisited\s*\[.*\]\s*=/.test(line)) score += /發現|標記|visited|訪問/.test(event) ? 11 : 4
+  if (/\bq\.push\b|\bpq\.push\b/.test(line)) score += /加入|入隊|heap|queue/.test(event) ? 11 : 4
+  if (/\blow\s*=/.test(line)) score += /左界|low|右側/.test(event) ? 14 : 3
+  if (/\bhigh\s*=/.test(line)) score += /右界|high|左側/.test(event) ? 14 : 3
+  if (/\bmid\s*=/.test(line)) score += /中點|mid/.test(event) ? 13 : 3
+  if (/tree\s*\[.*\]\s*=/.test(line)) score += /pull|葉|覆寫|更新|build|總和/.test(event) ? 12 : 4
+  if (/return\s+tree\s*\[/.test(line)) score += /完整包含|取用|query/.test(event) ? 14 : 4
+  if (/\b(lower|upper)\.push_back\b/.test(line)) score += /加入|保留|凸包|完成/.test(event) ? 13 : 5
+  if (/\b(lower|upper)\.pop_back\b/.test(line)) score += /移除|淘汰|pop|右轉/.test(event) ? 14 : 5
+  if (/\bcross\s*\(/.test(line)) score += /左轉|右轉|cross|方向|比較/.test(event) ? 12 : 4
+
+  if (/比較|判斷|太大|太小|命中|左轉|右轉|cross|<=|>=|<|>/.test(event)) {
+    if (/^(if|else if|while)\s*\(/.test(line)) score += 8
+    if (/^for\s*\(/.test(line)) score -= 2
+  }
+  if (/更新|寫回|覆寫|交換|加入|移除|鬆弛|改善|前進|縮小|歸位|固定|push|pop|pull/.test(event)) {
+    if (/\b(swap|push|pop|insert|erase)\b|\+\+|--|\+=|-=|\*=|\/=|=[^=]/.test(line)) score += 6
+    if (/^for\s*\(/.test(line)) score -= 3
+  }
+
+  return score
+}
+
 const normalizeFrameCodeOwnership = (lesson: AlgorithmLesson) => lesson.frames.map((frame, frameIndex) => {
-  // Animation code highlighting must describe the event that actually changes the frame.
-  // Do NOT attach unrelated uncovered source lines merely to reach 100% catalog coverage:
-  // code-guide coverage and animation-event ownership are different concerns.
+  // Animation code highlighting describes the event that actually changes the frame.
+  // Code-guide coverage is separate: uncovered source lines must never be injected into
+  // an unrelated animation frame merely to reach a coverage percentage.
   const codeLines = [...new Set(frame.codeLines)]
     .filter((number) => number >= 1 && number <= lesson.code.length)
     .sort((a, b) => a - b)
-  const currentPrimary = frame.codeLine.trim()
-  const ownedPrimary = codeLines.find((number) => lesson.code[number - 1]?.trim() === currentPrimary)
-  const semanticPrimary = ownedPrimary ?? codeLines.find((number) => {
-    const line = lesson.code[number - 1]?.trim() ?? ''
-    return line && !/^[{}]+;?$/.test(line) && !line.startsWith('//')
-  })
+
+  const semanticPrimary = codeLines
+    .map((number) => ({ number, score: primaryCodeScore(lesson, frame, number) }))
+    .sort((a, b) => b.score - a.score || a.number - b.number)[0]?.number
+
   const fallback = meaningfulCodeLines(lesson)[Math.min(
     meaningfulCodeLines(lesson).length - 1,
     Math.round(frameIndex / Math.max(1, lesson.frames.length - 1) * Math.max(0, meaningfulCodeLines(lesson).length - 1)),
   )]
   const teachingLine = semanticPrimary
-    ? { number: semanticPrimary, line: lesson.code[semanticPrimary - 1]?.trim() ?? currentPrimary }
+    ? { number: semanticPrimary, line: lesson.code[semanticPrimary - 1]?.trim() ?? frame.codeLine.trim() }
     : fallback
   if (!teachingLine) return { ...frame, codeLines }
-  return {
-    ...frame,
-    codeLines,
-    codeLine: currentPrimary && ownedPrimary ? currentPrimary : teachingLine.line,
-  }
+  return { ...frame, codeLines, codeLine: teachingLine.line }
 })
 
 const buildStep = (lesson: AlgorithmLesson, frame: Frame, step: number, total: number): BeginnerStep => {
