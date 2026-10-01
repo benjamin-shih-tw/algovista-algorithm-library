@@ -718,3 +718,83 @@ A fourth special case is emerging:
    Merely adding more state fields to a generic graph or geometry scene will not be enough if the scene cannot distinguish residual edges, matching states, event lines, or active interval structures.
 
 This is the main Stage 2 planning split for the remaining lessons.
+
+
+---
+
+## Calibration batch 4 — broader core algorithms and advanced structures
+
+The fourth batch expands human review across authored array lessons, shortest paths, tree decomposition, range structures, classic DP, automata, flow, number theory, geometry, and polynomial tools.
+
+| Lesson | Animation | Code Sync | Main finding | Repair class |
+|---|:---:|:---:|---|:---:|
+| Prefix Sum | A | B | Excellent continuous prefix construction and range query; some build steps highlight the loop header rather than the assignment. | S0 |
+| Two Pointers | A | B | Concrete pointer/value/sum evolution; greater/less decisions can still inherit the equality branch as primary code. | S0 |
+| Merge Sort | A | C | The animation is a strong recursive split/merge execution, but element-level merge events are hidden inside one `inplace_merge(...)` library call in the displayed code. | S1 |
+| 0–1 BFS | C | C | Deque and edge snapshots are useful, but distances and a continuous 0/1 relaxation sequence are incomplete. | S1 |
+| Bellman–Ford | C | C | Pass, relaxation, and negative-cycle snapshots exist, but most edge-by-edge distance changes are skipped. | S1 |
+| Euler Circuit | C | C | Stack, used edges, dead end, and final circuit are meaningful; Hierholzer traversal/backtracking is not continuous. | S1 |
+| Tree Diameter | C | C | Two-sweep endpoints and final diameter path are useful; the farthest traversals themselves are compressed. | S1 |
+| Centroid Decomposition | C | C | Centroid, components, and centroid-tree snapshots are useful; recursive decomposition of each component is skipped. | S1 |
+| 2D Fenwick Tree | D | D | Only lowbit/four-prefix phase labels remain; no concrete matrix coordinates, BIT cells, nested walks, or values. | S2 |
+| Segment Tree Beats | D | D | Needs node-level max1/max2/countMax/sum state and concrete range-chmin propagation. | S3 |
+| LCS | C | C | One concrete matching-cell transition and final sequence exist; no actual strings or table-fill progression. | S1 |
+| Edit Distance | C | C | Base cases and one cell are meaningful, but source/target strings and cell-by-cell table evolution are missing. | S1 |
+| Tree DP | C | C | The code itself uses abstract `base` / `merge`, so there is no single executable DP problem or value trace. | S2 |
+| Divide & Conquer DP Optimization | C | C | Shows mid and opt bounds conceptually, but no concrete DP layer, cost values, candidate transitions, or best update. | S2 |
+| Trie | D | D | No concrete inserted words, trie nodes, character edges, current node, or terminal creation. | S2 |
+| Suffix Automaton | D | D | Needs explicit states, transitions, suffix links, clone creation, and redirect operations for a concrete string. | S3 |
+| Palindromic Tree | D | D | Needs palindrome nodes, lengths, suffix links, current suffix traversal, and concrete node creation. | S3 |
+| Minimum Cut | D | D | Requires a concrete residual graph, reachable S set, T set, saturated crossing edges, and cut capacity. | S3 |
+| Euclidean Algorithm | D | D | Only names the gcd invariant and recurrence; no concrete `(a,b) → (b,a%b)` sequence. | S2 |
+| Modular Inverse | D | D | No concrete a, m, gcd, Bézout coefficient, normalization, or verification arithmetic. | S2 |
+| Point in Polygon | D | D | Needs a concrete polygon, query point, ray, half-open edge tests, crossing count, and boundary case. | S2 |
+| Closest Pair | D | D | Needs sweep position, active y-set, eviction boundary, candidate points, and current best distance. | S3 |
+| Lagrange Interpolation | D | D | No concrete sample points, basis terms, modular numerators/denominators, or accumulated value. | S2 |
+| Berlekamp–Massey | D | D | Current transform-like visual is semantically weak; needs sequence, discrepancy, C/B polynomials, L, m, b, and correction steps. | S3 |
+
+### New failure mode: animation/code granularity mismatch
+
+Stage 2 originally separated “good animation” from “bad code ownership”. Batch 4 reveals a stronger variant:
+
+> The animation can be more detailed than the displayed implementation itself.
+
+Merge Sort is the clearest example. The animation shows:
+
+```text
+compare left-front / right-front
+→ choose smaller value
+→ append to merge buffer
+→ repeat
+```
+
+but the displayed C++ delegates those operations to:
+
+```cpp
+inplace_merge(a.begin()+l, a.begin()+m, a.begin()+r);
+```
+
+There is no source line in the displayed lesson that corresponds to the individual comparisons shown by the animation.
+
+This is different from a normal code-sync bug. The lesson has an **abstraction-level mismatch**:
+
+- animation: implementation-detail level;
+- code: library-call level.
+
+For teaching pages, the code and animation should operate at compatible granularity. A repair may therefore require expanding the C++ implementation, not merely changing `codeLines`.
+
+### Stage 2 progress after batch 4
+
+Human semantic review now covers **61 / 202 lessons**.
+
+The remaining lessons must stay explicitly `UNREVIEWED` until their final enriched traces are inspected. No automatic structural score is allowed to masquerade as an A/B/C/D human grade.
+
+The current evidence supports five practical repair patterns:
+
+1. **S0 — mostly correct execution; synchronize exact code ownership and labels.**
+2. **S1 — useful algorithm-specific snapshots exist; reconstruct them into one continuous execution.**
+3. **S2 — concepts are correct but concrete execution state must be authored.**
+4. **S3 — the algorithm needs richer domain-specific visual state/rendering.**
+5. **Granularity mismatch — execution trace is useful, but the displayed C++ hides the operations being animated.**
+
+The fifth pattern can coexist with S0/S1/S2/S3 and should be tracked separately during implementation.
