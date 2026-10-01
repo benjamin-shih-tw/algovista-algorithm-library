@@ -97,6 +97,23 @@ const codeOverrides: Record<string, string[]> = {
     '  answer = min(answer, dp[full][u] + w[u][start]);',
     'return answer;',
   ],
+  'merge-sort': [
+    'void mergeSort(int l, int r) {',
+    '  if (r - l <= 1) return;',
+    '  int m = (l + r) / 2;',
+    '  mergeSort(l, m);',
+    '  mergeSort(m, r);',
+    '  vector<int> tmp;',
+    '  int i = l, j = m;',
+    '  while (i < m && j < r) {',
+    '    if (a[i] <= a[j]) tmp.push_back(a[i++]);',
+    '    else tmp.push_back(a[j++]);',
+    '  }',
+    '  while (i < m) tmp.push_back(a[i++]);',
+    '  while (j < r) tmp.push_back(a[j++]);',
+    '  copy(tmp.begin(), tmp.end(), a.begin() + l);',
+    '}',
+  ],
 }
 
 const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
@@ -146,6 +163,49 @@ const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
     ],
   },
   'euler-tour-flattening': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'tarjan-scc': {
+    edges: [
+      {from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'},
+      {from:'C',to:'D'},{from:'D',to:'E'},{from:'E',to:'D'},
+      {from:'E',to:'F'},
+    ],
+  },
+  'bridges': {
+    edges: [
+      {from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'},
+      {from:'B',to:'D'},{from:'D',to:'E'},{from:'E',to:'F'},{from:'F',to:'D'},
+    ],
+  },
+  'articulation-points': {
+    edges: [
+      {from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'},
+      {from:'B',to:'D'},{from:'D',to:'E'},{from:'E',to:'F'},{from:'F',to:'D'},
+    ],
+  },
+  'tree-centroid': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'heavy-light-decomposition': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'centroid-decomposition': {
+    edges: [
+      {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
+      {from:'B',to:'E'},{from:'D',to:'F'},
+    ],
+  },
+  'tree-isomorphism': {
     edges: [
       {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
       {from:'B',to:'E'},{from:'D',to:'F'},
@@ -546,6 +606,92 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'tout[u] = timer','B 子樹完成：range [1,5)','E 返回後 timer=5，B 的所有後代剛好連續占 order[1..5)。',{node:'B',tin:1,tout:5,range:'[1,5)',subtree:['B','D','F','E'],operation:'close subtree'},{active:['B','D','E','F'],accepted:['B','D','E','F']}),
     eventFrame(lesson,'order.push_back(u)','最後進入 C','回到 A 後處理 C，tin[C]=5，order 最終是 [A,B,D,F,E,C]。',{current:'C',tin:5,order:['A','B','D','F','E','C'],operation:'enter C'},{active:['A','C']}),
     eventFrame(lesson,'tout[u] = timer','A 完成：整棵樹 [0,6)','timer=6，tout[A]=6；每個子樹都對應一個半開連續區間。',{tinA:0,toutA:6,range:'[0,6)',order:['A','B','D','F','E','C'],operation:'finish flattening'},{accepted:['A','B','C','D','E','F']}),
+  ],
+
+
+  'tarjan-scc': (lesson) => [
+    eventFrame(lesson,'disc[u] = low[u] = timer++','進入 A：disc=low=0，Push Stack','Tarjan 只讓仍在 stack 的節點參與回邊 low-link。',{current:'A',disc:'A0',low:'A0',stack:['A'],operation:'discover A'},{active:['A']}),
+    eventFrame(lesson,'disc[v] == -1','A→B→C 深入','B、C 都尚未造訪，依 DFS tree 進入；disc 依序 1、2。',{path:['A','B','C'],disc:'A0 B1 C2',low:'A0 B1 C2',stack:['A','B','C'],operation:'tree-edge DFS'},{active:['A','B','C']}),
+    eventFrame(lesson,'else if (inStack[v]) low[u] = min','C→A 是 Stack 內回邊','A 還在 stack，故 low[C]=min(2,disc[A]=0)=0。',{edge:'C→A',before:'low[C]=2',after:'low[C]=0',stack:['A','B','C'],operation:'back-edge update'},{active:['C','A']}),
+    eventFrame(lesson,'disc[v] == -1','C→D→E→F 繼續 DFS','沿 C→D、D→E、E→F 進入，disc 分別 3、4、5。',{path:['C','D','E','F'],disc:'D3 E4 F5',stack:['A','B','C','D','E','F'],operation:'discover tail'},{active:['D','E','F']}),
+    eventFrame(lesson,'else if (inStack[v]) low[u] = min','E→D 讓 low[E]=3','D 還在 stack，所以 E 可以回到 D 的 discovery time 3。',{edge:'E→D',before:'low[E]=4',after:'low[E]=3',operation:'back-edge update'},{active:['E','D']}),
+    eventFrame(lesson,'if (low[u] == disc[u])','F 是自己的 SCC Root','F 沒有回到更早 stack 節點，low[F]=disc[F]=5。',{u:'F',low:5,disc:5,operation:'detect SCC root'},{active:['F']}),
+    eventFrame(lesson,'st.top(); st.pop()','Pop F，得到 SCC {F}','從 stack top 彈到 F，F 成為單獨 SCC。',{component:['F'],remainingStack:['A','B','C','D','E'],operation:'pop SCC'},{active:['F'],accepted:['F']}),
+    eventFrame(lesson,'if (low[u] == disc[u])','回到 D：low[D]=disc[D]=3','E 的 low=3 傳回 D，因此 D 是下一個 SCC root。',{u:'D',low:3,disc:3,operation:'detect SCC root'},{active:['D','E']}),
+    eventFrame(lesson,'st.top(); st.pop()','Pop E、D，得到 SCC {D,E}','從 top 依序彈 E、D。',{component:['D','E'],remainingStack:['A','B','C'],operation:'pop SCC'},{active:['D','E'],accepted:['D','E','F']}),
+    eventFrame(lesson,'low[u] = min(low[u], low[v])','Low 值一路傳回 A','C 的 low=0 傳給 B，再傳給 A；A、B、C 都能互相回到 A。',{low:'C0→B0→A0',stack:['A','B','C'],operation:'propagate low-link'},{active:['A','B','C']}),
+    eventFrame(lesson,'st.top(); st.pop()','A 為 Root：Pop C、B、A','最後得到 SCC {A,B,C}。所有節點恰好屬於一個 SCC。',{component:['A','B','C'],remainingStack:[],operation:'pop final SCC'},{accepted:['A','B','C','D','E','F']}),
+  ],
+
+  'bridges': (lesson) => [
+    eventFrame(lesson,'disc[u] = low[u] = timer++','DFS 從 A 開始','圖左側 A-B-C 是三角形，右側 D-E-F 也是三角形，中間只有 B-D 一條連接。',{current:'A',disc:'A0',low:'A0',operation:'start DFS'},{active:['A']}),
+    eventFrame(lesson,'dfs(v,id); low[u] = min','沿 A→B→C','disc[A]=0、B=1、C=2。',{treeEdges:['A-B','B-C'],disc:'A0 B1 C2',operation:'tree descent'},{active:['A','B','C']}),
+    eventFrame(lesson,'else low[u] = min(low[u],disc[v])','C→A 回邊讓 low[C]=0','C 能繞過父邊 B-C 回到祖先 A，因此這個三角形中的邊都不會是橋。',{edge:'C-A',before:'low[C]=2',after:'low[C]=0',operation:'back-edge low update'},{active:['C','A']}),
+    eventFrame(lesson,'low[u] = min(low[u],low[v])','回到 B：low[B]=0','C 子樹可回到 A，所以 B-C 不是橋，B 的 low 也降為 0。',{u:'B',low:'1→0',operation:'propagate child low'},{active:['B','C','A']}),
+    eventFrame(lesson,'dfs(v,id); low[u] = min','B→D 進入右側三角形','D=3、E=4、F=5；F→D 是回邊，使 low[F]=3。',{treeEdges:['B-D','D-E','E-F'],backEdge:'F-D',lowF:3,operation:'explore right cycle'},{active:['B','D','E','F']}),
+    eventFrame(lesson,'low[u] = min(low[u],low[v])','右側 Low 傳回 D=3','F 的 low=3 傳給 E，再傳給 D；E-F、D-E 都有替代路徑，不是橋。',{low:'F3→E3→D3',operation:'propagate right-cycle low'},{active:['D','E','F']}),
+    eventFrame(lesson,'if (low[v] > disc[u]) bridge[id] = true','檢查 B-D：3 > 1','low[D]=3 嚴格大於 disc[B]=1，D 子樹無法繞回 B 或更早祖先，因此 B-D 是橋。',{edge:'B-D',lowD:3,discB:1,result:'bridge',operation:'bridge test'},{active:['B','D'],accepted:['B','D']}),
+  ],
+
+  'articulation-points': (lesson) => [
+    eventFrame(lesson,'disc[u] = low[u] = timer++','DFS Discovery','使用同一張「兩個三角形由 B-D 相連」的圖。A 為 DFS root。',{root:'A',disc:'A0',operation:'start DFS'},{active:['A']}),
+    eventFrame(lesson,'low[u] = min(low[u],disc[v])','左三角形回邊 C→A','low[C]=0，回傳後 low[B]=0；因此刪除 B-C 不會斷開圖。',{edge:'C-A',low:'C2→0, B1→0',operation:'back-edge update'},{active:['A','B','C']}),
+    eventFrame(lesson,'++children; dfs(v,u); low[u] = min','B 的另一個 Child 是 D','從 B 沿橋進入右側 D-E-F 三角形。',{u:'B',child:'D',disc:'B1 D3',operation:'visit child subtree'},{active:['B','D']}),
+    eventFrame(lesson,'low[u] = min(low[u],disc[v])','F→D 讓右側 Low 回到 3','右側三角形內可以繞行，但無法越過 D 回到 B。',{backEdge:'F-D',low:'F5→3, E4→3, D3',operation:'close right cycle'},{active:['D','E','F']}),
+    eventFrame(lesson,'parent != -1 && low[v] >= disc[u]','B 是割點','對 child D，low[D]=3 ≥ disc[B]=1；刪除 B 後右側 {D,E,F} 與 {A,C} 分離。',{u:'B',child:'D',condition:'3≥1',cut:'B',operation:'non-root articulation test'},{active:['B','D'],accepted:['B']}),
+    eventFrame(lesson,'parent != -1 && low[v] >= disc[u]','D 也是割點','對 D 的 child E，low[E]=3 ≥ disc[D]=3。等號也算，因為刪掉 D 後回到 D 的回邊也消失。',{u:'D',child:'E',condition:'3≥3',cut:'D',operation:'non-root articulation test'},{active:['D','E'],accepted:['B','D']}),
+    eventFrame(lesson,'parent == -1 && children >= 2','A 不是割點','A 在 DFS tree 中只有一個 child B；C 已由 B 被造訪，所以 root 特例不成立。',{root:'A',children:1,result:'not cut',operation:'root articulation test'},{active:['A'],accepted:['B','D']}),
+  ],
+
+  'tree-centroid': (lesson) => [
+    eventFrame(lesson,'int centroid(int u','固定 Root A 的 Subtree Size','n=6，subtree 為 A6、B4、C1、D2、E1、F1。',{n:6,subtree:'A6 B4 C1 D2 E1 F1',operation:'precomputed subtree sizes'},{active:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'if (subtree[v] > n/2)','在 A 發現 B 太大','n/2=3，而 subtree[B]=4>3，所以 A 不可能是重心；重心必在 B 子樹內。',{current:'A',child:'B',size:4,half:3,operation:'follow heavy component'},{active:['A','B']}),
+    eventFrame(lesson,'return centroid(v,u,n)','遞迴移到 B','呼叫 centroid(B,A,6)。',{from:'A',to:'B',operation:'move candidate'},{active:['B']}),
+    eventFrame(lesson,'if (subtree[v] > n/2)','B 的 Child 都不超過 3','D 子樹大小 2、E 大小 1；B 的父側大小是 6−4=2，也不超過一半。',{current:'B',components:['D-side=2','E-side=1','parent-side=2'],operation:'check all components'},{active:['B','D','E','A']}),
+    eventFrame(lesson,'return u','回傳 B 為重心','刪除 B 後所有連通塊大小都 ≤3，因此 B 是 centroid。',{centroid:'B',componentSizes:['2','1','2'],operation:'return centroid'},{active:['B'],accepted:['B']}),
+  ],
+
+  'heavy-light-decomposition': (lesson) => [
+    eventFrame(lesson,'while (head[u] != head[v])','Query Path C→F','預處理後 heavy chain 是 A-B-D-F；C 與 E 各自是 light chain。u=C、v=F 的 head 不同。',{u:'C',v:'F',headU:'C',headV:'A',operation:'start path query'},{active:['C','F']}),
+    eventFrame(lesson,'depth[head[u]] < depth[head[v]]','較深的 Head 是 C','depth(head C)=1 > depth(head F=A)=0，所以不 swap；先處理 C 這條短鏈。',{headU:'C(depth1)',headV:'A(depth0)',operation:'choose deeper chain'},{active:['C','A']}),
+    eventFrame(lesson,'answer += query(pos[head[u]], pos[u])','查詢 Segment [C,C]','C 的 chain 只有自己，因此先把 C 的值合併進 answer。',{segment:'pos[C]..pos[C]',pathPiece:['C'],operation:'query chain segment'},{active:['C'],accepted:['C']}),
+    eventFrame(lesson,'u = parent[head[u]]','跳過 Light Edge C→A','處理完 C chain 後令 u=parent[C]=A。現在 head[A]=head[F]=A。',{from:'C',to:'A',operation:'jump to parent head'},{active:['A','C']}),
+    eventFrame(lesson,'if (depth[u] > depth[v]) swap(u,v)','同鏈內校正端點順序','u=A 深度 0、v=F 深度 3，不需交換。',{u:'A',v:'F',sameHead:'A',operation:'order same-chain endpoints'},{active:['A','F']}),
+    eventFrame(lesson,'answer += query(pos[u], pos[v])','一次查完 A-B-D-F','同一 heavy chain 在 base array 中連續，因此查 pos[A]..pos[F] 即完成剩餘路徑。',{segment:'A-B-D-F',pathPiece:['A','B','D','F'],segmentsUsed:2,operation:'final chain query'},{active:['A','B','D','F'],accepted:['A','B','C','D','F']}),
+  ],
+
+  'centroid-decomposition': (lesson) => [
+    eventFrame(lesson,'findCentroid(component)','整棵 6 點樹找到重心 B','第一層 component 是 {A,B,C,D,E,F}，centroid=B。',{component:['A','B','C','D','E','F'],centroid:'B',operation:'find centroid'},{active:['B']}),
+    eventFrame(lesson,'removed[c] = true','標記 B Removed','刪除 B 後原樹切成三個互不相交 component。',{removed:'B',components:['{A,C}','{D,F}','{E}'],operation:'remove centroid'},{active:['A','C','D','E','F'],accepted:['B']}),
+    eventFrame(lesson,'decompose(componentOf(v))','遞迴處理 {A,C}','這個兩點 component 的重心可取 A；建立 centroid child A。',{component:['A','C'],childCentroid:'A',operation:'decompose component 1'},{active:['A','C'],accepted:['B']}),
+    eventFrame(lesson,'centroidParent[child] = c','設定 Parent[A]=B','Centroid tree 邊 B→A 建立。',{child:'A',parent:'B',operation:'link centroid tree'},{active:['A','B'],accepted:['A','B']}),
+    eventFrame(lesson,'decompose(componentOf(v))','遞迴處理 {D,F} 與 {E}','{D,F} 的重心取 D；單點 {E} 的重心就是 E。',{nextCentroids:['D','E'],operation:'decompose remaining components'},{active:['D','E','F'],accepted:['A','B']}),
+    eventFrame(lesson,'centroidParent[child] = c','第一層 Centroid Tree 完成','得到 B→A、B→D、B→E；更小 component 繼續遞迴，深度最多 O(log n)。',{centroidTree:['B→A','B→D','B→E'],height:'≤ log n',operation:'finish decomposition layer'},{accepted:['A','B','D','E']}),
+  ],
+
+  'tree-isomorphism': (lesson) => [
+    eventFrame(lesson,'vector<string> children','從葉節點開始編碼','葉 C、E、F 都沒有 child，因此 children 為空。',{leaves:['C','E','F'],operation:'encode leaves'},{active:['C','E','F']}),
+    eventFrame(lesson,'return "(" + concat(children) + ")"','葉編碼都是 ()','節點名稱不進入編碼，所以任何葉都得到同一字串 ()。',{codes:['C=()','E=()','F=()'],operation:'return leaf codes'},{accepted:['C','E','F']}),
+    eventFrame(lesson,'children.push_back(encode(v,u))','D 收到 Child F 的 ()','D 只有 F 一個 child，因此 children=[()].',{node:'D',childCodes:['()'],operation:'collect child code'},{active:['D','F']}),
+    eventFrame(lesson,'return "(" + concat(children) + ")"','D 編碼為 (())','外層括號包住 child code。',{node:'D',code:'(())',operation:'encode D'},{active:['D'],accepted:['D','F']}),
+    eventFrame(lesson,'sort(children.begin(), children.end())','B 排序 D 與 E 的子樹碼','B 的 child codes 是 (()) 與 ()；排序消除兄弟排列順序差異。',{node:'B',before:['(())','()'],after:['(())','()'],operation:'sort child multiset'},{active:['B','D','E']}),
+    eventFrame(lesson,'return "(" + concat(children) + ")"','B 編碼為 ((())())','串接排序後 child code，再包一層括號。',{node:'B',code:'((())())',operation:'encode B'},{active:['B'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'sort(children.begin(), children.end())','A 合併 B 與 C','A 的 child codes 是 ((())()) 與 ()，排序後保持此順序。',{node:'A',childCodes:['((())())','()'],operation:'sort root children'},{active:['A','B','C']}),
+    eventFrame(lesson,'return "(" + concat(children) + ")"','Root Code = (((())())())','任何僅重新命名、交換兄弟順序但結構相同的 rooted tree 都得到同一 root code。',{root:'A',code:'(((())())())',comparisonTreeCode:'(((())())())',isomorphic:'true',operation:'compare root codes'},{accepted:['A','B','C','D','E','F']}),
+  ],
+
+  'merge-sort': (lesson) => [
+    eventFrame(lesson,'int m = (l + r) / 2','Split [0,8) at 4','輸入 [7,2,9,4,1,8,5,3] 分成左右各 4 格。',{range:'[0,8)',mid:4,operation:'split root'},{values:[7,2,9,4,1,8,5,3],low:0,high:7}),
+    eventFrame(lesson,'mergeSort(l, m)','左半 [0,4) 再 Split','[7,2,9,4] 分成 [7,2] 與 [9,4]，直到長度 1 觸發 base case。',{range:'[0,4)',split:'[0,2)+[2,4)',operation:'recurse left'},{values:[7,2,9,4,1,8,5,3],low:0,high:3}),
+    eventFrame(lesson,'if (a[i] <= a[j])','Merge [7] 與 [2]','7>2，先從右半取 2，再把左半剩餘 7 接上 tmp。',{left:['7'],right:['2'],takeOrder:['2','7'],operation:'merge pair'},{values:[7,2,9,4,1,8,5,3],active:['0','1']}),
+    eventFrame(lesson,'copy(tmp.begin(), tmp.end()','寫回 [2,7]','tmp=[2,7] 寫回 a[0..2)。',{range:'[0,2)',buffer:['2','7'],operation:'copy merged pair'},{values:[2,7,9,4,1,8,5,3],low:0,high:1,accepted:['0','1']}),
+    eventFrame(lesson,'copy(tmp.begin(), tmp.end()','另一對 [9,4] → [4,9]','同樣合併並寫回右側 pair。',{range:'[2,4)',buffer:['4','9'],operation:'merge second pair'},{values:[2,7,4,9,1,8,5,3],low:2,high:3,accepted:['0','1','2','3']}),
+    eventFrame(lesson,'if (a[i] <= a[j])','Merge [2,7] 與 [4,9]','依序取 2、4、7、9，左半完成為 [2,4,7,9]。',{left:['2','7'],right:['4','9'],takeOrder:['2','4','7','9'],operation:'merge left half'},{values:[2,7,4,9,1,8,5,3],active:['0','1','2','3']}),
+    eventFrame(lesson,'copy(tmp.begin(), tmp.end()','左半寫回完成','a[0..4)=[2,4,7,9]。',{range:'[0,4)',buffer:['2','4','7','9'],operation:'copy left half'},{values:[2,4,7,9,1,8,5,3],accepted:['0','1','2','3']}),
+    eventFrame(lesson,'mergeSort(m, r)','遞迴處理右半 [1,8,5,3]','[1,8] 本身合併後不變；[5,3] 合併成 [3,5]。',{range:'[4,8)',pairs:['[1,8]','[5,3]→[3,5]'],operation:'sort right half'},{values:[2,4,7,9,1,8,3,5],low:4,high:7}),
+    eventFrame(lesson,'copy(tmp.begin(), tmp.end()','右半變成 [1,3,5,8]','合併 [1,8] 與 [3,5] 後寫回。',{range:'[4,8)',buffer:['1','3','5','8'],operation:'copy right half'},{values:[2,4,7,9,1,3,5,8],accepted:['4','5','6','7']}),
+    eventFrame(lesson,'if (a[i] <= a[j])','Final Merge 兩個長度 4 的有序段','比較兩側 front，取值順序為 1、2、3、4、5、7、8、9。',{left:['2','4','7','9'],right:['1','3','5','8'],takeOrder:['1','2','3','4','5','7','8','9'],operation:'final merge'},{values:[2,4,7,9,1,3,5,8],active:['0','4']}),
+    eventFrame(lesson,'copy(tmp.begin(), tmp.end()','寫回最終排序結果','a=[1,2,3,4,5,7,8,9]。每層總合併 O(n)，深度 O(log n)。',{result:['1','2','3','4','5','7','8','9'],complexity:'O(n log n)',operation:'final copy'},{values:[1,2,3,4,5,7,8,9],accepted:['0','1','2','3','4','5','6','7']}),
   ],
 }
 
