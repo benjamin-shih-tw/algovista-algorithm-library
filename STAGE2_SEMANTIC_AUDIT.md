@@ -798,3 +798,129 @@ The current evidence supports five practical repair patterns:
 5. **Granularity mismatch — execution trace is useful, but the displayed C++ hides the operations being animated.**
 
 The fifth pattern can coexist with S0/S1/S2/S3 and should be tracked separately during implementation.
+
+
+---
+
+## Calibration batch 5 — core sorting, containers, graph, tree, range, DP, and hashing
+
+This batch focuses on the lessons students are most likely to encounter early.
+
+| Lesson | Animation | Code Sync | Repair |
+|---|:---:|:---:|:---:|
+| Difference Array | A | B | S0 |
+| Coordinate Compression | A | B | S0 |
+| Kadane | A | B | S0 |
+| Selection Sort | A | B | S0 |
+| Bubble Sort | A | B | S0 |
+| Quick Sort | A | B | S0 |
+| Quickselect | C | C | S1 |
+| Stack | C | C | S1 |
+| Parentheses Matching | C | C | S1 |
+| Queue | C | C | S1 |
+| Deque | C | C | S1 |
+| Binary Heap | C | C | S1 |
+| Monotonic Queue | C | C | S1 |
+| Flood Fill | C | C | S1 |
+| Multi-Source BFS | C | C | S1 |
+| DFS | C | C | S1 |
+| Kruskal | D | D | S2 |
+| Prim | D | D | S2 |
+| Bridges | C | C | S1 |
+| Articulation Points | C | C | S1 |
+| Euler Tour Flattening | C | C | S1 |
+| Tree Centroid | C | C | S1 |
+| Small-to-Large | D | D | S2 |
+| Sqrt Decomposition | C | C | S1 |
+| Treap | C | C | S2 |
+| Coin Change | C | C | S1 |
+| TSP DP | C | C | S1 |
+| Rerooting DP | C | C | S2 |
+| Knuth Optimization | C | C | S2 |
+| Rolling Hash | D | D | S2 |
+
+### Strong authored lessons continue to validate the execution-first model
+
+Difference Array, Coordinate Compression, Kadane, Selection Sort, Bubble Sort, and Quick Sort are all good examples of what the rest of the site should move toward.
+
+They use one concrete input and progress through actual operations. For example, Difference Array shows:
+
+```text
+[3,3,3,3,3,3]
+update [1,4] += 2
+→ diff[1] += 2
+→ diff[5] -= 2
+→ prefix-restore
+→ [3,5,5,5,5,3]
+```
+
+Kadane similarly shows actual `ending` and `best` values at each index rather than merely naming the recurrence.
+
+The remaining weakness in these lessons is mostly code ownership: many comparison/mutation events are attached to loop headers because the lesson code is compact.
+
+### Generic expansion can make even trivial data structures temporally wrong
+
+Stack, Queue, and Deque expose one of the clearest semantic bugs in the current pipeline.
+
+For Stack, the first frame already contains:
+
+```text
+stack = [2,5]
+top = 5
+```
+
+before the displayed program has executed:
+
+```cpp
+st.push(2);
+st.push(5);
+```
+
+The same pattern exists in Queue.
+
+So the issue is stronger than “repeated frame”: the animation can show **future state before the code that creates it**.
+
+These lessons are S1 because the visual model and operations are simple; the fix is to reconstruct exact push/pop events in order.
+
+### STL abstraction can create the same granularity problem as Merge Sort
+
+Binary Heap uses `std::priority_queue`, but the animation conceptually wants to explain heap bubbling.
+
+A real teaching trace would show parent/child comparisons and swaps. Those operations are not visible in the displayed STL call:
+
+```cpp
+pq.push(x);
+```
+
+This is another code-animation granularity mismatch. Either:
+
+- the lesson should teach the abstract priority-queue interface and avoid pretending to animate internal heap swaps; or
+- the displayed implementation should be an explicit binary heap.
+
+The animation and code need to choose the same abstraction level.
+
+### Graph lessons split cleanly into salvageable and rebuild groups
+
+DFS, Flood Fill, Multi-Source BFS, Bridges, and Articulation Points already contain useful semantic snapshots such as:
+
+- call stack;
+- frontier;
+- `disc` / `low`;
+- bridge condition;
+- articulation root-child count.
+
+They are S1.
+
+Kruskal and Prim, however, currently only contain phase labels. To teach MST correctly they need concrete weighted edges, the sorted/frontier order, accept/reject decisions, components/visited sets, and running cost. They are S2.
+
+### DP lessons again show the difference between “one useful transition” and “an execution”
+
+Coin Change and TSP DP each have one meaningful transition, but not the table/state progression around it.
+
+Rerooting DP and Knuth Optimization are even more abstract: the code itself contains placeholders or high-level operations, so the animation lacks concrete numeric meaning. Those are S2.
+
+### Stage 2 progress after batch 5
+
+With this batch entered into the remediation matrix, human semantic review covers **91 / 202 lessons** once the next CI run regenerates the matrix.
+
+The remaining lessons stay `UNREVIEWED` until inspected.
