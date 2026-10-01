@@ -392,6 +392,26 @@ const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number)
     if (/上凸包|upper/.test(context) && /\bupper\./.test(line)) score += 12
     if (/下凸包|lower/.test(context) && /\blower\./.test(line)) score += 12
   }
+  if (lesson.id === 'difference-array') {
+    if (/l=|左端|\+2|開始/.test(context) && /diff\s*\[l\]\s*\+=/.test(line)) score += 35
+    if (/r\+1|右端|抵銷|停止/.test(context) && /diff\s*\[r\s*\+\s*1\]\s*-?=/.test(line)) score += 35
+  }
+  if (lesson.id === 'coordinate-compression') {
+    if (/映射|rank|壓縮/.test(context) && /lower_bound/.test(line) && /=/.test(line)) score += 35
+  }
+  if (lesson.id === 'kadane') {
+    if (/ending|重開|延續|接在後面|正貢獻|i=/.test(context) && /\bending\s*=\s*max/.test(line)) score += 35
+    if (/best|最佳/.test(context) && /\bbest\s*=\s*max/.test(line)) score += 35
+  }
+  if (lesson.id === 'selection-sort') {
+    if (/假設.*最小|mn/.test(context) && /\bmn\s*=\s*i/.test(line)) score += 35
+    if (/找到.*更小|更新.*最小|min/.test(context) && /\bmn\s*=\s*j/.test(line)) score += 35
+    if (/交換|固定/.test(context) && /\bswap\s*\(/.test(line)) score += 35
+  }
+  if (lesson.id === 'bubble-sort') {
+    if (/第.*輪|不再碰|固定.*尾|n-pass/.test(context) && /for\s*\(int j.*n-pass/.test(line)) score += 30
+    if (/交換|swap/.test(context) && /\bswap\s*\(/.test(line)) score += 35
+  }
 
   if (/比較|判斷|太大|太小|命中|左轉|右轉|cross|<=|>=|<|>/.test(event)) {
     if (/^(if|else if|while)\s*\(/.test(line)) score += 8
