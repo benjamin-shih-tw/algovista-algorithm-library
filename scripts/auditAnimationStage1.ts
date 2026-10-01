@@ -264,6 +264,50 @@ const topStructuralRisk = [...rows]
   .sort((a, b) => b.structuralRisk - a.structuralRisk || b.dataNoOpTransitions - a.dataNoOpTransitions || a.id.localeCompare(b.id))
   .slice(0, 40)
 
+const cohortSummary = [
+  {
+    cohort: 'authored-v2',
+    rows: rows.filter((row) => !row.expandedByGenericPipeline),
+  },
+  {
+    cohort: 'expanded-non-factory',
+    rows: rows.filter((row) => row.expandedByGenericPipeline && row.sourceType !== 'completion-factory'),
+  },
+  {
+    cohort: 'completion-factory',
+    rows: rows.filter((row) => row.sourceType === 'completion-factory'),
+  },
+].map(({ cohort, rows: cohortRows }) => {
+  const transitions = cohortRows.reduce((acc, row) => acc + Math.max(0, row.finalFrameCount - 1), 0)
+  const finalFrames = cohortRows.reduce((acc, row) => acc + row.finalFrameCount, 0)
+  const rawFrames = cohortRows.reduce((acc, row) => acc + row.rawFrameCount, 0)
+  const dataNoOp = cohortRows.reduce((acc, row) => acc + row.dataNoOpTransitions, 0)
+  const renderedNoOp = cohortRows.reduce((acc, row) => acc + row.renderedNoOpTransitions, 0)
+  const codeOnly = cohortRows.reduce((acc, row) => acc + row.codeOnlyTransitions, 0)
+  const genericText = cohortRows.reduce((acc, row) => acc + row.genericTextFrames, 0)
+  return {
+    cohort,
+    lessons: cohortRows.length,
+    rawFrames,
+    finalFrames,
+    expansion: Math.round((finalFrames / Math.max(1, rawFrames)) * 100) / 100,
+    dataNoOpPct: pct(ratio(dataNoOp, transitions)),
+    renderedNoOpPct: pct(ratio(renderedNoOp, transitions)),
+    codeOnlyPct: pct(ratio(codeOnly, transitions)),
+    genericTextPct: pct(ratio(genericText, finalFrames)),
+    averageRisk: Math.round(cohortRows.reduce((acc, row) => acc + row.structuralRisk, 0) / Math.max(1, cohortRows.length) * 10) / 10,
+  }
+})
+
+const authoredAnomalies = rows
+  .filter((row) => !row.expandedByGenericPipeline && (row.dataNoOpTransitions > 0 || row.codeOnlyTransitions > 0))
+  .map((row) => ({
+    id: row.id,
+    dataNoOpTransitions: row.dataNoOpTransitions,
+    codeOnlyTransitions: row.codeOnlyTransitions,
+    genericTextFrames: row.genericTextFrames,
+  }))
+
 const summary = {
   generatedAt: new Date().toISOString(),
   totalLessons: rows.length,
@@ -284,6 +328,8 @@ const summary = {
   lessonsWithGenericText: rows.filter((row) => row.genericTextFrames > 0).length,
   averageCodeCoveragePct: Math.round(rows.reduce((acc, row) => acc + row.codeCoveragePct, 0) / rows.length * 10) / 10,
   sourceCounts,
+  cohortSummary,
+  authoredAnomalies,
   categoryCounts,
   flagCounts,
 }
@@ -307,6 +353,18 @@ const markdown = [
   `- Lessons containing code-only transitions: **${summary.lessonsWithCodeOnlySteps}**`,
   `- Lessons containing generated/generic step wording: **${summary.lessonsWithGenericText}**`,
   `- Average meaningful-code mapping coverage: **${summary.averageCodeCoveragePct}%**`,
+  '',
+  '## Cohorts',
+  '',
+  '| Cohort | Lessons | Raw→Final frames | Data no-op | Render no-op | Code-only | Generic text | Avg risk |',
+  '|---|---:|---:|---:|---:|---:|---:|---:|',
+  ...cohortSummary.map((item) => `| ${item.cohort} | ${item.lessons} | ${item.rawFrames}→${item.finalFrames} (×${item.expansion}) | ${item.dataNoOpPct}% | ${item.renderedNoOpPct}% | ${item.codeOnlyPct}% | ${item.genericTextPct}% | ${item.averageRisk} |`),
+  '',
+  '## Authored-v2 anomalies',
+  '',
+  ...(authoredAnomalies.length
+    ? authoredAnomalies.map((item) => `- ${item.id}: dataNoOp=${item.dataNoOpTransitions}, codeOnly=${item.codeOnlyTransitions}, genericText=${item.genericTextFrames}`)
+    : ['- None']),
   '',
   '## Structural flags',
   '',
