@@ -203,6 +203,7 @@ const targets = [
   'voronoi-diagram',
   'delaunay-triangulation',
   'fast-walsh-hadamard-transform',
+  'minkowski-sum',
 ]
 
 const hiddenStateKeys = new Set([
