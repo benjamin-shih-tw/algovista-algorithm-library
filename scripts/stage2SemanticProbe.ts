@@ -1,0 +1,92 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { lessons, type Frame } from '../src/algorithms'
+
+const targets = [
+  'binary-search',
+  'bfs',
+  'dijkstra',
+  'segment-tree',
+  'prefix-xor',
+  'fenwick-tree',
+  'kmp',
+  'knapsack-01',
+  'tarjan-scc',
+  'digit-dp',
+  'dinic',
+  'meet-in-the-middle',
+]
+
+const hiddenStateKeys = new Set([
+  'algorithm', 'goal', 'before', 'condition', 'operation', 'after',
+  'rationale', 'invariant', 'timelineStep', 'phase', 'microStep', 'microPhase',
+])
+
+const compactState = (frame: Frame) => Object.fromEntries(
+  Object.entries(frame.state ?? {}).filter(([key]) => !hiddenStateKeys.has(key)),
+)
+
+const snap = (frame: Frame) => JSON.stringify({
+  values: frame.values,
+  low: frame.low,
+  high: frame.high,
+  mid: frame.mid,
+  active: frame.active,
+  accepted: frame.accepted,
+  muted: frame.muted,
+  queue: frame.queue,
+  priorityQueue: frame.priorityQueue,
+  distances: frame.distances,
+  hull: frame.hull,
+  segmentStep: frame.segmentStep,
+  state: compactState(frame),
+})
+
+const result = targets.map((id) => {
+  const lesson = lessons.find((candidate) => candidate.id === id)
+  if (!lesson) throw new Error(`Missing lesson ${id}`)
+  return {
+    id,
+    title: lesson.title,
+    zhTitle: lesson.zhTitle,
+    categoryId: lesson.categoryId,
+    visual: lesson.visual,
+    visualModel: lesson.visualModel,
+    frameCount: lesson.frames.length,
+    codeLines: lesson.code.length,
+    frames: lesson.frames.map((frame, index) => ({
+      step: index + 1,
+      title: frame.title,
+      explanation: frame.explanation,
+      codeLine: frame.codeLine,
+      codeLines: frame.codeLines,
+      state: compactState(frame),
+      active: frame.active,
+      accepted: frame.accepted,
+      muted: frame.muted,
+      queue: frame.queue,
+      priorityQueue: frame.priorityQueue,
+      distances: frame.distances,
+      changedFromPrevious: index === 0 ? true : snap(frame) !== snap(lesson.frames[index - 1]),
+    })),
+  }
+})
+
+mkdirSync('.tmp', { recursive: true })
+writeFileSync('.tmp/stage2-semantic-probe.json', JSON.stringify(result, null, 2))
+
+for (const lesson of result) {
+  console.log(`=== STAGE2 ${lesson.id} | ${lesson.visualModel} | ${lesson.frameCount} frames ===`)
+  for (const frame of lesson.frames) {
+    console.log(JSON.stringify({
+      step: frame.step,
+      title: frame.title,
+      changed: frame.changedFromPrevious,
+      code: frame.codeLine,
+      state: frame.state,
+      active: frame.active,
+      queue: frame.queue,
+      pq: frame.priorityQueue,
+    }))
+  }
+}
+console.log('Detailed file: .tmp/stage2-semantic-probe.json')
