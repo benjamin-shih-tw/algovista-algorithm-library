@@ -6,6 +6,7 @@ import { applyS2DataDpOverride } from './s2ExecutionOverridesDataDp'
 import { applyS2DpTreeOfflineOverride } from './s2ExecutionOverridesDpTreeOffline'
 import { applyS2AdvancedStringOverride } from './s2ExecutionOverridesAdvancedStrings'
 import { applyS2AdvancedMathOverride } from './s2ExecutionOverridesAdvancedMath'
+import { applyS2GeometryOverride } from './s2ExecutionOverridesGeometry'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
@@ -147,7 +148,9 @@ export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLess
   if(dpTreeOffline!==lesson) return dpTreeOffline
   const advancedString=applyS2AdvancedStringOverride(lesson)
   if(advancedString!==lesson) return advancedString
-  return applyS2AdvancedMathOverride(lesson)
+  const advancedMath=applyS2AdvancedMathOverride(lesson)
+  if(advancedMath!==lesson) return advancedMath
+  return applyS2GeometryOverride(lesson)
 }
 
 export const s2ExecutionOverrideIds=Object.freeze(Object.keys(overrides))
