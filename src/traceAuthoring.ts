@@ -1,7 +1,7 @@
 import type { AlgorithmLesson, Frame } from './algorithms'
 
 export type FrameExtra = Partial<Pick<Frame,
-  'active'|'accepted'|'muted'|'values'|'low'|'high'|'mid'|'queue'|'priorityQueue'|'distances'|'hull'|'segmentStep'
+  'active'|'accepted'|'muted'|'values'|'low'|'high'|'mid'|'queue'|'priorityQueue'|'distances'|'hull'|'segmentStep'|'executionView'
 >>
 
 export const lineNumber = (lesson: AlgorithmLesson, needle: string) => {
