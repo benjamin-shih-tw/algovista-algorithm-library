@@ -386,31 +386,17 @@ function LessonDependencyLink({lessonId,reason,onNavigate}:{lessonId:string;reas
 }
 
 function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNavigate:(lesson:AlgorithmLesson)=>void}) {
-  const [expanded,setExpanded]=useState(false)
   const unit=lesson.knowledge!
-  return <section className={`knowledge-unit ${expanded?'expanded':'collapsed'}`}>
-    <button type="button" className="knowledge-trigger" onClick={()=>setExpanded((value)=>!value)} aria-expanded={expanded} aria-controls={`knowledge-unit-${lesson.id}`}>
-      <Workflow/><div><h2>完整演算法體系</h2><p>{unit.prerequisites.length} 先備 · {unit.operations.length} 操作 · {unit.extensions.length} 延伸</p></div>
-      <span className="guide-toggle-label">{expanded?'收起':'展開'}<ChevronDown/></span>
-    </button>
-    <AnimatePresence initial={false}>{expanded&&<motion.div id={`knowledge-unit-${lesson.id}`} className="knowledge-content" initial={{height:0,opacity:0}} animate={{height:'auto',opacity:1}} exit={{height:0,opacity:0}} transition={{duration:.24,ease:'easeOut'}}>
+  return <section className="knowledge-unit expanded">
+    <div className="knowledge-trigger">
+      <Workflow/><div><h2>先備知識</h2><p>{unit.prerequisites.length? `${unit.prerequisites.length} 堂先備課程 · 先確認名詞與基礎概念再進入動畫` : '基礎單元 · 不依賴其他演算法課'}</p></div>
+    </div>
+    <div className="knowledge-content">
       <div className="knowledge-dependencies">
         <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
-        <section><header><BookOpen/><span>本頁會先定義</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
+        <section><header><BookOpen/><span>進入過程前先懂</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
       </div>
-
-      {unit.extensions.length>0&&<section className="knowledge-extensions"><header><Sparkles/><span>基礎完成後，再往這裡延伸</span></header><div>{unit.extensions.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div></section>}
-
-      <section className="knowledge-detail"><header><Workflow/><span>操作生命週期</span></header><div className="knowledge-table-wrap"><table className="knowledge-table"><thead><tr><th>操作</th><th>目的</th><th>讀取</th><th>寫入</th><th>複雜度</th></tr></thead><tbody>{unit.operations.map((operation)=><tr key={operation.name}><td><b>{operation.name}</b></td><td>{operation.purpose}</td><td>{operation.reads}</td><td>{operation.writes}</td><td>{operation.complexity}</td></tr>)}</tbody></table></div>{unit.operationFlow.length>0&&<ol className="knowledge-flow">{unit.operationFlow.map((step)=><li key={step}>{step.replace(/^\d+\. /,'')}</li>)}</ol>}</section>
-
-      <section className="knowledge-detail"><header><Clock3/><span>分項複雜度</span></header><dl className="knowledge-complexity"><div><dt>預處理</dt><dd>{unit.complexity.preprocessing}</dd></div><div><dt>查詢</dt><dd>{unit.complexity.query}</dd></div><div><dt>更新</dt><dd>{unit.complexity.update}</dd></div><div><dt>記憶體</dt><dd>{unit.complexity.memory}</dd></div></dl><p className="knowledge-note">{unit.complexity.note}</p></section>
-
-      <section className="knowledge-detail"><header><Layers3/><span>輸入／輸出契約</span></header><dl className="knowledge-contract"><div><dt>INPUT</dt><dd>{unit.implementation.input}</dd></div><div><dt>OUTPUT</dt><dd>{unit.implementation.output}</dd></div></dl>{unit.implementation.assumptions.length>0&&<ul className="knowledge-assumptions">{unit.implementation.assumptions.map((item)=><li key={item}>{item}</li>)}</ul>}<p className="knowledge-note">{unit.implementation.relationship}</p></section>
-
-      <section className="knowledge-detail"><header><Eye/><span>例題流程</span></header><dl className="knowledge-example"><div><dt>輸入</dt><dd>{unit.example.input}</dd></div></dl><ol className="knowledge-flow">{unit.example.steps.map((step)=><li key={step}>{step}</li>)}</ol><dl className="knowledge-example"><div><dt>輸出</dt><dd>{unit.example.output}</dd></div></dl></section>
-
-      <section className="knowledge-detail"><header><AlertTriangle/><span>常見錯誤與邊界</span></header><ul className="knowledge-mistakes">{unit.mistakes.map((item)=><li key={item}>{item}</li>)}</ul><ul className="knowledge-mistakes">{unit.edgeCases.map((item)=><li key={item}>{item}</li>)}</ul></section>
-    </motion.div>}</AnimatePresence>
+    </div>
   </section>
 }
 
@@ -470,11 +456,7 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
   const resetLayout=()=>setVisualWidth(58)
   return <main className="player-page" style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
     <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(lessons.length).padStart(3,'0')}</span></header>
-    <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p>{lesson.sources&&<div className="lesson-sources"><span>CONTENT SOURCE</span>{lesson.sources.map((source)=><a key={source.url} href={source.url} target="_blank" rel="noreferrer"><b>{source.label}</b>{source.title}</a>)}</div>}</div><div className="complexity relative z-10"><span>TIME COMPLEXITY</span><strong>{lesson.complexity}</strong></div></section>
-    <section className="lesson-context">
-      <article><header><Target size={15}/><span>什麼時候使用</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
-      <article><header><BookOpen size={15}/><span>精選例題</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
-    </section>
+    <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p></div></section>
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate}/>
 
     <section className="lesson-stage" ref={stageRef}>
@@ -489,6 +471,10 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
       <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><span className="reasoning-label">STEP-BY-STEP REASONING</span><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p><aside className="step-pitfall"><AlertTriangle size={14}/><span>這一步要避免：</span><p>{frame.beginner!.pitfall}</p></aside><code><CppCode line={frame.codeLine}/></code></motion.div></AnimatePresence></div>
+    </section>
+    <section className="lesson-context">
+      <article><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
+      <article><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
     </section>
     <footer className={`player-controls ${stageVisible?'visible':''}`} aria-hidden={!stageVisible}><div className="progress"><motion.i animate={{width:`${index/(lesson.frames.length-1)*100}%`}} /></div><span>{index+1} / {lesson.frames.length}</span><div><button aria-label="上一步" title="上一步" disabled={index===0} onClick={()=>{setPlaying(false);setIndex(index-1)}}><ChevronLeft/></button><button aria-label={playing?'暫停':'播放'} title={playing?'暫停':'播放'} className="play" onClick={()=>index===lesson.frames.length-1?restart():setPlaying(!playing)}>{playing?<Pause/>:<Play/>}</button><button aria-label="下一步" title="下一步" disabled={index===lesson.frames.length-1} onClick={()=>{setPlaying(false);setIndex(index+1)}}><ChevronRight/></button><button aria-label="重新播放" title="重新播放" onClick={restart}><RotateCcw/></button></div></footer>
   </main>
