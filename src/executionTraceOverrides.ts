@@ -31,6 +31,22 @@ const eventFrame = (
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
+const codeOverrides: Record<string, string[]> = {
+  'connected-components': [
+    'void dfs(int u) {',
+    '  seen[u] = true;',
+    '  for (int v : graph[u])',
+    '    if (!seen[v]) dfs(v);',
+    '}',
+    'int components = 0;',
+    'for (int u = 0; u < n; ++u) {',
+    '  if (seen[u]) continue;',
+    '  ++components;',
+    '  dfs(u);',
+    '}',
+  ],
+}
+
 const overrides: Record<string, TraceBuilder> = {
   'stack': (lesson) => [
     eventFrame(lesson,'stack<int> st','建立空 Stack','一開始 stack 為空；之後所有操作都只發生在 top。',{stack:[],operation:'initialize'}),
@@ -96,9 +112,10 @@ const overrides: Record<string, TraceBuilder> = {
 export const applyExecutionTraceOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
   const build = overrides[lesson.id]
   if (!build) return lesson
+  const tracedLesson = codeOverrides[lesson.id] ? { ...lesson, code: codeOverrides[lesson.id] } : lesson
   return {
-    ...lesson,
-    frames: build(lesson),
+    ...tracedLesson,
+    frames: build(tracedLesson),
     traceMode: 'execution',
     animationVersion: 2,
   }
