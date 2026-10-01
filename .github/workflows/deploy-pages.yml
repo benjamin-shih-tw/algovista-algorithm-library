@@ -29,6 +29,8 @@ jobs:
         run: npm ci
       - name: Audit AP325 Guide
         run: npm run audit:ap325
+      - name: Audit animation structure
+        run: npm run audit:animation:stage1
       - name: Build
         run: npm run build
       - name: Configure Pages
