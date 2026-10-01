@@ -52,3 +52,8 @@ console.log(JSON.stringify(summary,null,2))
 for (const row of rows) {
   console.log(JSON.stringify(row))
 }
+
+if (summary.unresolvedPrimary > 0 || summary.genericHeaderPrimary > 0) {
+  console.error('Stage 3 code-sync gate failed:', summary)
+  process.exitCode = 1
+}
