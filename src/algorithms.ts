@@ -9,6 +9,7 @@ import { enrichPedagogy } from './pedagogy'
 import { enrichKnowledgeCatalog, type KnowledgeUnit } from './knowledge'
 import { applyExecutionTraceOverride } from './executionTraceOverrides'
 import { applyS2ExecutionOverride } from './s2ExecutionOverrides'
+import { applyS3ExecutionOverride } from './s3ExecutionOverrides'
 
 export type AlgorithmId = string
 export type VisualKind = 'array' | 'linear' | 'graph' | 'tree' | 'segment-tree' | 'range' | 'dp' | 'string' | 'flow' | 'math' | 'geometry' | 'transform'
@@ -475,6 +476,7 @@ const pedagogicalLessons: AlgorithmLesson[] = [...coreLessons, ...foundationLess
   .map(ensureGuidedLesson)
   .map(applyExecutionTraceOverride)
   .map(applyS2ExecutionOverride)
+  .map(applyS3ExecutionOverride)
   .map(enrichLesson)
   .map(enrichPedagogy)
   .map((lesson) => ({ ...lesson, fidelity: lesson.traceMode === 'execution' ? 'concrete' as const : 'semantic' as const }))
