@@ -23,7 +23,7 @@ for (const lesson of lessons.filter((lesson) => s0.has(lesson.id))) {
       .filter((candidate)=>candidate.line && specificSourceRe.test(candidate.line))
     const genericHeaderPrimary=genericHeaderRe.test(line) &&
       specificCandidates.some((candidate)=>candidate.number!==primaryLineNumber) &&
-      !/檢查|開始.*迭代|建立|確認.*設定|問題設定|函式|呼叫|理解|複雜度|成本|排序完成|完成.*成本/.test(frame.title)
+      !/檢查|開始.*迭代|建立|確認.*設定|問題設定|函式|呼叫|理解|複雜度|成本|排序完成|完成.*成本|第.*輪|不再碰/.test(frame.title)
     rows.push({
       lessonId:lesson.id,
       step:i+1,
