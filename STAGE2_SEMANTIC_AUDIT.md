@@ -384,3 +384,288 @@ The next semantic pass should expand beyond calibration and classify all lessons
 5. repair class S0/S1/S2/S3.
 
 The end product of Stage 2 should be a 202-row semantic remediation matrix, not just a list of examples.
+
+
+---
+
+## Calibration batch 2 — cross-category semantic review
+
+The second batch broadens the calibration across linear structures, DAG processing, tree queries, lazy propagation, string automata, cost flow, number theory, geometry, and transforms.
+
+| Lesson | Animation | Code Sync | Main finding | Repair class |
+|---|:---:|:---:|---|:---:|
+| Monotonic Stack | C | C | Has real stack/incoming-value snapshots, but they jump between examples and many code steps repeat the same stack state. | S1 |
+| Topological Sort | C | C | Initial indegrees and queue are concrete, but the trace jumps from processing A directly to final output count instead of showing edge-by-edge indegree decrements. | S1 |
+| LCA Binary Lifting | C | C | Query has concrete u/v/depth/jump state, but skips the actual jump-table logic and several code steps repeat unchanged state. | S1 |
+| Lazy Segment Tree | C | C | Knows covered intervals and pending tags, but a 20-step code walk is built from only three semantic snapshots. | S1 |
+| LIS | C | C | Concrete tails examples exist, but frames jump between unrelated snapshots rather than executing one input sequence from start to finish. | S1 |
+| Aho–Corasick | D | D | Only phase labels “Trie + failure links / fallback / reported matches” remain; no actual trie nodes, fail links, text index, or outputs are executed. | S2 |
+| Min-Cost Max-Flow | D | D | No concrete capacities, costs, shortest residual path, bottleneck, reverse edge, or cumulative flow/cost values. | S3 |
+| Extended Euclid | D | D | Correct concept names, but no concrete recursive pair (a,b), quotient, gcd, or coefficient back-substitution is shown. | S2 |
+| Rotating Calipers | D | D | No concrete convex polygon, i/j pair, area comparison, or monotonic pointer motion is visible in the execution trace. | S2 |
+| FFT | D | D | Mentions split/butterfly/inverse, but no coefficients, roots of unity, butterfly values, or stage-by-stage transform values are executed. | S2 |
+
+### Monotonic Stack
+
+There is useful algorithm-specific state:
+
+```text
+stack = [2,1]
+incoming = 5
+decision = pop 1
+```
+
+and later:
+
+```text
+stack = [2]
+decision = pop 2
+```
+
+This is valuable and should be preserved.
+
+However the trace then jumps to:
+
+```text
+stack = [5,3]
+incoming = 4
+```
+
+without showing the push of 5, subsequent input consumption, or how 3 entered the stack.
+
+The lesson is therefore not fake from scratch, but it is not one continuous execution. It belongs in S1: reconstruct a coherent input sequence around the existing semantic snapshots.
+
+### Topological Sort
+
+The raw state correctly contains:
+
+```text
+indegree: A=0,B=1,C=1,D=1,E=2,F=2
+queue: [A]
+```
+
+and then:
+
+```text
+order: [A]
+queue: [B,C]
+newZero: [B,C]
+```
+
+The missing teaching content is the most important part:
+
+```text
+pop A
+A→B: indegree[B] 1→0 → push B
+A→C: indegree[C] 1→0 → push C
+```
+
+Instead, several frames merely advance through source lines.
+
+This is another S1 case: the necessary data model is already known, but the execution timeline is missing.
+
+### LCA Binary Lifting
+
+The trace has meaningful query state:
+
+```text
+u=F(depth3)
+v=C(depth1)
+jump 2^1: F→B
+```
+
+then:
+
+```text
+u=B
+v=C
+parent=A
+LCA=A
+```
+
+That is enough to recover a good animation.
+
+What is missing:
+
+- the relevant binary-lifting table entries;
+- why the selected power of two is legal;
+- the descending-k scan;
+- the simultaneous upward movement before returning parent.
+
+The existing tree/path renderer is probably sufficient. This is S1, not a full renderer rewrite.
+
+### Lazy Segment Tree
+
+The lesson has correct high-level state:
+
+```text
+update [2,6] += 3
+covered nodes [3,4], [5,6]
+pending tags ...
+```
+
+But 20 final frames are spread across only three real semantic snapshots.
+
+The student does not actually see:
+
+```text
+full cover
+→ apply tag to node
+→ update node sum
+→ stop descending
+→ later query reaches parent
+→ push tag to children
+→ clear parent tag
+```
+
+Because the existing Segment Tree renderer already has a strong node/interval model, this should be an S1 extension of that model.
+
+### LIS
+
+The lesson knows the right invariant and has examples such as:
+
+```text
+incoming 4
+replace 5→4
+tails [2,4]
+```
+
+But the next major state becomes `tails=[1,3,7]` without executing the intermediate input values.
+
+A good LIS lesson should choose one array and animate every `lower_bound`, replace, or append operation on the same tails array.
+
+This is S1.
+
+### Aho–Corasick
+
+The current trace never materializes the automaton.
+
+A student needs to see at least:
+
+- the trie for a small pattern set;
+- fail links;
+- BFS construction order;
+- current text character;
+- current automaton node;
+- fallback via fail;
+- output/report nodes.
+
+The current “Trie + failure links → fallback transition → multiple patterns reported” is a conceptual outline, not an animation.
+
+This is S2: the visual model can remain a string automaton, but the lesson needs concrete execution data.
+
+### Min-Cost Max-Flow
+
+The current flow lesson lacks every numeric object needed to understand the algorithm:
+
+- residual capacity;
+- edge cost;
+- reverse edge cost;
+- shortest-path distance;
+- chosen augmenting path;
+- bottleneck;
+- path cost;
+- cumulative flow;
+- cumulative total cost.
+
+Because the existing flow scene will need richer edge labels/state than a simple generic network, this is classified S3.
+
+### Extended Euclid
+
+The important learning event is back-substitution.
+
+A useful execution could use a concrete pair such as:
+
+```text
+exgcd(30,18)
+→ exgcd(18,12)
+→ exgcd(12,6)
+→ exgcd(6,0)
+
+6 = 6·1 + 0·0
+6 = 12·? + 6·?
+...
+30x + 18y = 6
+```
+
+The current trace only names “Bézout identity” and “back substitute coefficients”.
+
+This is S2.
+
+### Rotating Calipers
+
+The required picture is geometric, not textual:
+
+- an actual convex polygon;
+- current edge `(i,i+1)`;
+- current antipodal point `j`;
+- area comparison for `j` vs `j+1`;
+- movement of `j`;
+- current best distance.
+
+The current trace contains none of those concrete values, so it is S2.
+
+### FFT
+
+A butterfly is only understandable when values move.
+
+A good small example should show, for example, an n=4 or n=8 transform:
+
+```text
+coefficients
+→ even / odd split
+→ smaller DFT results
+→ omega^k
+→ E + omega^k O
+→ E - omega^k O
+```
+
+The current frames walk through the C++ statements while the semantic state remains “butterfly combine”.
+
+This is S2.
+
+---
+
+## Updated Stage 2 pattern
+
+After 22 manually reviewed lessons, two broad failure families are now clear.
+
+### Family A — useful raw semantic data, bad timeline
+
+Examples:
+
+- Fenwick Tree
+- Tarjan SCC
+- Monotonic Stack
+- Topological Sort
+- LCA
+- Lazy Segment Tree
+- LIS
+
+These lessons often already contain the important algorithm-specific nouns and one or more meaningful snapshots.
+
+Their main problem is that `expandGuidedFrames()` stretches those snapshots across code lines.
+
+**Recommended treatment: S1.** Preserve the algorithm-specific raw material and reconstruct a continuous event timeline.
+
+### Family B — concept labels without executable state
+
+Examples:
+
+- Prefix XOR
+- KMP
+- 0/1 Knapsack
+- Digit DP
+- Dinic
+- Meet in the Middle
+- Aho–Corasick
+- Min-Cost Max-Flow
+- Extended Euclid
+- Rotating Calipers
+- FFT
+
+These lessons do not currently contain enough concrete per-step data to recover an animation merely by changing the timeline.
+
+**Recommended treatment: S2/S3.** Add real examples, state values, and algorithm events; add richer renderer/state support where the domain requires it.
+
+This distinction is important because it prevents wasting time rewriting lessons that already contain salvageable semantic material.
