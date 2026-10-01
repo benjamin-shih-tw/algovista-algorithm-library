@@ -38,6 +38,13 @@ jobs:
           path: |
             .tmp/stage1-animation-audit.json
             .tmp/stage1-animation-audit.md
+      - name: Probe representative animation semantics
+        run: npm run audit:animation:stage2
+      - name: Upload Stage 2 semantic probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage2-semantic-probe
+          path: .tmp/stage2-semantic-probe.json
       - name: Build
         run: npm run build
       - name: Configure Pages
