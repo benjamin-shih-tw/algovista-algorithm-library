@@ -61,6 +61,13 @@ jobs:
         with:
           name: stage3-code-sync-audit
           path: .tmp/stage3-code-sync-audit.json
+      - name: Audit execution-trace progress
+        run: npm run audit:animation:stage5
+      - name: Upload Stage 5 execution progress
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage5-execution-progress
+          path: .tmp/stage5-execution-progress.json
       - name: Build
         run: npm run build
       - name: Configure Pages
