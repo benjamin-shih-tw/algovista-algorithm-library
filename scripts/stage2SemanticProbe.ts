@@ -14,6 +14,16 @@ const targets = [
   'digit-dp',
   'dinic',
   'meet-in-the-middle',
+  'monotonic-stack',
+  'topological-sort',
+  'lca-binary-lifting',
+  'lazy-segment-tree',
+  'longest-increasing-subsequence',
+  'aho-corasick',
+  'min-cost-max-flow',
+  'extended-euclid',
+  'rotating-calipers',
+  'fft',
 ]
 
 const hiddenStateKeys = new Set([
