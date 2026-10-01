@@ -403,7 +403,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'void add(Line nw','根目前存 y=2x+1','現在加入新線 y=-x+8，定義域 [0,8]。',{currentLine:'2x+1',newLine:'-x+8',domain:'[0,8]',operation:'start insertion'}),
     eventFrame(lesson,'int m=(l+r)/2','在左端與中點比較','l=0：新線 8 不優於舊線 1，所以 left=false；m=4：新線 4 優於舊線 9，所以 mid=true。',{l:0,m:4,left:'8<1 false',mid:'4<9 true',operation:'compare two points'}),
     eventFrame(lesson,'if (mid) swap(nw,line[p])','中點較優者留在 Root','mid=true，因此把 -x+8 留在目前節點，原本 2x+1 變成待遞迴的 nw。',{kept:'-x+8',remaining:'2x+1',operation:'swap at midpoint'}),
-    eventFrame(lesson,'if (left!=mid) add(nw,p*2,l,m);','優劣只可能在左半翻轉','left=false、mid=true 不同，兩線交點位於左半側，所以只需把 2x+1 遞迴到 [0,4]。',{left:false,mid:true,recurse:'[0,4]',line:'2x+1',operation:'recurse left'}),
+    eventFrame(lesson,'if (left!=mid) add(nw,p*2,l,m);','優劣只可能在左半翻轉','left=false、mid=true 不同，兩線交點位於左半側，所以只需把 2x+1 遞迴到 [0,4]。',{left:'false',mid:'true',recurse:'[0,4]',line:'2x+1',operation:'recurse left'}),
     eventFrame(lesson,'if (l==r) return','遞迴深度至多 log C','每層只進一個孩子；落敗線若還可能勝出，只會發生在那一側。',{domain:'[0,8]→[0,4]→…',complexity:'O(log C)',operation:'finish insertion'}),
   ],
 
