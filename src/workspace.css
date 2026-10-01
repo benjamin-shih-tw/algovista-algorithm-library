@@ -40,3 +40,44 @@
 
 @media(max-width:1100px){.learning-workspace.resizable-workspace{grid-template-columns:1fr}.workspace-resizer{display:none}.algorithm-scene-wrap.resizable-y{height:auto}.code-scroll.resizable-y{height:auto}.reset-layout,.panel-size-hint{display:none}.knowledge-motivation,.term-grid,.complexity-grid{grid-template-columns:repeat(2,1fr)}.operation-table>header{display:none}.operation-table>article{grid-template-columns:1fr 2fr}.knowledge-example-risk{grid-template-columns:1fr}}
 @media(max-width:620px){.theme-launcher{right:10px;bottom:96px}.theme-color-grid{grid-template-columns:1fr}.code-actions button span{display:none}.code-panel>header .code-actions{margin-right:5px}.theme-panel{right:8px;top:8px;bottom:8px;width:calc(100% - 16px)}.guide-collapse-trigger{grid-template-columns:auto 1fr}.guide-toggle-label{grid-column:2;justify-self:start}.guide-collapse-trigger p{font-size:9px}.knowledge-trigger{grid-template-columns:auto 1fr}.knowledge-trigger>.guide-toggle-label{grid-column:2;justify-self:start}.knowledge-counts{grid-column:2;flex-wrap:wrap}.knowledge-dependencies,.knowledge-motivation,.term-grid,.complexity-grid,.implementation-contract>div,.knowledge-extensions>div{grid-template-columns:1fr}.operation-table>article{grid-template-columns:1fr}.code-contract{grid-template-columns:1fr}.knowledge-content>div,.knowledge-content>section{padding:var(--space-3)}}
+
+
+/* Stage 7: rich execution views for algorithms that need more than a generic scene. */
+.rich-execution-scene{position:relative;min-height:430px;padding:18px 20px 14px;overflow:hidden}
+.rich-scene-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.rich-scene-head>span{font-weight:800;color:var(--text-strong)}
+.rich-scene-head>div{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.rich-scene-head b,.rich-sequence b{border:1px solid color-mix(in srgb,var(--lesson-accent) 35%,transparent);background:color-mix(in srgb,var(--lesson-accent) 10%,transparent);border-radius:999px;padding:5px 8px;font-size:10px;color:var(--text-strong)}
+.rich-execution-scene svg{width:100%;height:min(430px,46vh);min-height:330px;overflow:visible}
+.rich-edge{stroke:color-mix(in srgb,var(--text-muted) 58%,transparent);stroke-width:2.2;fill:none}
+.rich-edge.active,.rich-sweep.active{stroke:var(--lesson-accent);stroke-width:4;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--lesson-accent) 55%,transparent))}
+.rich-edge.dashed{stroke-dasharray:8 7}
+.rich-edge-label,.rich-node-value,.rich-geo-label{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--text-muted)}
+.rich-node{fill:color-mix(in srgb,var(--surface-2) 88%,transparent);stroke:color-mix(in srgb,var(--lesson-accent) 40%,var(--border));stroke-width:2}
+.rich-node.active{stroke:var(--lesson-accent);stroke-width:4;fill:color-mix(in srgb,var(--lesson-accent) 15%,var(--surface-2))}
+.rich-node-label{font:800 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--text-strong);text-anchor:middle}
+.rich-node-value{text-anchor:middle}
+.rich-sequence{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px}
+.rich-sequence>span{margin-right:4px;font-size:10px;letter-spacing:.08em;color:var(--text-muted)}
+.rich-matrix-grid,.rich-table-grid{display:grid;gap:5px;max-width:860px;margin:22px auto 0}
+.rich-matrix-grid>*{min-height:46px;display:grid;place-items:center}
+.rich-matrix-grid strong,.rich-table-grid>strong{font-size:11px;color:var(--text-muted);font-weight:700}
+.rich-matrix-grid span,.rich-table-grid span{border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb,var(--surface-2) 91%,transparent);display:grid;place-items:center;min-height:46px;font:700 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.rich-matrix-grid span.active,.rich-table-grid span.active{border-color:var(--lesson-accent);background:color-mix(in srgb,var(--lesson-accent) 13%,var(--surface-2));box-shadow:0 0 0 1px color-mix(in srgb,var(--lesson-accent) 25%,transparent)}
+.rich-matrix-grid span.pivot{box-shadow:0 0 0 2px var(--lesson-accent),0 0 22px color-mix(in srgb,var(--lesson-accent) 25%,transparent)}
+.rich-structure-node{fill:var(--surface-2);stroke:var(--border);stroke-width:2}
+.rich-structure-node.active{stroke:var(--lesson-accent);stroke-width:4;fill:color-mix(in srgb,var(--lesson-accent) 12%,var(--surface-2))}
+.rich-point{fill:var(--surface-2);stroke:var(--lesson-accent);stroke-width:2}
+.rich-point.active{fill:var(--lesson-accent)}
+.rich-circle{fill:none;stroke:color-mix(in srgb,var(--lesson-accent) 55%,var(--border));stroke-width:2.5}
+.rich-circle.active{stroke:var(--lesson-accent);stroke-width:4}
+.rich-polygon{fill:color-mix(in srgb,var(--lesson-accent) 7%,transparent);stroke:var(--lesson-accent);stroke-width:3}
+.rich-sweep{stroke:var(--lesson-accent);stroke-width:3;stroke-dasharray:8 6}
+.rich-table-grid{margin-top:18px}
+.rich-table-grid>*{min-height:42px;padding:8px 10px}
+@media(max-width:760px){
+  .rich-execution-scene{padding:14px 10px 10px;min-height:390px}
+  .rich-execution-scene svg{min-height:300px;height:40vh}
+  .rich-scene-head{align-items:flex-start;flex-direction:column}
+  .rich-matrix-grid,.rich-table-grid{overflow-x:auto;grid-auto-columns:minmax(52px,1fr)}
+}
