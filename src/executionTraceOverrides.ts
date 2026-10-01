@@ -45,6 +45,51 @@ const codeOverrides: Record<string, string[]> = {
     '  dfs(u);',
     '}',
   ],
+  'quickselect': [
+    'int partitionRange(int l, int r) {',
+    '  int pivot = a[r], p = l;',
+    '  for (int i = l; i < r; ++i)',
+    '    if (a[i] < pivot) swap(a[i], a[p++]);',
+    '  swap(a[p], a[r]);',
+    '  return p;',
+    '}',
+    'int quickselect(int l, int r, int k) {',
+    '  int p = partitionRange(l, r);',
+    '  if (p == k) return a[p];',
+    '  if (k < p) return quickselect(l, p - 1, k);',
+    '  return quickselect(p + 1, r, k);',
+    '}',
+  ],
+}
+
+const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
+  'zero-one-bfs': {
+    edges: [
+      {from:'A',to:'B',weight:1},{from:'A',to:'C',weight:0},
+      {from:'B',to:'D',weight:1},{from:'B',to:'E',weight:0},
+      {from:'C',to:'E',weight:1},{from:'D',to:'F',weight:0},
+      {from:'E',to:'F',weight:1},
+    ],
+  },
+  'bellman-ford': {
+    edges: [
+      {from:'A',to:'B',weight:4},{from:'A',to:'C',weight:2},
+      {from:'C',to:'B',weight:-3},{from:'B',to:'D',weight:2},
+      {from:'D',to:'E',weight:2},{from:'E',to:'B',weight:-6},
+      {from:'D',to:'F',weight:2},
+    ],
+  },
+  'floyd-warshall': {
+    points: [
+      {id:'A',x:12,y:50,label:'A'},{id:'B',x:38,y:20,label:'B'},
+      {id:'C',x:62,y:70,label:'C'},{id:'D',x:88,y:40,label:'D'},
+    ],
+    edges: [
+      {from:'A',to:'B',weight:3},{from:'A',to:'C',weight:10},
+      {from:'A',to:'D',weight:20},{from:'B',to:'C',weight:2},
+      {from:'B',to:'D',weight:8},{from:'C',to:'D',weight:1},
+    ],
+  },
 }
 
 const overrides: Record<string, TraceBuilder> = {
@@ -182,12 +227,98 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'color[v]==0 && dfs(v)','B→C：C 還是白色','再遞迴進入 C，此時 A、B、C 都在同一條 DFS 路徑上。',{edge:'B-C',colors:'A=gray,B=gray,C=gray',stack:['A','B','C'],operation:'descend B-C'},{active:['A','B','C']}),
     eventFrame(lesson,'if(color[v]==1) return true','C→A 指向灰色祖先','C 的出邊回到仍為灰色的 A，這是一條 back edge；A→B→C→A 構成有向環。',{edge:'C-A',colors:'A=gray,B=gray,C=gray',backEdge:'C→A',result:'cycle',operation:'detect back edge'},{active:['A','C'],accepted:['A','B','C']}),
   ],
+
+
+  'dsu': (lesson) => [
+    eventFrame(lesson,'iota(parent.begin()','初始化 6 個單元素集合','每個節點一開始都是自己的 parent，size 全為 1。',{parent:['A→A','B→B','C→C','D→D','E→E','F→F'],sizes:'all 1',operation:'initialize sets'},{active:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'a = find(a); b = find(b);','Unite A 與 B：先找根','find(A)=A、find(B)=B，兩個代表元不同，因此可以合併。',{query:'unite(A,B)',roots:['A','B'],operation:'find roots'},{active:['A','B']}),
+    eventFrame(lesson,'parent[b] = a; size[a] += size[b];','把 B 掛到 A','兩棵大小相同，令 parent[B]=A，size[A]=2。',{parent:['A→A','B→A'],sizes:'A=2,B=1',operation:'union by size'},{active:['A','B'],accepted:['A','B']}),
+    eventFrame(lesson,'parent[b] = a; size[a] += size[b];','再把 D 掛到 B 的集合','先合併 B 與 D。find(B)=A，所以實際是把 D 掛到代表元 A；集合成為 {A,B,D}。',{parent:['A→A','B→A','D→A'],sizes:'A=3',operation:'unite B,D'},{active:['A','B','D'],accepted:['A','B','D']}),
+    eventFrame(lesson,'if (parent[x] == x)','Find D：D 不是根','parent[D]=A，所以 find(D) 需要往上走。',{query:'find(D)',path:['D','A'],operation:'follow parent'},{active:['D','A']}),
+    eventFrame(lesson,'return parent[x] = find(parent[x]);','路徑壓縮','遞迴返回時把 D 直接指向 A。這個例子已是一層；若原本是 D→B→A，就會壓成 D→A。',{before:'D→B→A',after:'D→A',operation:'path compression'},{active:['D','A'],accepted:['A']}),
+    eventFrame(lesson,'if (size[a] < size[b]) swap(a, b);','Unite E 與大集合：小掛大','E 的集合大小 1，小於 A 集合大小 3，因此保持 A 為新根。',{merge:'E → A',sizes:'A=3,E=1',operation:'choose larger root'},{active:['A','E']}),
+    eventFrame(lesson,'parent[b] = a; size[a] += size[b];','完成 Unite','parent[E]=A，size[A]=4；A、B、D、E 現在同集合。',{parent:['B→A','D→A','E→A'],sizes:'A=4',operation:'merge E'},{active:['A','E'],accepted:['A','B','D','E']}),
+    eventFrame(lesson,'return find(a) == find(b)','Same(B,E) 回傳 true','find(B)=A 且 find(E)=A，所以兩點已連通。',{query:'same(B,E)',roots:['A','A'],result:'true',operation:'connectivity query'},{active:['B','E'],accepted:['A','B','D','E']}),
+  ],
+
+  'fenwick-tree': (lesson) => [
+    eventFrame(lesson,'explicit FenwickTree','建立 n=8 的空 BIT','bit[1..8] 全為 0；索引採 1-based。',{n:8,bit:['0','0','0','0','0','0','0','0'],operation:'initialize BIT'},{values:[0,0,0,0,0,0,0,0]}),
+    eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','Add(3,+5)：更新 bit[3]','lowbit(3)=1，所以第一個被更新的分組右端是 3。',{i:3,lowbit:1,bit:'bit[3]:0→5',path:['3','4','8'],operation:'update bit[3]'},{values:[0,0,5,0,0,0,0,0],active:['2']}),
+    eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','i=4：更新 bit[4]','3+lowbit(3)=4；bit[4] 代表 [1,4]，也必須包含位置 3 的 +5。',{i:4,lowbit:4,bit:'bit[4]:0→5',path:['3','4','8'],operation:'update bit[4]'},{values:[0,0,5,5,0,0,0,0],active:['3']}),
+    eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','i=8：更新 bit[8]','4+lowbit(4)=8；bit[8] 代表 [1,8]。下一步 i=16 超界，add 結束。',{i:8,lowbit:8,bit:'bit[8]:0→5',path:['3','4','8'],operation:'update bit[8]'},{values:[0,0,5,5,0,0,0,5],active:['7']}),
+    eventFrame(lesson,'long long s = 0;','Prefix(6)：累加器從 0 開始','查詢前綴 [1,6]，先令 s=0。',{query:'prefix(6)',i:6,sum:0,operation:'initialize prefix'}),
+    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','讀 bit[6]','lowbit(6)=2，bit[6] 代表 [5,6]；目前值為 0，所以 s 仍為 0。',{i:6,lowbit:2,covered:'[5,6]',sum:'0+0=0',operation:'accumulate bit[6]'},{active:['5']}),
+    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','i=4：讀 bit[4]','6−lowbit(6)=4；bit[4] 代表 [1,4]，值為 5，所以 s=5。',{i:4,lowbit:4,covered:'[1,4]',sum:'0+5=5',operation:'accumulate bit[4]'},{active:['3'],accepted:['2']}),
+    eventFrame(lesson,'return s;','Prefix(6)=5','4−lowbit(4)=0，查詢結束；位置 3 的 +5 正確落在前綴中。',{query:'prefix(6)',result:5,operation:'return prefix'},{accepted:['2']}),
+  ],
+
+  'sparse-table': (lesson) => [
+    eventFrame(lesson,'st[0] = a;','Level 0 直接複製原陣列','st[0][i] 表示長度 1 的區間最小值，因此就是 a[i]。',{level:0,intervalLength:1,row:['2','5','1','4','9','3','7','6'],operation:'copy base level'},{values:[2,5,1,4,9,3,7,6]}),
+    eventFrame(lesson,'for (int j = 1; j < k; ++j)','建立 Level 1','j=1 代表長度 2；每格由兩個長度 1 區間合併。',{level:1,intervalLength:2,operation:'build level 1'},{values:[2,5,1,4,9,3,7,6]}),
+    eventFrame(lesson,'st[j][i] = min','st[1][1] = min(5,1)=1','區間 [1,2] 的最小值由 st[0][1] 與 st[0][2] 合併。',{cell:'st[1][1]',left:5,right:1,result:1,operation:'merge length-1 blocks'},{active:['1','2'],accepted:['2']}),
+    eventFrame(lesson,'st[j][i] = min','建立 Level 2 的 [2,5]','j=2 代表長度 4；st[2][2]=min(st[1][2],st[1][4])=min(1,3)=1。',{cell:'st[2][2]',interval:'[2,5]',leftBlock:'[2,3]=1',rightBlock:'[4,5]=3',result:1,operation:'merge length-2 blocks'},{active:['2','3','4','5'],accepted:['2']}),
+    eventFrame(lesson,'int k = 31 - __builtin_clz','Query [2,6]：選 k=2','查詢長度 5，floor(log2 5)=2，所以使用兩個長度 4 的區塊。',{query:'[2,6]',length:5,k:2,blockLength:4,operation:'choose power of two'},{low:2,high:6}),
+    eventFrame(lesson,'return min(st[k][l]','用 [2,5] 與 [3,6] 覆蓋','兩個區塊可以重疊；min 是冪等運算，重複元素不影響答案。min(1,3)=1。',{leftBlock:'[2,5]→1',rightBlock:'[3,6]→3',answer:1,operation:'two-block RMQ'},{low:2,high:6,accepted:['2']}),
+  ],
+
+  'lazy-segment-tree': (lesson) => [
+    eventFrame(lesson,'void update(int p','Update [1,5] += 3','從根 [0,7] 開始。目標只部分覆蓋根，因此需要往下分解。',{node:'[0,7]',query:'[1,5] += 3',lazy:0,operation:'enter update'},{values:[2,5,1,4,9,3,7,6],low:1,high:5}),
+    eventFrame(lesson,'if (ql <= l && r <= qr) { apply','命中完整覆蓋節點','當遞迴到完整落在 [1,5] 的節點，例如 [2,3]，直接 apply，不再往下。',{node:'[2,3]',covered:'true',delta:3,operation:'apply full cover'},{values:[2,5,1,4,9,3,7,6],active:['2','3']}),
+    eventFrame(lesson,'tree[p] += v *','Apply [2,3] += 3','區間長度 2，所以 tree[p] 總和增加 3×2=6；lazy[p] 同時累加 +3。',{node:'[2,3]',sum:'5→11',lazy:'0→3',operation:'store lazy tag'},{values:[2,5,4,7,9,3,7,6],active:['2','3'],accepted:['2','3']}),
+    eventFrame(lesson,'push(p, l, r);','只有需要進入子節點才 Push','若另一個部分覆蓋節點帶有 lazy，進入孩子前才把標記下傳；完整覆蓋節點可以一直保留標記。',{node:'[0,3]',reason:'partial overlap',operation:'push before descent'}),
+    eventFrame(lesson,'tree[p] = tree[p * 2] + tree[p * 2 + 1];','回程 Pull','左右子樹更新完後，重新以兩個孩子總和計算父節點。',{node:'[0,3]',operation:'pull children',invariant:'tree[p]=left+right'}),
+    eventFrame(lesson,'void update(int l, int r','更新完成','索引 1..5 共 5 個元素各 +3，根總和從 37 變成 52；未下傳的 lazy 仍與查詢結果等價。',{query:'[1,5]+=3',rootSum:'37→52',pending:'covered nodes keep lazy tags',operation:'finish update'},{values:[2,8,4,7,12,6,7,6],low:1,high:5,accepted:['1','2','3','4','5']}),
+    eventFrame(lesson,'if (ql <= l && r <= qr) return tree[p];','Query 完整覆蓋直接讀 Tree','之後查詢若完整包含某個帶 lazy 的節點，tree[p] 已經包含標記效果，所以可直接回傳。',{query:'query [2,3]',node:'[2,3]',answer:11,operation:'read covered node'},{active:['2','3'],accepted:['2','3']}),
+  ],
+
+  'zero-one-bfs': (lesson) => [
+    eventFrame(lesson,'dist[s] = 0','起點 A 距離設為 0','A 放到 deque 前端。因為之後只有 0/1 權重，deque 足以維持候選距離順序。',{current:'A',deque:['A'],operation:'initialize source'},{active:['A'],queue:['A'],distances:{A:0,B:'∞',C:'∞',D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'int u = dq.front()','Pop A','取出 deque 最前端 A。',{current:'A',deque:[],operation:'pop front'},{active:['A'],queue:[]}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','A→B 權重 1：B=1','鬆弛後 dist[B]=1。權重 1 的候選要放到 deque 尾端。',{edge:'A→B (1)',update:'B:∞→1',deque:['B'],operation:'relax weight 1'},{active:['A','B'],queue:['B'],distances:{A:0,B:1,C:'∞',D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'if (w == 0) dq.push_front(v);','A→C 權重 0：Push Front','dist[C]=0，與 A 同層，因此 C 必須插到 B 前面。',{edge:'A→C (0)',update:'C:∞→0',deque:['C','B'],operation:'push_front C'},{active:['A','C'],queue:['C','B'],distances:{A:0,B:1,C:0,D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'int u = dq.front()','Pop C','C 的距離 0 小於 B 的 1，所以 C 先被展開。',{current:'C',deque:['B'],operation:'pop C'},{active:['C'],queue:['B'],distances:{A:0,B:1,C:0,D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'else dq.push_back(v);','C→E 權重 1：Push Back','dist[E]=1，放到 B 後方。',{edge:'C→E (1)',update:'E:∞→1',deque:['B','E'],operation:'push_back E'},{active:['C','E'],queue:['B','E'],distances:{A:0,B:1,C:0,D:'∞',E:1,F:'∞'}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','B→D 權重 1：D=2','展開 B 後得到 dist[D]=2，放尾端。B→E 的 0 權候選為 1，沒有比目前 E=1 更好。',{current:'B',edge:'B→D (1)',update:'D:∞→2',deque:['E','D'],operation:'relax from B'},{active:['B','D'],queue:['E','D'],distances:{A:0,B:1,C:0,D:2,E:1,F:'∞'}}),
+    eventFrame(lesson,'else dq.push_back(v);','E→F 權重 1：F=2','E 出隊後把 F 更新成 2，放到尾端。',{current:'E',edge:'E→F (1)',update:'F:∞→2',deque:['D','F'],operation:'relax F'},{active:['E','F'],queue:['D','F'],distances:{A:0,B:1,C:0,D:2,E:1,F:2}}),
+    eventFrame(lesson,'while (!dq.empty())','Deque 清空，距離完成','D→F 的 0 權候選同樣是 2，不會再改善。最後 A0、C0、B1、E1、D2、F2。',{result:'A0 C0 B1 E1 D2 F2',deque:[],operation:'finish'},{accepted:['A','B','C','D','E','F'],queue:[],distances:{A:0,B:1,C:0,D:2,E:1,F:2}}),
+  ],
+
+  'bellman-ford': (lesson) => [
+    eventFrame(lesson,'dist[s] = 0','初始化來源 A','只有 A=0，其餘皆為 ∞。這個例子含可達負環 B→D→E→B。',{pass:0,dist:'A0 others∞',operation:'initialize'},{active:['A'],distances:{A:0,B:'∞',C:'∞',D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','Pass 1：A→B，B=4','第一次掃邊時 A→B 讓 B 從 ∞ 變 4。',{pass:1,edge:'A→B (4)',update:'B:∞→4',operation:'relax'},{active:['A','B'],distances:{A:0,B:4,C:'∞',D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','Pass 1：A→C，C=2','A→C 讓 C=2。',{pass:1,edge:'A→C (2)',update:'C:∞→2',operation:'relax'},{active:['A','C'],distances:{A:0,B:4,C:2,D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','Pass 1：C→B，B 變 -1','負邊 C→B(-3) 改善 B：2−3=-1。',{pass:1,edge:'C→B (-3)',update:'B:4→-1',operation:'negative-edge relax'},{active:['C','B'],distances:{A:0,B:-1,C:2,D:'∞',E:'∞',F:'∞'}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','Pass 1：沿 B→D→E','B→D 得 D=1；D→E 得 E=3；D→F 得 F=3。',{pass:1,relaxed:['B→D:1','D→E:3','D→F:3'],operation:'propagate one pass'},{active:['B','D','E','F'],distances:{A:0,B:-1,C:2,D:1,E:3,F:3}}),
+    eventFrame(lesson,'dist[v] = dist[u] + w','E→B 關閉負環並再次改善','E→B 權重 -6，使 B 從 -1 變 -3。因 B 已在這輪早些時候處理過，影響會在下一輪繼續傳播。',{pass:1,edge:'E→B (-6)',update:'B:-1→-3',cycleWeight:'2+2-6=-2',operation:'close negative cycle'},{active:['E','B'],distances:{A:0,B:-3,C:2,D:1,E:3,F:3}}),
+    eventFrame(lesson,'for (int pass = 1; pass < n; ++pass)','Pass 2：距離繼續下降','下一輪 B→D→E→B 再走一次，B 會再下降 2；負環可無限降低路徑成本。',{pass:2,update:'B:-3→-5, D:1→-1, E:3→1, F:3→1',operation:'repeat relaxation'},{active:['B','D','E'],distances:{A:0,B:-5,C:2,D:-1,E:1,F:1}}),
+    eventFrame(lesson,'negativeCycle = true','額外一輪仍可鬆弛：偵測負環','做完 V−1 輪後若還能改善，例如 B→D，代表改善路徑必重複節點且包含負權環。',{extraPass:'relaxable edge remains',edge:'B→D',result:'negative cycle reachable',operation:'detect negative cycle'},{active:['B','D','E'],accepted:['B','D','E']}),
+  ],
+
+  'floyd-warshall': (lesson) => [
+    eventFrame(lesson,'for (int k = 0; k < n; ++k)','初始矩陣：只允許直接邊','A→B=3、A→C=10、A→D=20、B→C=2、B→D=8、C→D=1。尚未允許任何中繼點。',{k:'none',AtoC:10,AtoD:20,BtoD:8,operation:'initial distances'},{active:['A','B','C','D']}),
+    eventFrame(lesson,'dist[i][j] = min','k=B：A→C 改成 5','比較 direct 10 與 A→B→C = 3+2=5，取 5。',{k:'B',pair:'A→C',direct:10,via:'3+2=5',result:5,operation:'relax via B'},{active:['A','B','C']}),
+    eventFrame(lesson,'dist[i][j] = min','k=B：A→D 改成 11','A→B→D = 3+8=11，比原本 20 好。',{k:'B',pair:'A→D',direct:20,via:'3+8=11',result:11,operation:'relax via B'},{active:['A','B','D']}),
+    eventFrame(lesson,'dist[i][j] = min','k=C：B→D 改成 3','B→C→D = 2+1=3，比直接邊 8 好。',{k:'C',pair:'B→D',direct:8,via:'2+1=3',result:3,operation:'relax via C'},{active:['B','C','D']}),
+    eventFrame(lesson,'dist[i][j] = min','k=C：A→D 再改成 6','現在 dist[A][C]=5，所以 A→C→D = 5+1=6，比上一輪的 11 更短。',{k:'C',pair:'A→D',before:11,via:'5+1=6',result:6,operation:'relax via C'},{active:['A','C','D']}),
+    eventFrame(lesson,'for (int k = 0; k < n; ++k)','所有中繼點完成','k 依序放在最外層，確保每輪只使用已允許的中繼點。最終 A→D=6。',{allowed:'A,B,C,D',result:'A→D=6',operation:'finish all-pairs'},{accepted:['A','B','C','D']}),
+  ],
+
+  'quickselect': (lesson) => [
+    eventFrame(lesson,'int p = partitionRange','第一次 Partition：pivot=3，p=2','目標 k=3（0-based，第 4 小）。以最右端 3 為 pivot 後，3 固定在索引 2。',{range:'[0,7]',k:3,pivot:3,p:2,operation:'partition'},{values:[2,1,3,4,7,8,5,9],active:['2'],low:0,high:7,accepted:['2']}),
+    eventFrame(lesson,'return quickselect(p + 1','k=3 > p=2：只搜右側','索引 0..2 已確定都不會包含第 4 小，遞迴到 [3,7]。',{k:3,p:2,nextRange:'[3,7]',operation:'discard left side'},{values:[2,1,3,4,7,8,5,9],low:3,high:7,muted:['0','1','2']}),
+    eventFrame(lesson,'int p = partitionRange','第二次 Partition：pivot=9，p=7','9 是目前子段最大值，固定到索引 7。',{range:'[3,7]',k:3,pivot:9,p:7,operation:'partition'},{values:[2,1,3,4,7,8,5,9],active:['7'],low:3,high:7,accepted:['2','7']}),
+    eventFrame(lesson,'if (k < p)','k=3 < 7：改搜左側','第 4 小一定在 [3,6]。',{k:3,p:7,nextRange:'[3,6]',operation:'discard right pivot'},{values:[2,1,3,4,7,8,5,9],low:3,high:6,muted:['0','1','2','7']}),
+    eventFrame(lesson,'int p = partitionRange','第三次 Partition：pivot=5，p=4','子段 [4,7,8,5] 以 5 分割後得到 [4,5,8,7]，5 固定索引 4。',{range:'[3,6]',k:3,pivot:5,p:4,operation:'partition'},{values:[2,1,3,4,5,8,7,9],active:['4'],low:3,high:6,accepted:['2','4','7']}),
+    eventFrame(lesson,'if (k < p)','k=3 < 4：只剩索引 3','下一個遞迴區間為 [3,3]。',{k:3,p:4,nextRange:'[3,3]',operation:'narrow to one element'},{values:[2,1,3,4,5,8,7,9],low:3,high:3,active:['3']}),
+    eventFrame(lesson,'if (p == k) return a[p];','p=k=3：回傳 4','單元素 partition 後 pivot 位置就是 3；a[3]=4 是第 4 小。其他區段從未完整排序。',{k:3,p:3,result:4,operation:'return kth element'},{values:[2,1,3,4,5,8,7,9],active:['3'],accepted:['3']}),
+  ],
 }
 
 export const applyExecutionTraceOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
   const build = overrides[lesson.id]
   if (!build) return lesson
-  const tracedLesson = codeOverrides[lesson.id] ? { ...lesson, code: codeOverrides[lesson.id] } : lesson
+  const datasetLesson = lessonOverrides[lesson.id] ? { ...lesson, ...lessonOverrides[lesson.id] } : lesson
+  const tracedLesson = codeOverrides[lesson.id] ? { ...datasetLesson, code: codeOverrides[lesson.id] } : datasetLesson
   return {
     ...tracedLesson,
     frames: build(tracedLesson),
