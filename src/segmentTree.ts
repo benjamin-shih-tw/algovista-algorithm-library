@@ -68,7 +68,7 @@ export function createQueryTrace(values: number[], queryLeft: number, queryRight
 
   push({
     kind: 'start',
-    title: `查詢 [${queryLeft + 1}, ${queryRight + 1}]`,
+    title: `查詢 [${queryLeft}, ${queryRight}]`,
     explanation: '光帶標出目標範圍。接著從代表整個陣列的根節點開始。',
   })
 
@@ -76,8 +76,8 @@ export function createQueryTrace(values: number[], queryLeft: number, queryRight
     const id = nodeId(left, right)
     statuses[id] = 'active'
     push({
-      kind: 'visit', activeId: id, title: `查看 [${left + 1}, ${right + 1}]`,
-      explanation: `目前節點涵蓋第 ${left + 1} 到 ${right + 1} 個元素，先比較它和查詢範圍。`,
+      kind: 'visit', activeId: id, title: `查看 [${left}, ${right}]`,
+      explanation: `目前節點涵蓋索引 ${left} 到 ${right}，先比較它和查詢範圍。`,
     })
 
     if (right < queryLeft || left > queryRight) {
