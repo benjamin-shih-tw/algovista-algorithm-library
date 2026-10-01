@@ -924,3 +924,42 @@ Rerooting DP and Knuth Optimization are even more abstract: the code itself cont
 With this batch entered into the remediation matrix, human semantic review covers **91 / 202 lessons** once the next CI run regenerates the matrix.
 
 The remaining lessons stay `UNREVIEWED` until inspected.
+
+
+---
+
+## Calibration batch 6 — geometry, math, strings, intervals, and offline techniques
+
+This batch adds 30 lessons and brings the semantic matrix to **121 / 202** once regenerated.
+
+The strongest positive control is **Convex Hull**: it shows real sorted points, real cross products, real stack pops/pushes, and the final hull. It confirms again that geometry can be taught well when the trace carries actual coordinates and predicates.
+
+The dominant failure in this batch is the opposite: technically correct concept labels without concrete values. Examples include:
+
+- Fast Exponentiation: no actual `a / e / result` sequence.
+- Prime Sieve: no concrete table or multiples being crossed out.
+- Matrix Exponentiation: no actual matrices or products.
+- Nim / Sprague–Grundy: no concrete piles or mex/XOR arithmetic.
+- Z / LCP: no actual strings, indices, or character comparisons.
+- Interval Scheduling / Covering / Merging: no real intervals or accept/reject decisions.
+- Huffman Coding: no frequencies or priority-queue merges.
+- Histogram / Sliding Window Maximum: no actual bar heights or deque/stack contents.
+- Expression Evaluation / Shunting Yard: no token stream and no operator/value/output stack evolution.
+
+### Another renderer-level case: Gaussian Elimination
+
+Gaussian Elimination is classified S3 because a useful lesson must visibly manipulate an augmented matrix:
+
+```text
+choose pivot
+→ swap rows
+→ normalize pivot row
+→ eliminate column
+→ inspect rank / contradiction / free variables
+```
+
+A generic math label panel is not enough. Row operations need to be first-class visual state.
+
+### Stage 2 progress after batch 6
+
+The semantic review covers **121 / 202 lessons** in the remediation matrix after regeneration. The remaining 81 stay explicitly `UNREVIEWED`.
