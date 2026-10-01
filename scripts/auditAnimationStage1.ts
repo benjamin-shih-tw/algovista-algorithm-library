@@ -408,3 +408,11 @@ console.log(JSON.stringify(topStructuralRisk.slice(0, 20).map((row) => ({
   flags: row.flags,
 })), null, 2))
 console.log('Detailed files: .tmp/stage1-animation-audit.json and .tmp/stage1-animation-audit.md')
+
+if (summary.expandedByGenericPipeline > 0 || summary.totalGenericTextFrames > 0) {
+  console.error('Stage 4 trace-quality gate failed:', {
+    expandedByGenericPipeline: summary.expandedByGenericPipeline,
+    totalGenericTextFrames: summary.totalGenericTextFrames,
+  })
+  process.exitCode = 1
+}
