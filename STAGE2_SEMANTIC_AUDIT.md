@@ -963,3 +963,109 @@ A generic math label panel is not enough. Row operations need to be first-class 
 ### Stage 2 progress after batch 6
 
 The semantic review covers **121 / 202 lessons** in the remediation matrix after regeneration. The remaining 81 stay explicitly `UNREVIEWED`.
+
+
+---
+
+## Final Stage 2 result — full 202-lesson semantic coverage
+
+Stage 2 is complete.
+
+The CI-generated remediation matrix now reports:
+
+| Metric | Result |
+|---|---:|
+| Total lessons | 202 |
+| Human-reviewed lessons | **202** |
+| Remaining | **0** |
+| Animation A | 15 |
+| Animation B | 1 |
+| Animation C | 49 |
+| Animation D | 137 |
+| Repair S0 | 15 |
+| Repair S1 | 45 |
+| Repair S2 | 100 |
+| Repair S3 | 42 |
+
+### Interpretation
+
+Only **16 / 202** lessons are currently A/B at the animation level.
+
+The rest split into:
+
+- **49 C lessons:** useful algorithm-specific material exists, but the student cannot follow one continuous execution.
+- **137 D lessons:** the final animation is mostly conceptual labels or generic phase expansion, not executable state.
+
+Repair scope:
+
+- **S0 (15):** preserve animation; fix labels/code ownership.
+- **S1 (45):** preserve useful snapshots; rebuild them into a continuous execution.
+- **S2 (100):** author concrete examples and real execution events.
+- **S3 (42):** richer domain-specific visual state/renderer support is required.
+
+### Stage 7 review pattern — advanced graph, flow, matching, and structures
+
+The advanced graph/flow batch confirmed that a generic graph renderer is not enough for algorithms whose correctness depends on multiple simultaneous structures.
+
+Examples classified S3 include:
+
+- Biconnected Components / Block-Cut Tree
+- Offline Dynamic Connectivity
+- Ford–Fulkerson / Edmonds–Karp / Push–Relabel
+- Lower-Bound Flow / Circulation with Demands
+- Hopcroft–Karp / Hungarian / Blossom
+- 2D Segment Tree
+- Wavelet Tree / Wavelet Matrix
+- Implicit Treap / Splay Tree
+
+These lessons need visual state such as residual capacities, levels, excess, matching edges, contraction state, time-segment buckets, rank maps, or tree rotations. A label like “augmenting path” or “bit partition” is not an animation.
+
+### Stage 8 review pattern — dynamic trees, DP, number theory, geometry, transforms
+
+The last large batch showed the same issue in other domains.
+
+Representative S3 lessons:
+
+- Link-Cut Tree / Euler-Tour Tree
+- KD-Tree / Persistent DSU / Ordered Statistic Tree
+- Profile DP / Convex Hull Trick / Slope Trick
+- Suffix Tree
+- Half-Plane Intersection
+- Circle Tangents / Smallest Enclosing Circle
+- Voronoi / Delaunay
+- Minkowski Sum
+
+Representative S2 lessons:
+
+- Fibonacci DP / Knapsack variants / Grid DP / interval DP
+- Rabin–Karp / Duval / Minimum Rotation
+- Linear Sieve / Factorization / Totient / Pollard Rho / BSGS
+- Basic vector/line/circle arithmetic
+- FWT
+
+The common rule is now explicit:
+
+> If a student cannot point to the concrete values or objects that changed in the current step, the lesson is not considered execution-driven.
+
+### New CI quality gate
+
+The Stage 2 remediation-matrix command now fails when:
+
+1. a catalog lesson has no human semantic review entry; or
+2. a review entry no longer corresponds to a real catalog lesson.
+
+This prevents future catalog growth from silently bypassing semantic review.
+
+### Stage 2 release conclusion
+
+Stage 2 does **not** claim that the site is ready to publish.
+
+It establishes a complete semantic map of what must be repaired and proves that the main issue is systemic rather than anecdotal.
+
+The next work should proceed in this order:
+
+1. fix code/event ownership for S0 lessons;
+2. remove generic timeline expansion from S1 lessons and reconstruct continuous traces;
+3. author execution traces for S2 lessons;
+4. build the richer visual state required by S3 lessons;
+5. continuously rerun Stage 1 + Stage 2 guards to prevent regressions.
