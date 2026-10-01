@@ -344,6 +344,8 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
 const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number) => {
   const line = (lesson.code[number - 1] ?? '').trim()
   const event = `${frame.title} ${frame.explanation} ${String(frame.state?.operation ?? '')}`.toLowerCase()
+  const stateText = JSON.stringify(frame.state ?? {}).toLowerCase()
+  const context = `${event} ${stateText}`
   let score = 0
 
   if (!line || /^[{}]+;?$/.test(line) || line.startsWith('//')) return -1000
@@ -364,6 +366,32 @@ const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number)
   if (/\b(lower|upper)\.push_back\b/.test(line)) score += /加入|保留|凸包|完成/.test(event) ? 13 : 5
   if (/\b(lower|upper)\.pop_back\b/.test(line)) score += /移除|淘汰|pop|右轉/.test(event) ? 14 : 5
   if (/\bcross\s*\(/.test(line)) score += /左轉|右轉|cross|方向|比較/.test(event) ? 12 : 4
+
+  // S0 lessons use algorithm-specific event ownership so a visually correct
+  // execution never highlights a merely adjacent branch/header.
+  if (lesson.id === 'binary-search') {
+    if (context.includes('==') && /a\[mid\]\s*==\s*target/.test(line)) score += 30
+    if (context.includes('<') && /a\[mid\]\s*<\s*target/.test(line)) score += 30
+    if ((context.includes('>') || context.includes('太大')) && /^else\b/.test(line)) score += 30
+    if (/左界|low/.test(context) && /\blow\s*=/.test(line)) score += 30
+    if (/右界|high/.test(context) && /\bhigh\s*=/.test(line)) score += 30
+  }
+  if (lesson.id === 'bfs') {
+    if (/發現/.test(context) && /\bdist\s*\[v\]\s*=/.test(line)) score += 30
+    if (/已發現|不重複|沒有未訪問/.test(context) && /if\s*\(visited\[v\]\)/.test(line)) score += 30
+    if (/取出|展開/.test(context) && /\bq\.pop\s*\(/.test(line)) score += 20
+  }
+  if (lesson.id === 'dijkstra') {
+    if (/鬆弛|改善|第一次到達|提供第一條/.test(context) && /\bdist\s*\[v\]\s*=/.test(line)) score += 35
+    if (/過期|stale/.test(context) && /d\s*!=\s*dist\[u\]/.test(line)) score += 35
+    if (/取出|確定距離/.test(context) && /\bpq\.pop\s*\(/.test(line)) score += 20
+  }
+  if (lesson.id === 'convex-hull') {
+    if (/push|加入|保留|完成下凸包/.test(context) && /\b(lower|upper)\.push_back\s*\(/.test(line)) score += 30
+    if (/pop|移除|淘汰|內部點/.test(context) && /\b(lower|upper)\.pop_back\s*\(/.test(line)) score += 30
+    if (/上凸包|upper/.test(context) && /\bupper\./.test(line)) score += 12
+    if (/下凸包|lower/.test(context) && /\blower\./.test(line)) score += 12
+  }
 
   if (/比較|判斷|太大|太小|命中|左轉|右轉|cross|<=|>=|<|>/.test(event)) {
     if (/^(if|else if|while)\s*\(/.test(line)) score += 8
