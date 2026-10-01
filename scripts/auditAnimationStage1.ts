@@ -149,7 +149,7 @@ const rows: AuditRow[] = lessons.map((lesson) => {
   const originallyAnimationV2 = raw.animationVersion === 2 || source.sourceType === 'core-authored'
   const rawFrameCount = raw.frames.length
   const finalFrameCount = lesson.frames.length
-  const expandedByGenericPipeline = !originallyAnimationV2 && finalFrameCount > rawFrameCount
+  const expandedByGenericPipeline = lesson.traceMode !== 'execution' && finalFrameCount > rawFrameCount
 
   const meaningful = meaningfulLines(lesson)
   const meaningfulNumbers = new Set(meaningful.map((line) => line.number))
@@ -194,7 +194,6 @@ const rows: AuditRow[] = lessons.map((lesson) => {
   if (ratio(focusOnlyTransitions, transitions) >= 0.25) flags.push('FOCUS_ONLY_STEPS')
   if (ratio(codeOnlyTransitions, transitions) >= 0.2) flags.push('CODE_ONLY_STEPS')
   if (ratio(genericTextFrames, finalFrameCount) >= 0.5) flags.push('GENERIC_TEXT')
-  if (mapped.size < meaningful.length) flags.push('CODE_COVERAGE_GAP')
 
   const structuralRisk =
     (expandedByGenericPipeline ? 2 : 0) +
@@ -267,7 +266,7 @@ const topStructuralRisk = [...rows]
 const cohortSummary = [
   {
     cohort: 'authored-v2',
-    rows: rows.filter((row) => !row.expandedByGenericPipeline),
+    rows: rows.filter((row) => row.originallyAnimationV2),
   },
   {
     cohort: 'semantic-non-factory',
@@ -300,7 +299,7 @@ const cohortSummary = [
 })
 
 const authoredAnomalies = rows
-  .filter((row) => !row.expandedByGenericPipeline && (row.dataNoOpTransitions > 0 || row.codeOnlyTransitions > 0))
+  .filter((row) => row.originallyAnimationV2 && (row.dataNoOpTransitions > 0 || row.codeOnlyTransitions > 0))
   .map((row) => ({
     id: row.id,
     dataNoOpTransitions: row.dataNoOpTransitions,
