@@ -7,6 +7,7 @@ import { completionLessons } from './completionLessons'
 import { enrichLesson, type PracticeProblem, type VisualModel } from './lessonMeta'
 import { enrichPedagogy } from './pedagogy'
 import { enrichKnowledgeCatalog, type KnowledgeUnit } from './knowledge'
+import { applyExecutionTraceOverride } from './executionTraceOverrides'
 
 export type AlgorithmId = string
 export type VisualKind = 'array' | 'linear' | 'graph' | 'tree' | 'segment-tree' | 'range' | 'dp' | 'string' | 'flow' | 'math' | 'geometry' | 'transform'
@@ -423,6 +424,7 @@ const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): 
 
 const pedagogicalLessons: AlgorithmLesson[] = [...coreLessons, ...foundationLessons, ...graphTreeLessons, ...dataDpLessons, ...advancedLessons, ...completionLessons]
   .map(ensureGuidedLesson)
+  .map(applyExecutionTraceOverride)
   .map(enrichLesson)
   .map(enrichPedagogy)
   .map((lesson) => ({ ...lesson, fidelity: lesson.traceMode === 'execution' ? 'concrete' as const : 'semantic' as const }))
