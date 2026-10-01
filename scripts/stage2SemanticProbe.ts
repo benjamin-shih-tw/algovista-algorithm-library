@@ -206,6 +206,22 @@ const targets = [
   'minkowski-sum',
 ]
 
+const targetSet = new Set(targets)
+const catalogIds = lessons.map((lesson) => lesson.id)
+const catalogSet = new Set(catalogIds)
+const missingTargets = catalogIds.filter((id) => !targetSet.has(id))
+const extraTargets = targets.filter((id) => !catalogSet.has(id))
+const duplicateTargetCount = targets.length - targetSet.size
+
+if (missingTargets.length || extraTargets.length || duplicateTargetCount) {
+  throw new Error([
+    'Stage 2 semantic probe target list does not match the lesson catalog.',
+    missingTargets.length ? `Missing: ${missingTargets.join(', ')}` : '',
+    extraTargets.length ? `Unknown: ${extraTargets.join(', ')}` : '',
+    duplicateTargetCount ? `Duplicate target count: ${duplicateTargetCount}` : '',
+  ].filter(Boolean).join('\n'))
+}
+
 const hiddenStateKeys = new Set([
   'algorithm', 'goal', 'before', 'condition', 'operation', 'after',
   'rationale', 'invariant', 'timelineStep', 'phase', 'microStep', 'microPhase',
