@@ -302,6 +302,7 @@ export const visualKindForModel = (model: VisualModel) => {
   if (/^tree-/.test(model) || model === 'reconstruction-tree') return 'tree'
   if (/^(fenwick|segment|dynamic-segment|merge-sort-tree|lazy|persistent-tree|sparse|sqrt|balanced|line-container|wavelet|spatial-tree|dynamic-tree|persistent-dsu)/.test(model)) return 'range'
   if (model === 'dag-dp') return 'graph'
+  if (model === 'dp-tree') return 'tree'
   if (/^dp-/.test(model)) return 'dp'
   if (/^(string|trie|suffix|palindrome|palindromic)/.test(model)) return 'string'
   if (/^(flow|bipartite|assignment|stable|general)/.test(model)) return 'flow'
