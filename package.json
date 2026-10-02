@@ -16,7 +16,8 @@
     "audit:animation:stage2": "esbuild scripts/stage2SemanticProbe.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-animation-stage2.mjs && node /tmp/algovista-animation-stage2.mjs",
     "audit:animation:stage2:matrix": "esbuild scripts/stage2RemediationMatrix.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-stage2-matrix.mjs && node /tmp/algovista-stage2-matrix.mjs",
     "audit:animation:stage3": "esbuild scripts/stage3CodeSyncAudit.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-stage3.mjs && node /tmp/algovista-stage3.mjs",
-    "audit:animation:stage5": "esbuild scripts/stage5ExecutionProgress.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-stage5.mjs && node /tmp/algovista-stage5.mjs"
+    "audit:animation:stage5": "esbuild scripts/stage5ExecutionProgress.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-stage5.mjs && node /tmp/algovista-stage5.mjs",
+    "audit:deep": "esbuild scripts/deepScan.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-deep-scan.mjs && node /tmp/algovista-deep-scan.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
