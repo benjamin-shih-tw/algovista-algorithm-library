@@ -304,7 +304,7 @@ const overrides: Record<string, TraceBuilder> = {
 
   'bipartite-coloring': (lesson) => [
     eventFrame(lesson,'color[s]=0','A 染成 0 並入隊','每個新分量可以任選起點顏色；令 A=0。',{colors:'A=0',queue:['A'],operation:'seed color'},{active:['A'],queue:['A']}),
-    eventFrame(lesson,'int u=q.front()','Pop A','展開 A，所有未染色鄰居必須染成相反色 1。',{current:'A',colors:'A=0',queue:[],operation:'pop A'},{active:['A'],queue:[]}),
+    eventFrame(lesson,'int u=q.front()','Pop A','展開 A，所有未染色鄰居必須染成相反色 1。',{colorState:'A=0 before propagation',current:'A',colors:'A=0',queue:[],operation:'pop A'},{active:['A'],queue:[]}),
     eventFrame(lesson,'color[v]=color[u]^1','A→B：B 染成 1','B 未染色，因此 color[B]=1 並入隊。',{edge:'A-B',colors:'A=0,B=1',queue:['B'],operation:'color B'},{active:['A','B'],accepted:['A','B'],queue:['B']}),
     eventFrame(lesson,'color[v]=color[u]^1','A→C：C 染成 1','C 同樣與 A 相鄰，因此 C=1。',{edge:'A-C',colors:'A=0,B=1,C=1',queue:['B','C'],operation:'color C'},{active:['A','C'],accepted:['A','B','C'],queue:['B','C']}),
     eventFrame(lesson,'color[v]=color[u]^1','B→D：D 染成 0','展開 B 時 D 尚未染色，所以 D 必須與 B 相反，得到 0。',{edge:'B-D',colors:'B=1,D=0',queue:['C','D'],operation:'color D'},{active:['B','D'],accepted:['A','B','C','D'],queue:['C','D']}),
