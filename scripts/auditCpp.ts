@@ -6,10 +6,21 @@ type Result={id:string;ok:boolean;err:string}
 type SnippetReason='missing-external-context'|'declaration-conflict'|'type-or-signature-mismatch'|'syntax-or-other'
 
 const snippetReason=(diagnostic:string):SnippetReason=>{
-  if(/undeclared identifier|unknown type name|no member named/.test(diagnostic))return 'missing-external-context'
+  if(/undeclared identifier|unknown type name|no member named|has no member named|was not declared in this scope|does not name a type|variable or field .* declared void/.test(diagnostic))return 'missing-external-context'
   if(/redefinition|ambiguous/.test(diagnostic))return 'declaration-conflict'
-  if(/no matching function|no viable conversion|reference to overloaded function/.test(diagnostic))return 'type-or-signature-mismatch'
+  if(/no matching function|no viable conversion|reference to overloaded function|too many arguments|conversion from .* to non-scalar type|invalid conversion|cannot convert|invalid types .* for array subscript|no match for/.test(diagnostic))return 'type-or-signature-mismatch'
   return 'syntax-or-other'
+}
+
+const classifierFixtures:[string,SnippetReason][]=[
+  ["error: use of undeclared identifier 'timer'",'missing-external-context'],
+  ['error: ‘timer’ was not declared in this scope','missing-external-context'],
+  ["error: no viable conversion from 'vector<long long>' to 'vector<int>'",'type-or-signature-mismatch'],
+  ['error: conversion from ‘vector<long long int>’ to non-scalar type ‘vector<int>’ requested','type-or-signature-mismatch'],
+  ["error: redefinition of 'prefix'",'declaration-conflict'],
+]
+for(const [diagnostic,expected] of classifierFixtures){
+  if(snippetReason(diagnostic)!==expected)throw new Error(`C++ diagnostic classifier mismatch: ${diagnostic}`)
 }
 
 const compileLesson=(lesson:(typeof lessons)[number])=>new Promise<Result>((resolve)=>{
