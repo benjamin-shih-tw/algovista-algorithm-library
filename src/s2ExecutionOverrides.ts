@@ -32,6 +32,35 @@ const intervalSchedulingView = (step: number): NonNullable<Frame['executionView'
     badges:[`lastEnd = ${['—','−∞','4','4','7','7','11'][step]}`,`accepted = ${[0,0,1,1,2,2,3][step]}`],
   }
 }
+const jobSchedulingCode = [
+  'int maxJobsBeforeDeadlines(vector<pair<int,int>> jobs) {',
+  '  sort(jobs.begin(), jobs.end());',
+  '  priority_queue<int> durations; long long used=0;',
+  '  for(auto [deadline,duration]:jobs){',
+  '    used+=duration; durations.push(duration);',
+  '    if(used>deadline){',
+  '      used-=durations.top(); durations.pop();',
+  '    }',
+  '  }',
+  '  return durations.size();',
+  '}',
+]
+const jobSchedulingView = (step: number): NonNullable<Frame['executionView']> => {
+  const statuses = [
+    ['待處理','待處理','待處理','待處理'],
+    ['保留','待處理','待處理','待處理'],
+    ['保留','保留','待處理','待處理'],
+    ['保留','保留','暫收','待處理'],
+    ['移除','保留','保留','待處理'],
+    ['移除','保留','保留','保留'],
+  ][step]
+  const jobs=[[3,3],[4,1],[4,2],[6,3]]
+  return {kind:'table',title:'DEADLINE SCHEDULING · keep maximum feasible count',
+    columns:['deadline','duration','decision'],rows:jobs.map(([deadline,duration],index)=>[String(deadline),String(duration),statuses[index]]),
+    activeCells:(step===3?[2]:step===4?[0]:step===5?[3]:step>0?[step-1]:[]).map((index)=>`${index},2`),
+    badges:[`used = ${[0,3,4,6,3,6][step]}`,`kept = ${[0,1,2,3,2,3][step]}`],
+  }
+}
 
 const prefixMatrix = (cells: string[][], activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
   kind: 'matrix', title: '2D PREFIX · pref[r][c] = sum of [0,r) × [0,c)', cells,
@@ -119,7 +148,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'if(used>deadline)','加入 (4,2) 後超時','used=6>4，必須刪掉一個已選工作。',{job:'(4,2)',used:6,deadline:4,heap:['3','2','1'],operation:'detect infeasible prefix'}),
     eventFrame(lesson,'used-=durations.top(); durations.pop','刪除最長 Duration 3','移除 duration=3 後 used=3，仍保留兩件工時 1、2，對未來最有利。',{removed:3,used:'6→3',heap:['2','1'],kept:2,operation:'drop longest job'}),
     eventFrame(lesson,'used+=duration; durations.push','加入最後 (6,3)','used=6≤6，所以可保留；最終 heap 有三件工作。',{job:'(6,3)',used:6,heap:['3','2','1'],kept:3,operation:'finish feasible set'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:jobSchedulingView(step)})),
 
   'fractional-knapsack': (lesson) => [
     eventFrame(lesson,'sort(items.begin()','依 Value/Weight 排序','容量 50；物品 (w10,v60),(w20,v100),(w30,v120)，密度分別 6、5、4。',{capacity:50,items:['10/60 density6','20/100 density5','30/120 density4'],operation:'sort by density'}),
@@ -166,6 +195,7 @@ const overrides: Record<string, TraceBuilder> = {
 
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
   if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
+  if(lesson.id==='job-scheduling') lesson={...lesson,description:'依截止時間保留最多件可完成的工作。',code:jobSchedulingCode}
   const build=overrides[lesson.id]
   if(build) return {
     ...lesson,
