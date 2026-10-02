@@ -2,6 +2,14 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { categories, lessons } from '../src/algorithms'
 
 const byId=new Map(lessons.map((lesson)=>[lesson.id,lesson]))
+const assertJsonSafe=(value:unknown,path:string)=>{
+  if(typeof value==='number'&&!Number.isFinite(value)) throw new Error(`non-finite number at ${path}`)
+  if(typeof value==='bigint'||typeof value==='function'||typeof value==='symbol') throw new Error(`non-JSON value at ${path}: ${typeof value}`)
+  if(Array.isArray(value)){value.forEach((item,index)=>assertJsonSafe(item,`${path}[${index}]`));return}
+  if(value&&typeof value==='object'){
+    for(const [key,item] of Object.entries(value)) assertJsonSafe(item,`${path}.${key}`)
+  }
+}
 const depthCache=new Map<string,number>()
 const visiting=new Set<string>()
 const depthOf=(id:string):number=>{
@@ -51,6 +59,7 @@ const lessonDir='public/lessons'
 rmSync(lessonDir,{recursive:true,force:true})
 mkdirSync(lessonDir,{recursive:true})
 for(const lesson of lessons){
+  assertJsonSafe(lesson,`lesson.${lesson.id}`)
   const serialized=JSON.stringify(lesson)
   const restored=JSON.parse(serialized) as {id?:string;frames?:unknown[]}
   if(restored.id!==lesson.id||restored.frames?.length!==lesson.frames.length){
