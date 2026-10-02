@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, ArrowLeft, BookOpen, Boxes, Bug, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Code2, Copy, Download, Eye, ExternalLink, GripVertical, Layers3, Lightbulb, Link2, Maximize2, Pause, Play, RotateCcw, Search, ShieldCheck, Sparkles, Target, Workflow, Zap } from 'lucide-react'
-import { categories, lessons, segmentNodes, segmentValues, type AlgorithmCategory, type AlgorithmLesson, type Frame, type VisualKind } from './algorithms'
+import type { AlgorithmCategory, AlgorithmLesson, Frame, VisualKind } from './algorithms'
+import { buildTree } from './segmentTree'
 import { CppCode } from './CppCode'
 import { ArrayAdaptiveScene, DPAdaptiveScene, FlowAdaptiveScene, GeometryAdaptiveScene, GraphAdaptiveScene, LinearAdaptiveScene, MathAdaptiveScene, RangeAdaptiveScene, StringAdaptiveScene, TransformAdaptiveScene, TreeAdaptiveScene } from './AdaptiveScenes'
 import DotPattern from '@/components/ui/dot-pattern-1'
@@ -13,6 +14,33 @@ const INTERVAL = 5200
 const WORKSPACE_STORAGE_KEY = 'algovista-workspace-split-v1'
 const readWorkspaceWidth=()=>{try{const saved=Number(localStorage.getItem(WORKSPACE_STORAGE_KEY));return Number.isFinite(saved)&&saved>=30&&saved<=72?saved:58}catch{return 58}}
 
+interface CatalogLesson {
+  id:string
+  index:string
+  category:string
+  categoryId:AlgorithmCategory['id']
+  subcategory:string
+  title:string
+  zhTitle:string
+  description:string
+  complexity:string
+  accent:string
+  prerequisiteCount:number
+  depth:number
+  visualModel:string
+  steps:number
+}
+interface CatalogPayload {
+  generatedAt:string
+  total:number
+  categories:AlgorithmCategory[]
+  lessons:CatalogLesson[]
+}
+const segmentValues=[2,5,1,4,9,3,7,6]
+const segmentNodes=buildTree(segmentValues)
+let fullLessonMapPromise:Promise<Map<string,AlgorithmLesson>>|null=null
+const loadFullLessonMap=()=>fullLessonMapPromise??=import('./algorithms').then((module)=>new Map(module.lessons.map((lesson)=>[lesson.id,lesson])))
+
 const BEGINNER_PATH = [
   { id: 'linear-search', step: '01', reason: '先學會逐格讀值、比較條件與排除候選。' },
   { id: 'binary-search', step: '02', reason: '接著理解「為什麼能安全丟掉一半」。' },
@@ -23,17 +51,6 @@ const BEGINNER_PATH = [
 ] as const
 
 const beginnerRank = new Map<string,string>(BEGINNER_PATH.map((item) => [item.id, item.step]))
-const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]))
-const depthCache = new Map<string, number>()
-const curriculumDepth = (lesson: AlgorithmLesson): number => {
-  const cached = depthCache.get(lesson.id)
-  if (cached !== undefined) return cached
-  const depth = lesson.knowledge?.prerequisites.length
-    ? 1 + Math.max(...lesson.knowledge.prerequisites.map((item) => curriculumDepth(lessonById.get(item.lessonId)!)))
-    : 0
-  depthCache.set(lesson.id, depth)
-  return depth
-}
 
 function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = GraphAdaptiveScene({ lesson, frame })
@@ -402,13 +419,13 @@ function BeginnerGuidePanel({lesson,onStart}:{lesson:AlgorithmLesson;onStart:()=
   </section>
 }
 
-function LessonDependencyLink({lessonId,reason,onNavigate}:{lessonId:string;reason:string;onNavigate:(lesson:AlgorithmLesson)=>void}) {
-  const target=lessonById.get(lessonId)
+function LessonDependencyLink({lessonId,reason,onNavigate,catalogById}:{lessonId:string;reason:string;onNavigate:(lessonId:string)=>void;catalogById:Map<string,CatalogLesson>}) {
+  const target=catalogById.get(lessonId)
   if(!target)return null
-  return <button type="button" onClick={()=>onNavigate(target)} style={{'--lesson-accent':target.accent} as React.CSSProperties}><span>{target.index}</span><div><b>{target.zhTitle}</b><small>{reason}</small></div><ChevronRight/></button>
+  return <button type="button" onClick={()=>onNavigate(lessonId)} style={{'--lesson-accent':target.accent} as React.CSSProperties}><span>{target.index}</span><div><b>{target.zhTitle}</b><small>{reason}</small></div><ChevronRight/></button>
 }
 
-function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNavigate:(lesson:AlgorithmLesson)=>void}) {
+function KnowledgeUnitPanel({lesson,onNavigate,catalogById}:{lesson:AlgorithmLesson;onNavigate:(lessonId:string)=>void;catalogById:Map<string,CatalogLesson>}) {
   const unit=lesson.knowledge!
   return <section className="knowledge-unit expanded">
     <div className="knowledge-trigger">
@@ -416,7 +433,7 @@ function KnowledgeUnitPanel({lesson,onNavigate}:{lesson:AlgorithmLesson;onNaviga
     </div>
     <div className="knowledge-content">
       <div className="knowledge-dependencies">
-        <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
+        <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate} catalogById={catalogById}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
         <section><header><BookOpen/><span>進入過程前先懂</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
       </div>
     </div>
@@ -451,7 +468,7 @@ function WorkspaceResizeHandle({onPointerDown,onKeyboardResize}:{onPointerDown:(
   return <button type="button" className="workspace-resizer" onPointerDown={onPointerDown} onKeyDown={(event)=>{if(event.key==='ArrowLeft'){event.preventDefault();onKeyboardResize(-2)}if(event.key==='ArrowRight'){event.preventDefault();onKeyboardResize(2)}}} aria-label="拖曳調整動畫與程式碼寬度" title="拖曳調整左右面板寬度"><GripVertical/></button>
 }
 
-function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson; onBack: () => void; onNavigate:(lesson:AlgorithmLesson)=>void }) {
+function LessonPlayer({ lesson, onBack, onNavigate, catalogById, totalLessons }: { lesson: AlgorithmLesson; onBack: () => void; onNavigate:(lessonId:string)=>void; catalogById:Map<string,CatalogLesson>; totalLessons:number }) {
   const requestedStep=Number(new URLSearchParams(window.location.search).get('step') ?? 1)
   const initialStep=Number.isFinite(requestedStep)?Math.max(0,Math.min(lesson.frames.length-1,Math.floor(requestedStep)-1)):0
   const [index, setIndex] = useState(initialStep), [playing, setPlaying] = useState(false)
@@ -470,9 +487,9 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
   const beginWorkspaceResize=(event:React.PointerEvent<HTMLButtonElement>)=>{event.preventDefault();const move=(pointerEvent:PointerEvent)=>{const bounds=workspaceRef.current?.getBoundingClientRect();if(!bounds)return;setVisualWidth(Math.min(72,Math.max(30,(pointerEvent.clientX-bounds.left)/bounds.width*100)))};const finish=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',finish)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',finish)}
   const resetLayout=()=>setVisualWidth(58)
   return <main className="player-page" style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
-    <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(lessons.length).padStart(3,'0')}</span></header>
+    <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(totalLessons).padStart(3,'0')}</span></header>
     <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p></div></section>
-    <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate}/>
+    <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate} catalogById={catalogById}/>
 
     <section className="lesson-stage" ref={stageRef}>
       <div className="stage-top"><span>過程</span><button className="reset-layout" onClick={resetLayout} title="重設動畫與程式碼寬度"><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? '播放中' : '已暫停'}</span></div>
@@ -493,53 +510,86 @@ function LessonPlayer({ lesson, onBack, onNavigate }: { lesson: AlgorithmLesson;
   </main>
 }
 
-function LessonCard({lesson,onSelect}:{lesson:AlgorithmLesson;onSelect:(lesson:AlgorithmLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><div className="card-dependency"><Workflow/>{lesson.knowledge?.prerequisites.length?`${lesson.knowledge.prerequisites.length} 堂先備 · 深度 ${curriculumDepth(lesson)}`:'基礎單元'}</div><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
+function LessonCard({lesson,onSelect}:{lesson:CatalogLesson;onSelect:(lesson:CatalogLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><div className="card-dependency"><Workflow/>{lesson.prerequisiteCount?`${lesson.prerequisiteCount} 堂先備 · 深度 ${lesson.depth}`:'基礎單元'}</div><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
 
-function CategoryDetail({category,onBack,onSelect}:{category:AlgorithmCategory;onBack:()=>void;onSelect:(lesson:AlgorithmLesson)=>void}) {
-  const categoryLessons=lessons.filter((lesson)=>lesson.categoryId===category.id).sort((a,b)=>curriculumDepth(a)-curriculumDepth(b)||Number(a.index)-Number(b.index))
+function CategoryDetail({category,lessons,onBack,onSelect}:{category:AlgorithmCategory;lessons:CatalogLesson[];onBack:()=>void;onSelect:(lesson:CatalogLesson)=>void}) {
+  const categoryLessons=lessons.filter((lesson)=>lesson.categoryId===category.id).sort((a,b)=>a.depth-b.depth||Number(a.index)-Number(b.index))
   return <main className="library-page"><header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有分類</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">CATEGORY {category.index}</span></header>
     <section className="category-heading" style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index} · ALGORITHM DOMAIN</span><h1>{category.title}</h1><p>{category.zhTitle} · {category.description}</p></section>
     <section className="subcategory-list">{category.subcategories.map((subcategory)=>{const items=categoryLessons.filter((lesson)=>lesson.subcategory===subcategory);if(!items.length)return null;return <div className="subcategory" key={subcategory}><header><span>{subcategory}</span><b>{String(items.length).padStart(2,'0')} ALGORITHMS</b></header><div className="subcategory-grid">{items.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>)}</div></div>})}</section>
   </main>
 }
 
-function Library({ onSelect }: { onSelect: (lesson: AlgorithmLesson) => void }) {
+function Library({ catalog,onSelect }: { catalog:CatalogPayload;onSelect: (lesson: CatalogLesson) => void }) {
   const [category,setCategory]=useState<AlgorithmCategory|null>(null)
   const [query,setQuery]=useState('')
+  const lessons=catalog.lessons
   const matched=query.trim()?lessons.filter((lesson)=>`${lesson.title} ${lesson.zhTitle} ${lesson.category} ${lesson.subcategory}`.toLowerCase().includes(query.trim().toLowerCase())):[]
   const beginnerLessons=BEGINNER_PATH.map((item)=>({...item,lesson:lessons.find((lesson)=>lesson.id===item.id)!}))
-  if(category) return <CategoryDetail category={category} onBack={()=>setCategory(null)} onSelect={onSelect}/>
+  if(category) return <CategoryDetail category={category} lessons={lessons} onBack={()=>setCategory(null)} onSelect={onSelect}/>
   return <main className="library-page"><header className="site-header"><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-note">COMPETITIVE PROGRAMMING · VISUALIZED</span></header>
     <section className="library-hero relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"/><span className="relative z-10">STRUCTURED ALGORITHM LIBRARY</span><h1 className="relative z-10">先建立地圖，<br/><em>再理解細節。</em></h1><p className="relative z-10">從演算法領域進入子分類，再學習具體演算法。動畫、資料結構狀態與 C++ 程式碼在每一步保持同步。</p></section>
     <section className="beginner-path"><header><div><span>第一次來？</span><h2>照這 6 堂建立第一張演算法地圖</h2></div><p>每堂都會先教你看畫面，再讓動畫、變數與 C++ 程式碼逐步同步。</p></header><div>{beginnerLessons.map(({lesson,step,reason})=><button key={lesson.id} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span>{step}</span><div><b>{lesson.zhTitle}</b><small>{lesson.title}</small><p>{reason}</p></div><ChevronRight size={15}/></button>)}</div></section>
     <label className="library-search"><Search/><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="搜尋演算法、分類或中文名稱"/><span>{query?`${matched.length} RESULTS`:`${lessons.length} ALGORITHMS`}</span></label>
-    {query?<section className="search-results">{matched.length?matched.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>):<p>找不到符合的演算法。</p>}</section>:<section className="category-grid">{categories.map((category)=><button key={category.id} className="category-card" onClick={()=>setCategory(category)} style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index}</span><Layers3/><small>{category.subcategories.length} SUBCATEGORIES</small><h2>{category.title}</h2><p>{category.zhTitle} · {category.description}</p><footer><b>{lessons.filter((lesson)=>lesson.categoryId===category.id).length} 個演算法</b><ChevronRight/></footer></button>)}</section>}
+    {query?<section className="search-results">{matched.length?matched.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>):<p>找不到符合的演算法。</p>}</section>:<section className="category-grid">{catalog.categories.map((category)=><button key={category.id} className="category-card" onClick={()=>setCategory(category)} style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index}</span><Layers3/><small>{category.subcategories.length} SUBCATEGORIES</small><h2>{category.title}</h2><p>{category.zhTitle} · {category.description}</p><footer><b>{lessons.filter((lesson)=>lesson.categoryId===category.id).length} 個演算法</b><ChevronRight/></footer></button>)}</section>}
   </main>
 }
 
 export default function App() {
   const [theme,setTheme]=useThemeSettings()
-  const directLessonId=new URLSearchParams(window.location.search).get('lesson')
-  const [selected,setSelected]=useState<AlgorithmLesson|null>(()=>lessons.find((lesson)=>lesson.id===directLessonId)??null)
-  useEffect(()=>{
-    const syncFromLocation=()=>{
-      const lessonId=new URLSearchParams(window.location.search).get('lesson')
-      setSelected(lessons.find((lesson)=>lesson.id===lessonId)??null)
+  const [catalog,setCatalog]=useState<CatalogPayload|null>(null)
+  const [catalogError,setCatalogError]=useState('')
+  const [selected,setSelected]=useState<AlgorithmLesson|null>(null)
+  const [lessonLoading,setLessonLoading]=useState(false)
+  const requestRef=useRef(0)
+
+  const showLesson=async(lessonId:string|null)=>{
+    const request=++requestRef.current
+    if(!lessonId){
+      setLessonLoading(false)
+      setSelected(null)
+      return
     }
+    setLessonLoading(true)
+    try{
+      const map=await loadFullLessonMap()
+      if(request===requestRef.current)setSelected(map.get(lessonId)??null)
+    }finally{
+      if(request===requestRef.current)setLessonLoading(false)
+    }
+  }
+
+  useEffect(()=>{
+    let cancelled=false
+    fetch('./catalog-index.json')
+      .then((response)=>{if(!response.ok)throw new Error(`catalog HTTP ${response.status}`);return response.json() as Promise<CatalogPayload>})
+      .then((payload)=>{if(!cancelled)setCatalog(payload)})
+      .catch((error)=>{if(!cancelled)setCatalogError(error instanceof Error?error.message:'catalog load failed')})
+    void showLesson(new URLSearchParams(window.location.search).get('lesson'))
+    const syncFromLocation=()=>void showLesson(new URLSearchParams(window.location.search).get('lesson'))
     window.addEventListener('popstate',syncFromLocation)
-    return()=>window.removeEventListener('popstate',syncFromLocation)
+    return()=>{cancelled=true;window.removeEventListener('popstate',syncFromLocation)}
   },[])
-  const selectLesson=(lesson:AlgorithmLesson)=>{
+
+  const selectLesson=(lessonId:string)=>{
     const url=new URL(window.location.href)
-    url.searchParams.set('lesson',lesson.id)
+    url.searchParams.set('lesson',lessonId)
     url.searchParams.delete('step')
-    window.history.pushState({algovista:'lesson',lessonId:lesson.id},'',url.pathname+`?${url.searchParams.toString()}`)
-    setSelected(lesson)
+    window.history.pushState({algovista:'lesson',lessonId},'',url.pathname+`?${url.searchParams.toString()}`)
+    void showLesson(lessonId)
   }
   const clearLesson=()=>{
     window.history.pushState({algovista:'library'},'',window.location.pathname)
-    setSelected(null)
+    void showLesson(null)
   }
-  const catalogManifest=JSON.stringify(lessons.map(({id,visualModel,frames})=>({id,visualModel,steps:frames.length})))
-  return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{selected?<LessonPlayer lesson={selected} onBack={clearLesson} onNavigate={selectLesson}/>:<Library onSelect={selectLesson}/>}</div>
+  const catalogById=new Map((catalog?.lessons??[]).map((lesson)=>[lesson.id,lesson]))
+  const catalogManifest=JSON.stringify((catalog?.lessons??[]).map(({id,visualModel,steps})=>({id,visualModel,steps})))
+  const content=selected
+    ? <LessonPlayer lesson={selected} onBack={clearLesson} onNavigate={selectLesson} catalogById={catalogById} totalLessons={catalog?.total??202}/>
+    : lessonLoading
+      ? <main className="library-page"><header className="site-header"><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div></header><section className="library-hero"><span>LOADING LESSON</span><h1>正在載入演算法內容…</h1><p>首頁目錄維持輕量；完整動畫、程式碼與教學資料只在進入課程時載入。</p></section></main>
+      : catalog
+        ? <Library catalog={catalog} onSelect={(lesson)=>selectLesson(lesson.id)}/>
+        : <main className="library-page"><header className="site-header"><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div></header><section className="library-hero"><span>{catalogError?'CATALOG ERROR':'LOADING CATALOG'}</span><h1>{catalogError?'目錄載入失敗':'正在載入演算法目錄…'}</h1><p>{catalogError||'只載入課程索引，不載入 202 課完整動畫資料。'}</p></section></main>
+  return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{content}</div>
 }
