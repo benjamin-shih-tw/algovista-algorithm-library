@@ -102,10 +102,30 @@ if (chainCells.some((cells) => !cells || cells.length !== 3 || cells.some((row) 
     !chain.code.some((line) => line.includes('vector<vector<long long>> dp(n + 1')) || !chain.code.some((line) => line.includes('return dp[0][n]'))) {
   errors.push('matrix-chain-multiplication: interval costs or code differ from the narrated trace')
 }
+const fenwick2d = lesson('fenwick-tree-2d')
+const fenwick2dCells = fenwick2d.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (fenwick2dCells.some((cells) => !cells || cells.length !== 4 || cells.some((row) => row.length !== 4)) ||
+    fenwick2dCells[1]?.[1][2] !== '5' || fenwick2dCells[1]?.[3][3] !== '0' ||
+    fenwick2dCells[3]?.[3][3] !== '5' || fenwick2dCells[6]?.[1][2] !== '5' ||
+    !fenwick2d.code.some((line) => line.includes('vector<vector<long long>> bit;')) ||
+    !fenwick2d.code.some((line) => line.includes('long long prefix(int x,int y) const'))) {
+  errors.push('fenwick-tree-2d: BIT updates, query snapshot, or code differ from the narrated trace')
+}
+const interval = lesson('interval-dp')
+const intervalCells = interval.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (intervalCells.some((cells) => !cells || cells.length !== 4 || cells.some((row) => row.length !== 4)) ||
+    intervalCells[0]?.[0][3] !== '—' || intervalCells[1]?.[3][3] !== '9' ||
+    intervalCells[2]?.[0][1] !== '3' || intervalCells[2]?.[1][2] !== '—' ||
+    intervalCells[3]?.[1][2] !== '5' || intervalCells[3]?.[2][3] !== '7' ||
+    intervalCells[4]?.[0][2] !== '-1' || intervalCells[4]?.[1][3] !== '4' || intervalCells[5]?.[0][3] !== '10' ||
+    !interval.frames[5].codeLines.some((line) => interval.code[line - 1]?.includes('return dp[0][n-1]')) ||
+    !interval.code.some((line) => line.includes('vector<vector<long long>> dp(n,'))) {
+  errors.push('interval-dp: interval table, execution order, return highlight, or code differs from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP OK')
 }

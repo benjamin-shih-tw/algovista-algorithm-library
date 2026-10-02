@@ -22,6 +22,26 @@ const chainView = (step:number):NonNullable<Frame['executionView']> => ({
     ['—','—','0',step>=1?'9000':'—'],['—','—','—','0']],
   activeCells:step===1?['0,2','1,3']:step>=3?['0,3']:[],
 })
+const fenwick2DView = (step:number):NonNullable<Frame['executionView']> => {
+  const cells = Array.from({length:4},()=>Array(4).fill('0') as string[])
+  if(step>=1) cells[1][2]='5'
+  if(step>=2) cells[1][3]='5'
+  if(step>=3) { cells[3][2]='5'; cells[3][3]='5' }
+  return {kind:'matrix',title:'2D FENWICK · bit[i][j]',rowLabels:['1','2','3','4'],colLabels:['1','2','3','4'],cells,
+    activeCells:step===1?['1,2']:step===2?['1,3']:step===3?['3,2','3,3']:step===5?['2,2','2,1']:step===6?['1,2','1,1']:[],
+    badges:step>=4?[`prefix(3,3) · s=${step===6?5:0}`]:[],}
+}
+const intervalView = (step:number):NonNullable<Frame['executionView']> => ({
+  kind:'matrix',title:'INTERVAL DP · dp[l][r] score difference',
+  rowLabels:['l=0','l=1','l=2','l=3'],colLabels:['r=0','r=1','r=2','r=3'],
+  cells:[
+    [step>=1?'4':'—',step>=2?'3':'—',step>=4?'-1':'—',step>=4?'10':'—'],
+    ['—',step>=1?'7':'—',step>=3?'5':'—',step>=4?'4':'—'],
+    ['—','—',step>=1?'2':'—',step>=3?'7':'—'],
+    ['—','—','—',step>=1?'9':'—'],
+  ],
+  activeCells:step===1?['0,0','1,1','2,2','3,3']:step===2?['0,1']:step===3?['1,2','2,3']:step>=4?['0,3']:[],
+})
 
 const treePoints:Point[]=[
   {id:'A',x:12,y:46,label:'A'},{id:'B',x:34,y:22,label:'B'},
@@ -98,15 +118,6 @@ const codeOverrides:Record<string,string[]>={
     '    }',
     '  }',
   ],
-  'interval-dp':[
-    'for(int len=1;len<=n;++len)',
-    '  for(int l=0;l+len<=n;++l) {',
-    '    int r=l+len-1;',
-    '    if(l==r) dp[l][r]=a[l];',
-    '    else dp[l][r]=max(a[l]-dp[l+1][r],a[r]-dp[l][r-1]);',
-    '  }',
-  ],
-
   'dag-dp':[
     'for(int u:topologicalOrder) {',
     '  for(auto [v,w]:g[u]) {',
@@ -214,10 +225,10 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'bit[i][j]+=v','i=2,j=3：bit[2][3]+=5','j 下一步加 lowbit(3)=1，變 4。',{i:2,j:3,cell:'bit[2][3]',value:'0→5',operation:'update first cell'}),
     eventFrame(lesson,'bit[i][j]+=v','i=2,j=4：bit[2][4]+=5','j=4 再加 4 會超界；接著 i=2+2=4。',{i:2,j:4,cell:'bit[2][4]',value:'0→5',operation:'update row ancestor'}),
     eventFrame(lesson,'bit[i][j]+=v','i=4：更新 [4][3] 與 [4][4]','最後四個被改到的 BIT cell 是 (2,3),(2,4),(4,3),(4,4)。',{cells:['(2,3)','(2,4)','(4,3)','(4,4)'],operation:'finish nested update'}),
-    eventFrame(lesson,'ll prefix(int x,int y)','查 Prefix(3,3)','x 方向走 3→2→0；每個 x 下 y 方向走 3→2→0。',{query:'prefix(3,3)',xPath:['3','2'],yPath:['3','2'],operation:'start prefix query'}),
+    eventFrame(lesson,'long long prefix(int x,int y)','查 Prefix(3,3)','x 方向走 3→2→0；每個 x 下 y 方向走 3→2→0。',{query:'prefix(3,3)',xPath:['3','2'],yPath:['3','2'],operation:'start prefix query'}),
     eventFrame(lesson,'s+=bit[i][j]','讀 (3,3),(3,2)：都是 0','這兩個查詢到的 BIT 儲存格都是 0，因此目前 prefix 累加值仍維持 s=0。',{cells:['(3,3)=0','(3,2)=0'],sum:0,operation:'accumulate first x row'}),
     eventFrame(lesson,'s+=bit[i][j]','i=2：bit[2][3]=5','再讀 bit[2][2]=0，所以 prefix(3,3)=5。',{cells:['(2,3)=5','(2,2)=0'],sum:5,operation:'finish prefix'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:fenwick2DView(step)})),
 
   'tree-dp':lesson=>[
     eventFrame(lesson,'dp[u]=1','Root A：每個 Node 先 Count 自己','這個具體 Tree DP 計算 subtree size；葉節點 base 都是 1。',{goal:'subtree size',root:'A',operation:'base state'},{active:['A']}),
@@ -352,10 +363,10 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'for(int len=1','取數遊戲 a=[4,7,2,9]','dp[l][r] 表示目前玩家相對對手能取得的最大分差。',{a:['4','7','2','9'],operation:'define interval state'}),
     eventFrame(lesson,'if(l==r)','長度 1 Base','dp[i][i]=a[i]，所以對角線是 4,7,2,9。',{diag:['4','7','2','9'],operation:'base intervals'}),
     eventFrame(lesson,'dp[l][r]=max','算 [0,1]','max(4-dp[1][1]= -3, 7-dp[0][0]=3)=3。',{interval:'[0,1]',choices:['4-7=-3','7-4=3'],value:3,operation:'choose endpoint'}),
-    eventFrame(lesson,'dp[l][r]=max','算 [2,3]','max(2-9=-7,9-2=7)=7。',{interval:'[2,3]',value:7,operation:'choose endpoint'}),
-    eventFrame(lesson,'dp[l][r]=max','逐長度擴張到 [0,3]','利用較短區間結果，最終 dp[0][3]=10。',{interval:'[0,3]',value:10,operation:'finish table'}),
-    eventFrame(lesson,'dp[l][r]=max','分差 10','第一手可保證比對手多 10 分。',{answer:10,operation:'return game value'}),
-  ],
+    eventFrame(lesson,'dp[l][r]=max','算完長度 2 的區間','依 l 遞增，先得 dp[1][2]=5，最後 dp[2][3]=7。',{interval:'[2,3]',value:7,operation:'finish length two'}),
+    eventFrame(lesson,'dp[l][r]=max','逐長度擴張到 [0,3]','長度 3 得 dp[0][2]=-1、dp[1][3]=4；長度 4 得 dp[0][3]=10。',{interval:'[0,3]',value:10,operation:'finish table'}),
+    eventFrame(lesson,'return dp[0][n-1]','分差 10','第一手可保證比對手多 10 分。',{answer:10,operation:'return game value'}),
+  ].map((frame,step)=>({...frame,executionView:intervalView(step)})),
 
   'dag-dp':lesson=>[
     eventFrame(lesson,'for(int u:topologicalOrder','DAG order=A,B,C,D','邊 A→B(2), A→C(5), B→D(4), C→D(1)，dp[A]=0，其餘 -∞。',{order:['A','B','C','D'],edges:['A-B:2','A-C:5','B-D:4','C-D:1'],operation:'initialize DAG'}),
