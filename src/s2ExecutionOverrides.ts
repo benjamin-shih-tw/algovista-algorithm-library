@@ -11,6 +11,28 @@ import { applyS2MiscOverride } from './s2ExecutionOverridesMisc'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
+const intervalSchedulingCode = [
+  'int maxNonOverlapping(vector<pair<int,int>> intervals) {',
+  '  sort(intervals.begin(), intervals.end(), [](auto a, auto b) { return a.second < b.second; });',
+  '  int lastEnd = numeric_limits<int>::min(), answer = 0;',
+  '  for(auto [l,r]:intervals) if(l>=lastEnd){',
+  '    ++answer; lastEnd=r;',
+  '  }',
+  '  return answer;',
+  '}',
+]
+const intervalSchedulingView = (step: number): NonNullable<Frame['executionView']> => {
+  const intervals = [[1,4],[3,5],[0,6],[5,7],[3,9],[5,9],[6,10],[8,11]]
+  const decided = [0,0,1,3,4,7,8][step]
+  const active = [[],[],[0],[1,2],[3],[4,5,6],[7]][step]
+  return {kind:'table',title:'INTERVAL SCHEDULING · sorted by finish time',
+    columns:['start','end','decision'],
+    rows:intervals.map(([l,r],index)=>[String(l),String(r),index>=decided?'待檢查':[0,3,7].includes(index)?'接受':'跳過']),
+    activeCells:active.map((index)=>`${index},2`),
+    badges:[`lastEnd = ${['—','−∞','4','4','7','7','11'][step]}`,`accepted = ${[0,0,1,1,2,2,3][step]}`],
+  }
+}
+
 const prefixMatrix = (cells: string[][], activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
   kind: 'matrix', title: '2D PREFIX · pref[r][c] = sum of [0,r) × [0,c)', cells,
   rowLabels: ['0', '1', '2', '3'], colLabels: ['0', '1', '2', '3'], activeCells,
@@ -68,7 +90,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'++answer; lastEnd=r','接受 (5,7)','5≥4，選入後 lastEnd=7、answer=2。',{interval:'(5,7)',lastEnd:7,answer:2,operation:'accept interval'}),
     eventFrame(lesson,'if(l>=lastEnd)','略過到 (8,11)','(3,9)、(5,9)、(6,10) 都與目前結束點 7 衝突；(8,11) 可接上。',{skipped:['(3,9)','(5,9)','(6,10)'],next:'(8,11)',operation:'scan compatible'}),
     eventFrame(lesson,'++answer; lastEnd=r','接受 (8,11)，答案 3','最終選 {(1,4),(5,7),(8,11)}，共 3 段。',{selected:['(1,4)','(5,7)','(8,11)'],answer:3,operation:'finish schedule'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:intervalSchedulingView(step)})),
 
   'interval-covering': (lesson) => [
     eventFrame(lesson,'sort(intervals.begin()','目標覆蓋 [0,10]','候選區間排序後為 (-1,3),(0,4),(2,7),(4,6),(6,10),(7,12)。',{target:'[0,10]',intervals:['(-1,3)','(0,4)','(2,7)','(4,6)','(6,10)','(7,12)'],operation:'sort candidates'}),
@@ -143,6 +165,7 @@ const overrides: Record<string, TraceBuilder> = {
 }
 
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
+  if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
   const build=overrides[lesson.id]
   if(build) return {
     ...lesson,

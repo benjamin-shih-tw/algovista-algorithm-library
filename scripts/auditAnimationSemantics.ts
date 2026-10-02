@@ -156,10 +156,21 @@ if (tspRows.some((rows) => !rows || rows.some((row) => row.length !== 4)) ||
     !tsp.frames[7].codeLines.some((line) => tsp.code[line - 1]?.includes('return answer'))) {
   errors.push('tsp-dp: selected path costs, tour optimum, or complete code differ from the trace')
 }
+const scheduling = lesson('interval-scheduling')
+const schedulingRows = scheduling.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (schedulingRows.some((rows) => !rows || rows.length !== 8 || rows.some((row) => row.length !== 3)) ||
+    schedulingRows[0]?.[1].join(',') !== '3,5,待檢查' ||
+    schedulingRows[2]?.[0][2] !== '接受' || schedulingRows[3]?.[2][2] !== '跳過' ||
+    schedulingRows[4]?.[3][2] !== '接受' || schedulingRows[5]?.[6][2] !== '跳過' ||
+    schedulingRows[6]?.[7][2] !== '接受' ||
+    !scheduling.code.some((line) => line.includes('int maxNonOverlapping(')) ||
+    !scheduling.code.some((line) => line.includes('return answer;'))) {
+  errors.push('interval-scheduling: sorted intervals, greedy choices, or code differ from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling OK')
 }
