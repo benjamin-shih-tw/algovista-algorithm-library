@@ -176,10 +176,29 @@ if (jobRows.some((rows) => !rows || rows.length !== 4 || rows.some((row) => row.
     !jobs.description.includes('最多件') || !jobs.code.some((line) => line.includes('return durations.size()'))) {
   errors.push('job-scheduling: deadline order, longest-job removal, objective, or code differ from the trace')
 }
+const covering = lesson('interval-covering')
+const coveringRows = covering.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (coveringRows.some((rows) => !rows || rows.length !== 6 || rows.some((row) => row.length !== 3)) ||
+    coveringRows[0]?.[0].join(',') !== '-1,3,待檢查' || coveringRows[2]?.[1][2] !== '最遠' ||
+    coveringRows[3]?.[1][2] !== '選用' || coveringRows[4]?.[2][2] !== '最遠' ||
+    coveringRows[5]?.[2][2] !== '選用' || coveringRows[6]?.[5][2] !== '最遠' ||
+    coveringRows[7]?.[5][2] !== '選用' ||
+    !covering.code.some((line) => line.includes('int minIntervalsToCover('))) {
+  errors.push('interval-covering: candidate scans or selected reaches differ from the narrated trace')
+}
+const merging = lesson('interval-merging')
+const mergingRows = merging.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (mergingRows.some((rows) => !rows || rows.length !== 5 || rows.some((row) => row.length !== 3)) ||
+    mergingRows[1]?.[0][2] !== '新段' || mergingRows[2]?.[1][2] !== '合併' ||
+    mergingRows[3]?.[2][2] !== '新段' || mergingRows[4]?.[3][2] !== '合併' ||
+    mergingRows[5]?.[4][2] !== '新段' ||
+    !merging.code.some((line) => line.includes('return out;'))) {
+  errors.push('interval-merging: union components or return code differ from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval and job scheduling OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling OK')
 }

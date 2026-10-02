@@ -61,6 +61,67 @@ const jobSchedulingView = (step: number): NonNullable<Frame['executionView']> =>
     badges:[`used = ${[0,3,4,6,3,6][step]}`,`kept = ${[0,1,2,3,2,3][step]}`],
   }
 }
+const intervalCoveringCode = [
+  'struct CoverInterval { double l, r; };',
+  'int minIntervalsToCover(vector<CoverInterval> intervals, double L, double R) {',
+  '  sort(intervals.begin(), intervals.end(), [](auto a, auto b) { return a.l < b.l; });',
+  '  int n=intervals.size(), i=0, answer=0;',
+  '  double covered=L;',
+  '  while(covered<R){',
+  '    double far=covered;',
+  '    while(i<n && intervals[i].l<=covered) far=max(far,intervals[i++].r);',
+  '    if(far==covered) return -1;',
+  '    covered=far; ++answer;',
+  '  }',
+  '  return answer;',
+  '}',
+]
+const intervalCoveringView = (step: number): NonNullable<Frame['executionView']> => {
+  const intervals=[[-1,3],[0,4],[2,7],[4,6],[6,10],[7,12]]
+  const status=[
+    ['待檢查','待檢查','待檢查','待檢查','待檢查','待檢查'],
+    ['待檢查','待檢查','待檢查','待檢查','待檢查','待檢查'],
+    ['候選','最遠','待檢查','待檢查','待檢查','待檢查'],
+    ['跳過','選用','待檢查','待檢查','待檢查','待檢查'],
+    ['跳過','選用','最遠','候選','待檢查','待檢查'],
+    ['跳過','選用','選用','跳過','待檢查','待檢查'],
+    ['跳過','選用','選用','跳過','候選','最遠'],
+    ['跳過','選用','選用','跳過','跳過','選用'],
+  ][step]
+  const active=[[],[],[0,1],[1],[2,3],[2],[4,5],[5]][step]
+  return {kind:'table',title:'INTERVAL COVERING · farthest reachable right end',
+    columns:['left','right','decision'],rows:intervals.map(([l,r],index)=>[String(l),String(r),status[index]]),
+    activeCells:active.map((index)=>`${index},2`),
+    badges:[`covered = ${['—','0','0','4','4','7','7','12'][step]}`,`far = ${['—','—','4','4','7','7','12','12'][step]}`],
+  }
+}
+const intervalMergingCode = [
+  'vector<pair<int,int>> mergeIntervals(vector<pair<int,int>> intervals) {',
+  '  sort(intervals.begin(), intervals.end());',
+  '  vector<pair<int,int>> out;',
+  '  for(auto [l,r]:intervals){',
+  '    if(out.empty() || l>out.back().second) out.push_back({l,r});',
+  '    else out.back().second=max(out.back().second,r);',
+  '  }',
+  '  return out;',
+  '}',
+]
+const intervalMergingView = (step: number): NonNullable<Frame['executionView']> => {
+  const intervals=[[1,3],[2,6],[8,10],[9,12],[15,18]]
+  const status=[
+    ['待處理','待處理','待處理','待處理','待處理'],
+    ['新段','待處理','待處理','待處理','待處理'],
+    ['新段','合併','待處理','待處理','待處理'],
+    ['新段','合併','新段','待處理','待處理'],
+    ['新段','合併','新段','合併','待處理'],
+    ['新段','合併','新段','合併','新段'],
+  ][step]
+  const output=['∅','(1,3)','(1,6)','(1,6), (8,10)','(1,6), (8,12)','(1,6), (8,12), (15,18)'][step]
+  return {kind:'table',title:'INTERVAL MERGING · sorted input and union',
+    columns:['left','right','action'],rows:intervals.map(([l,r],index)=>[String(l),String(r),status[index]]),
+    activeRow:step?step-1:undefined,badges:[`out = ${output}`],
+  }
+}
 
 const prefixMatrix = (cells: string[][], activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
   kind: 'matrix', title: '2D PREFIX · pref[r][c] = sum of [0,r) × [0,c)', cells,
@@ -130,7 +191,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'covered=far; ++answer','covered 變 7','answer=2。',{covered:'4→7',answer:2,operation:'extend coverage'}),
     eventFrame(lesson,'intervals[i].l<=covered','第三輪看到 (6,10)、(7,12)','兩者都可接，選 far=12 的 (7,12) 最有利。',{covered:7,candidates:['(6,10)','(7,12)'],far:12,operation:'choose farthest reach'}),
     eventFrame(lesson,'while(covered<R)','12≥10：完成','三段即可覆蓋整個 [0,10]。',{selectedReach:['0→4','4→7','7→12'],answer:3,result:'covered',operation:'finish coverage'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:intervalCoveringView(step)})),
 
   'interval-merging': (lesson) => [
     eventFrame(lesson,'sort(intervals.begin()','依 Left 排序','輸入 (1,3),(2,6),(8,10),(9,12),(15,18)。',{ordered:['(1,3)','(2,6)','(8,10)','(9,12)','(15,18)'],operation:'sort by left'}),
@@ -139,7 +200,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'out.empty() || l>out.back().second','(8,10) 開新段','8>6，中間有 gap，因此 push 新段。',{current:'(8,10)',out:['(1,6)','(8,10)'],operation:'new disjoint interval'}),
     eventFrame(lesson,'out.back().second=max','(9,12) 合併到第二段','9≤10，第二段延伸成 (8,12)。',{current:'(9,12)',after:'(8,12)',operation:'extend merged interval'}),
     eventFrame(lesson,'out.empty() || l>out.back().second','(15,18) 再開新段','15>12，因此互不重疊。',{current:'(15,18)',out:['(1,6)','(8,12)','(15,18)'],operation:'finish merged intervals'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:intervalMergingView(step)})),
 
   'job-scheduling': (lesson) => [
     eventFrame(lesson,'sort(jobs.begin()','依 Deadline 排序','使用 jobs=(d=3,t=3),(d=4,t=1),(d=4,t=2),(d=6,t=3)。',{jobs:['(3,3)','(4,1)','(4,2)','(6,3)'],operation:'sort by deadline'}),
@@ -196,6 +257,8 @@ const overrides: Record<string, TraceBuilder> = {
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
   if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
   if(lesson.id==='job-scheduling') lesson={...lesson,description:'依截止時間保留最多件可完成的工作。',code:jobSchedulingCode}
+  if(lesson.id==='interval-covering') lesson={...lesson,code:intervalCoveringCode}
+  if(lesson.id==='interval-merging') lesson={...lesson,code:intervalMergingCode}
   const build=overrides[lesson.id]
   if(build) return {
     ...lesson,
