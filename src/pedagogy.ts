@@ -274,6 +274,36 @@ const buildEnvDeclarations = (code: string[]): string[] => {
   if (uses('indegree') && !declaredAny('indegree')) declarations.push('vector<int> indegree;')
   if (uses('edges') && !declaredAny('edges')) declarations.push('vector<tuple<int,int,long long>> edges; // {u, v, w}')
   if (uses('negativeCycle') && !declaredAny('negativeCycle')) declarations.push('bool negativeCycle = false;')
+
+  // 常見圖論／樹論外部狀態。只有 snippet 未自行宣告時才補。
+  for (const token of ['disc','low','tin','tout','depth','head','pos','sz','subtree','heavy','color','state','component','degree']) {
+    if (uses(token) && !declaredAny(token)) declarations.push(`vector<int> ${token};`)
+  }
+  if (uses('seen') && !declaredAny('seen')) declarations.push('vector<bool> seen;')
+  if (uses('up') && !declaredAny('up')) declarations.push('vector<vector<int>> up;')
+  if (uses('tree') && !declaredAny('tree')) declarations.push('vector<vector<int>> tree;')
+  if (uses('queries') && !declaredAny('queries')) declarations.push('vector<pair<int,int>> queries;')
+  if (uses('cycle') && !declaredAny('cycle') && /\bcycle\.(?:push_back|clear|begin|end)\b/.test(joined)) declarations.push('vector<int> cycle;')
+
+  // 常見 DP / 字串演算法狀態。
+  if (uses('dp') && !declaredAny('dp')) {
+    if (/\bdp\s*\[[^\]]+\]\s*\[[^\]]+\]/.test(joined)) declarations.push('vector<vector<long long>> dp;')
+    else declarations.push('vector<long long> dp;')
+  }
+  if (uses('opt') && !declaredAny('opt')) {
+    if (/\bopt\s*\[[^\]]+\]\s*\[[^\]]+\]/.test(joined)) declarations.push('vector<vector<int>> opt;')
+    else declarations.push('vector<int> opt;')
+  }
+  if (uses('memo') && !declaredAny('memo')) {
+    if (/\bmemo\s*\[[^\]]+\]\s*\[[^\]]+\]/.test(joined)) declarations.push('vector<vector<long long>> memo;')
+    else declarations.push('vector<long long> memo;')
+  }
+  for (const token of ['z','pi','rad','rank','lcp','where']) {
+    if (uses(token) && !declaredAny(token)) declarations.push(`vector<int> ${token};`)
+  }
+  if (uses('patterns') && !declaredAny('patterns')) declarations.push('vector<string> patterns;')
+  if (uses('piles') && !declaredAny('piles')) declarations.push('vector<int> piles;')
+
   if (uses('prefix') && !declaredAny('prefix')) declarations.push('vector<long long> prefix; // 前綴和')
   if (uses('a') && !declaredAny('a') && (/\ba\[[^]]*\]/.test(joined) || /\bvalues\s*=\s*a\b/.test(joined) || /:\s*a\s*\)/.test(joined))) declarations.push('vector<long long> a; // 輸入陣列')
   if (uses('x') && !declaredAny('x') && /\b(?:push|push_back)\s*\(x\)/.test(joined)) declarations.push('int x = 0; // 範例輸入值')
