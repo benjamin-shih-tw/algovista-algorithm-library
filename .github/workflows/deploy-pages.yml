@@ -83,6 +83,11 @@ jobs:
           path: .tmp/stage5-execution-progress.json
       - name: Build
         run: npm run build
+      - name: Upload lesson payload size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-payload-sizes
+          path: .tmp/lesson-payload-sizes.json
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
