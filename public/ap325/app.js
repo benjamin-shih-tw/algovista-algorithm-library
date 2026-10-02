@@ -64,13 +64,20 @@ const chapterTitles={
   8:'樹上演算法'
 }
 
-const params=new URLSearchParams(location.search)
-const legacyModule=params.get('module')
-const legacyChapter=legacyModule&&moduleById.get(legacyModule)?.world
-const initialChapter=params.has('chapter')?Number(params.get('chapter')):legacyChapter
+const urlState=()=>{
+  const params=new URLSearchParams(location.search)
+  const legacyModule=params.get('module')
+  const legacyChapter=legacyModule&&moduleById.get(legacyModule)?.world
+  const requestedChapter=params.has('chapter')?Number(params.get('chapter')):legacyChapter
+  return {
+    view:params.get('view')||'path',
+    chapter:Number.isInteger(requestedChapter)&&worlds.some(w=>w.id===requestedChapter)?requestedChapter:null
+  }
+}
+const initialUrlState=urlState()
 const state={
-  view:params.get('view')||'path',
-  chapter:Number.isInteger(initialChapter)&&worlds.some(w=>w.id===initialChapter)?initialChapter:null,
+  view:initialUrlState.view,
+  chapter:initialUrlState.chapter,
   query:'',
   chapterFilter:'all',
   status:'all'
@@ -92,7 +99,7 @@ function chapterProblems(id){
   const ids=new Set(chapterModules(id).map(m=>m.id))
   return problems.filter(p=>ids.has(p.module))
 }
-function syncUrl(){
+function syncUrl(mode='replace'){
   const u=new URL(location.href)
   u.searchParams.delete('module')
   if(state.chapter!==null){
@@ -103,12 +110,20 @@ function syncUrl(){
     if(state.view==='path')u.searchParams.delete('view')
     else u.searchParams.set('view',state.view)
   }
-  history.replaceState(null,'',u)
+  const next=`${u.pathname}${u.search}${u.hash}`
+  const current=`${location.pathname}${location.search}${location.hash}`
+  if(mode==='push'&&next!==current) history.pushState(null,'',next)
+  else history.replaceState(null,'',next)
+}
+function syncStateFromUrl(){
+  const next=urlState()
+  state.chapter=next.chapter
+  state.view=next.view
 }
 function openChapter(id,anchor){
   state.chapter=Number(id)
   state.view='path'
-  render()
+  render(true,'push')
   if(anchor) requestAnimationFrame(()=>document.getElementById(anchor)?.scrollIntoView({block:'start'}))
 }
 function topbar(){
@@ -328,16 +343,17 @@ function enhanceRenderedContent(){
     })
   }
 }
-function render(scrollTop=true){
+function render(scrollTop=true,historyMode='replace'){
   document.body.innerHTML=topbar()+(state.chapter!==null?chapterView(state.chapter):state.view==='practice'?practiceView():homeView())+footer()
-  syncUrl();bind();enhanceRenderedContent()
+  if(historyMode!=='none')syncUrl(historyMode)
+  bind();enhanceRenderedContent()
   if(scrollTop)window.scrollTo({top:0})
 }
 function bind(){
-  $$('[data-action]').forEach(el=>el.addEventListener('click',async()=>{
+  $('[data-action]').forEach(el=>el.addEventListener('click',async()=>{
     const a=el.dataset.action
-    if(a==='home'){state.chapter=null;state.view='path';render()}
-    if(a==='view'){state.chapter=null;state.view=el.dataset.view;render()}
+    if(a==='home'){state.chapter=null;state.view='path';render(true,'push')}
+    if(a==='view'){state.chapter=null;state.view=el.dataset.view;render(true,'push')}
     if(a==='chapter')openChapter(Number(el.dataset.id))
     if(a==='problem')toggleProblem(el.dataset.code)
     if(a==='site-theme')setSiteTheme(getSiteTheme()==='dark'?'light':'dark')
@@ -352,4 +368,5 @@ function bind(){
   $('#code-theme-select')?.addEventListener('change',e=>setCodeTheme(e.target.value))
 }
 window.addEventListener('load',enhanceRenderedContent)
+window.addEventListener('popstate',()=>{syncStateFromUrl();render(false,'none')})
 render()
