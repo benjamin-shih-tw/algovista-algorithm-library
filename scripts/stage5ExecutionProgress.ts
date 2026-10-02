@@ -86,3 +86,7 @@ if (s2Remaining.length) {
   console.error('Stage 6 S2 execution gate failed:', s2Remaining)
   process.exitCode = 1
 }
+if (semantic.length) {
+  console.error('Stage 7 full-catalog execution gate failed:', semantic.map((row)=>row.id))
+  process.exitCode = 1
+}
