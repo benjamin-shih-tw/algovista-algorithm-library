@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { categories, lessons } from '../src/algorithms'
 
 const byId=new Map(lessons.map((lesson)=>[lesson.id,lesson]))
@@ -46,4 +46,18 @@ const payload={
 
 mkdirSync('public',{recursive:true})
 writeFileSync('public/catalog-index.json',JSON.stringify(payload))
+
+const lessonDir='public/lessons'
+rmSync(lessonDir,{recursive:true,force:true})
+mkdirSync(lessonDir,{recursive:true})
+for(const lesson of lessons){
+  const serialized=JSON.stringify(lesson)
+  const restored=JSON.parse(serialized) as {id?:string;frames?:unknown[]}
+  if(restored.id!==lesson.id||restored.frames?.length!==lesson.frames.length){
+    throw new Error(`lesson serialization mismatch: ${lesson.id}`)
+  }
+  writeFileSync(`${lessonDir}/${lesson.id}.json`,serialized)
+}
+
 console.log(`catalog index: ${payload.lessons.length} lessons, ${payload.categories.length} categories`)
+console.log(`lesson payloads: ${lessons.length} files in ${lessonDir}`)
