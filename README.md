@@ -41,7 +41,8 @@ npm run audit:cpp
 - 112 種依「演算法實際操作」建立的視覺模型；202 課逐一明確映射，不允許退回章節共用預設畫面
 - 每課包含兩項使用時機，以及 CSES、AtCoder 或 Codeforces 官方例題
 - C++17 token-level 語法染色，並以低干擾底色和側邊標記同步目前執行行
-- 程式碼可一鍵複製或下載 `.cpp`；點擊任一有效行可跳到第一次執行該行的動畫步驟
+- 程式碼可一鍵複製或下載 `.cpp` 教學片段；點擊任一有效行可跳到第一次執行該行的動畫步驟
+- C++17 區塊以「演算法核心教學片段」為準；部分課程依賴題目 I/O、型別或輔助環境，不宣稱每份都能單檔獨立編譯；CI 另產生 C++17 compilation coverage report
 - 動畫、程式碼與詳細解說面板可自由調整高度；桌面版可拖曳中線調整左右寬度並保存比例
 - 內建 Midnight、Ocean、Ember、Contrast 配色，可自訂動畫主色、背景、程式碼語法色與整體字級
 - 202 頁全部標記為 concrete，依 Array、Graph、Tree、Range、DP、String、Flow、Math、Geometry、Transform 等視覺引擎呈現
