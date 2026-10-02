@@ -308,7 +308,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'color[v]=color[u]^1','A→B：B 染成 1','B 未染色，因此 color[B]=1 並入隊。',{edge:'A-B',colors:'A=0,B=1',queue:['B'],operation:'color B'},{active:['A','B'],accepted:['A','B'],queue:['B']}),
     eventFrame(lesson,'color[v]=color[u]^1','A→C：C 染成 1','C 同樣與 A 相鄰，因此 C=1。',{edge:'A-C',colors:'A=0,B=1,C=1',queue:['B','C'],operation:'color C'},{active:['A','C'],accepted:['A','B','C'],queue:['B','C']}),
     eventFrame(lesson,'color[v]=color[u]^1','B→D：D 染成 0','展開 B 時 D 尚未染色，所以 D 必須與 B 相反，得到 0。',{edge:'B-D',colors:'B=1,D=0',queue:['C','D'],operation:'color D'},{active:['B','D'],accepted:['A','B','C','D'],queue:['C','D']}),
-    eventFrame(lesson,'color[v]=color[u]^1','C→E：E 染成 0','同理 E=0。',{edge:'C-E',colors:'C=1,E=0',queue:['D','E'],operation:'color E'},{active:['C','E'],accepted:['A','B','C','D','E'],queue:['D','E']}),
+    eventFrame(lesson,'color[v]=color[u]^1','C→E：E 染成 0','C 的顏色是 1，所以它尚未染色的鄰居 E 必須染成相反色 0，才能維持二分圖條件。',{edge:'C-E',colors:'C=1,E=0',queue:['D','E'],operation:'color E'},{active:['C','E'],accepted:['A','B','C','D','E'],queue:['D','E']}),
     eventFrame(lesson,'color[v]=color[u]^1','D→F：F 染成 1','F 第一次被 D 發現，所以 F=1。',{edge:'D-F',colors:'D=0,F=1',queue:['E','F'],operation:'color F'},{active:['D','F'],accepted:['A','B','C','D','E','F'],queue:['E','F']}),
     eventFrame(lesson,'else if(color[v]==color[u])','E→F：顏色不同，沒有衝突','E=0、F=1，這條已染色邊兩端顏色不同，因此合法。',{edge:'E-F',colors:'E=0,F=1',conflict:'false',operation:'check colored edge'},{active:['E','F'],accepted:['A','B','C','D','E','F']}),
     eventFrame(lesson,'return true','全部邊合法：圖可二分','所有邊兩端顏色都不同，0/1 兩組就是合法二分。',{partition0:['A','D','E'],partition1:['B','C','F'],result:'bipartite',operation:'finish'},{accepted:['A','B','C','D','E','F']}),
