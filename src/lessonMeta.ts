@@ -141,6 +141,7 @@ export const visualModelById = Object.fromEntries(
 const cses = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'CSES', title, url: `https://cses.fi/problemset/task/${task}`, note })
 const atcoder = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'AtCoder', title, url: `https://atcoder.jp/contests/${task.split('/')[0]}/tasks/${task.split('/')[1]}`, note })
 const codeforces = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'Codeforces', title, url: `https://codeforces.com/problemset/problem/${task.replace('-', '/')}`, note })
+const codeforcesGym = (title: string, gym: string, problem: string, note: string): PracticeProblem => ({ judge: 'Codeforces', title, url: `https://codeforces.com/problemset/gymProblem/${gym}/${problem}`, note })
 
 const practiceById: Record<string, PracticeProblem> = {
   'linear-search': atcoder('Buildings','abc353/abc353_a','從左到右找第一個符合條件的位置；不需要排序，也不能跳格。'),
@@ -148,12 +149,12 @@ const practiceById: Record<string, PracticeProblem> = {
   bfs: cses('Message Route','1667','用 FIFO queue 逐層找無權圖最短路並重建路徑。'),
   // A4 fix：修正三個最明顯的例題錯置（原配題與演算法無關）。
   'fibonacci-dp': cses('Dice Combinations','1633','遞迴只依賴前六項，是滾動 DP 的直接練習。'),
-  'stable-matching': cses('Tree Matching','1130','先用小圖理解「配對一旦成立不應被 blocking pair 破壞」的穩定概念，再練習最大匹配樹 DP。'),
+  'stable-matching': codeforcesGym('Stable Matching','100703','D','直接處理雙方偏好序與 stable matching，並在穩定解中最佳化最大 dissatisfaction。'),
   'duval-lyndon': cses('Minimal Rotation','1110','用 Duval 演算法線性找出字典序最小旋轉。'),
   'minimum-string-rotation': cses('Minimal Rotation','1110','同上，重點在線性時間比較循環同構。'),
-  'counting-sort': atcoder('Takahashi the Wallflower','typical90/typical90_o','值域有限時以頻率桶取代比較排序的情境。'),
-  'expression-evaluation': codeforces('Fox And Calculator','510-B','依運算優先序逐步化簡算式的模擬題。'),
-  'shunting-yard': codeforces('Fox And Calculator','510-B','把中綴式轉成可依序求值的形式再計算。'),
+  'counting-sort': atcoder("Ringo's Favorite Numbers 2",'abc200/abc200_c','把值映射到固定 200 個桶並累計頻率；核心操作與 counting sort 的 count array 相同。'),
+  'expression-evaluation': codeforces('Vanya and Brackets','552-E','實際處理由 +、* 與括號構成的算式，必須正確理解運算優先序與子運算式求值。'),
+  'shunting-yard': codeforces('Defining Macros','7-E','核心在括號與四則運算優先序；練習判斷 substitution 是否改變 expression evaluation order。'),
 }
 
 const usageById: Record<string, [string,string]> = {
