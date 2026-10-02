@@ -202,4 +202,4 @@ export const getProblemLabel = (problem) => {
     return problem.kind === 'P' ? 'Focus' : 'Practice';
 };
 export const getPdfUrl = (page) => `${AP325_PDF}#page=${page + 11}`;
-export const getVisualUrl = (lessonId) => `?lesson=${encodeURIComponent(lessonId)}`;
+export const getVisualUrl = (lessonId) => `../?lesson=${encodeURIComponent(lessonId)}`;
