@@ -167,7 +167,7 @@ const pitfallsFor = (lesson: AlgorithmLesson): [string, string] => {
   if (lesson.id === 'linear-search') return ['看到某格已大於目標就提前停止；未排序陣列的後面仍可能出現目標。', '走完整個陣列仍找不到時忘記回傳 -1，或把找到的索引誤當成元素值。']
   if (lesson.id === 'binary-search') return ['資料沒有排序、判斷也沒有單調性時仍使用二分搜尋；此時排除一半沒有證明。', '左右邊界定義混用閉區間與半開區間，造成無限迴圈或漏掉最後一格。']
   if (lesson.id === 'prefix-sum') return ['把 prefix[i] 誤認為包含 a[i]，查詢時就會固定多一格或少一格。', '閉區間 [l,r] 忘記讀 prefix[r+1]，或在 l=0 時使用不存在的 prefix[l−1]。']
-  if (lesson.id === 'bfs') return ['等到節點出 queue 才標記 visited，會讓同一節點被多個鄰居重複加入。', '圖有不同邊權時仍用普通 BFS 求最短成本；此時 queue 的逐層順序不再代表距離順序。']
+  if (lesson.id === 'bfs') return ['等到節點出 queue 才把 dist 從 -1 改掉，會讓同一節點在等待期間被多個鄰居重複加入；應在第一次發現、入隊前就設定 dist。', '圖有不同邊權時仍用普通 BFS 求最短成本；此時 FIFO queue 的逐層順序不再代表最小成本順序。']
   if (/shortest-path/.test(model)) return ['沒有先判斷邊權限制就直接套 Dijkstra，遇到負邊時答案會錯。', '把舊的 priority queue 項目當成最新距離處理，會造成重複工作或錯誤鬆弛。']
   if (/dp/.test(model)) return ['只背轉移式卻沒有先說清楚 dp 狀態代表什麼，初始化與答案位置很容易一起寫錯。', '更新順序不符合依賴關係，讀到本輪剛改過的值，會把 0/1 選擇誤寫成可重複選擇。']
   if (/string/.test(model) || /trie|suffix|palindrome/.test(model)) return ['混用字元索引、前綴長度與半開區間，常造成差一格的錯誤。', '失配時直接把文字指標退回，會失去演算法利用既有前綴資訊的複雜度優勢。']
@@ -478,9 +478,11 @@ const primaryCodeScore = (lesson: AlgorithmLesson, frame: Frame, number: number)
     if (/右界|high/.test(context) && /\bhigh\s*=/.test(line)) score += 30
   }
   if (lesson.id === 'bfs') {
-    if (/發現/.test(context) && /\bdist\s*\[v\]\s*=/.test(line)) score += 30
-    if (/已發現|不重複|沒有未訪問/.test(context) && /if\s*\(visited\[v\]\)/.test(line)) score += 30
-    if (/取出|展開/.test(context) && /\bq\.pop\s*\(/.test(line)) score += 20
+    if (/發現|最短距離|設定.*距離/.test(context) && /\bdist\s*\[v\]\s*=/.test(line)) score += 30
+    if (/已發現|不重複|回邊|continue|沒有.*新/.test(context) && /if\s*\(dist\[v\]\s*!=\s*-1\)/.test(line)) score += 35
+    if (/讀取.*前端|front/.test(context) && /\bq\.front\s*\(/.test(line)) score += 25
+    if (/移出|pop/.test(context) && /\bq\.pop\s*\(/.test(line)) score += 25
+    if (/入隊|加入.*queue|push/.test(context) && /\bq\.push\s*\(/.test(line)) score += 25
   }
   if (lesson.id === 'dijkstra') {
     if (/鬆弛|改善|第一次到達|提供第一條/.test(context) && /\bdist\s*\[v\]\s*=/.test(line)) score += 35
