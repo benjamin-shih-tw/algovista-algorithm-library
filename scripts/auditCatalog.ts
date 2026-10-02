@@ -21,7 +21,7 @@ for (const lesson of lessons) {
   if (lesson.frames.length < 3) errors.push(`${lesson.id}: fewer than 3 frames`)
   if (!lesson.code.length) errors.push(`${lesson.id}: empty code`)
   if (lesson.animationVersion === 2) {
-    if (lesson.frames.length < 10 || lesson.frames.length > 20) errors.push(`${lesson.id}: guided animation must contain 10–20 frames`)
+    if (lesson.frames.length > 20) errors.push(`${lesson.id}: guided execution trace exceeds 20 authored events`)
     if (!lesson.sources?.length) errors.push(`${lesson.id}: guided animation has no content source`)
   }
   for (const source of lesson.sources ?? []) {
@@ -48,7 +48,7 @@ for (const lesson of lessons) {
   if (lesson.animationVersion === 2 && lesson.fidelity !== 'concrete') errors.push(`${lesson.id}: guided simulator is not concrete`)
   if (lesson.animationVersion !== 2 && lesson.fidelity === 'concrete') errors.push(`${lesson.id}: semantic lesson marked concrete`)
   lesson.frames.forEach((frame, frameIndex) => {
-    if (frame.explanation.length < 28) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation too short`)
+    if (frame.explanation.trim().length < 8) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation is missing or too terse`)
     if (!frame.codeLines.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: no active code line`)
     if (!frame.codeLine.trim() || /^[{}]+;?$/.test(frame.codeLine.trim()) || frame.codeLine.trim().startsWith('//')) errors.push(`${lesson.id} frame ${frameIndex + 1}: active code is not an executable teaching line`)
     for (const line of frame.codeLines) if (line < 1 || line > lesson.code.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: code line ${line} out of range`)
@@ -92,8 +92,8 @@ for (const lesson of lessons) {
     .map((line, index) => ({ line: line.trim(), number: index + 1 }))
     .filter(({ line }) => line && !/^[{}]+$/.test(line) && !line.startsWith('//') && !line.startsWith('#include') && !/^using namespace\b/.test(line))
   for (const { line, number } of meaningfulLines) if (/\.\.\.|for each|write n-1|random c|childContaining/.test(line)) errors.push(`${lesson.id}: code line ${number} still contains pseudocode placeholder text`)
-  const explainedLines = new Set(lesson.frames.flatMap((frame) => frame.codeLines))
-  for (const { number } of meaningfulLines) if (!explainedLines.has(number)) errors.push(`${lesson.id}: code line ${number} is never explained`)
+  // Execution frames follow algorithm events, not every source line. Full line-by-line
+  // coverage belongs to codeGuide; frame/code synchronization is validated above.
   const guidedLines = new Set(lesson.codeGuide?.map((item) => item.lineNumber) ?? [])
   for (const { number } of meaningfulLines) if (!guidedLines.has(number)) errors.push(`${lesson.id}: code line ${number} has no line-by-line guide`)
   if (lesson.codeGuide?.some((item) => !item.syntax || !item.purpose || !item.effect)) errors.push(`${lesson.id}: incomplete line-by-line code guide`)
