@@ -1,6 +1,6 @@
 # AlgoVista 全專案交接文件
 
-更新日期：2026-08-13（Asia/Taipei）  
+更新日期：2026-10-02（Asia/Taipei）  
 交接對象：Antigravity  
 專案：Competitive Programming 演算法動畫教學網站
 
@@ -11,9 +11,9 @@
 - 以使用者自己的 CPPBook、Notion 模板庫與 USACO 為主要內容來源。
 - 目前 catalog 有 202 個競賽演算法、資料結構與技巧。
 - 每個演算法都必須依自身資料模型呈現專屬動畫，不能把圖論、字串、幾何等內容硬套成陣列。
-- 動畫要讓完全沒學過的初學者第一次看就能理解，原則上每課 10～20 步。
+- 動畫要讓完全沒學過的初學者第一次看就能理解；步數由真實 execution event 決定，不為了固定 10～20 步製造假 timeline。
 - 每一步必須同步：畫面狀態、白話解說、變數狀態、C++ 程式碼行。
-- 程式碼要達競賽模板等級；不能只有突然出現的 function、未定義 helper 或沒有初始化的 query。
+- 程式碼區以 C++17 教學核心片段為準；需要題目 I/O、shared helper 或外部環境的課程必須誠實標示，只有通過 compiler audit 的項目才能稱為 standalone compile-verified。
 - 每課需要使用時機、CSES／AtCoder／Codeforces 例題、常見錯誤與邊界。
 - UI 為現代深色、高留白、精緻教育動畫風格；不可有廉價圓圈箭頭感。
 - 使用者可調整動畫、程式碼與解說視窗大小，也可自訂配色與字級。
@@ -56,9 +56,9 @@
 - GitHub：<https://github.com/benjamin-shih-tw/algovista-algorithm-library>
 - 公開網站：<https://benjamin-shih-tw.github.io/algovista-algorithm-library/>
 - 主分支：`main`
-- 最新已推送 commit：`7c06338 Build repository-wide algorithm knowledge graph`
-- 最新 GitHub Pages workflow run：`31708479700`，已成功。
-- 最後確認 working tree 是乾淨的。
+- 主分支由 GitHub Actions 自動執行 release blocking audits、build 與 Pages deploy。
+- C++ compilation coverage 已拆成獨立 workflow，不再佔用 Pages concurrency。
+- 不在 handoff 寫死最新 commit/run；接手時以 GitHub `main` 與最新 workflow 狀態為準。
 
 ## 4. 技術架構
 
@@ -84,7 +84,9 @@
 - `src/pedagogy.ts`：C++ 可讀格式、逐行 code guide、初學者四段解說
 - `src/knowledge.ts`：最新加入的 Knowledge Unit schema、204 條 dependency、術語與 lifecycle 生成
 - `src/AdaptiveScenes.tsx`：演算法族群專屬畫面
-- `src/App.tsx`：Library、課程頁、動畫、Knowledge Unit、程式同步與控制
+- `src/App.tsx`：輕量 Library、catalog/lesson JSON 載入、routing/history、loading/error states
+- `src/LessonPlayer.tsx`：課程播放器、所有動畫 renderer、Knowledge Unit、程式同步與控制（lazy-loaded）
+- `scripts/generateCatalogIndex.ts`：build-time 產生 `catalog-index.json` 與 202 份 `lessons/<id>.json`
 - `src/ThemeControls.tsx`：配色與字級自訂
 - `src/workspace.css`：Resizable workspace、Knowledge Unit UI
 - `src/beginner.css`、`src/product.css`、`src/styles.css`：其餘 UI 與視覺系統
@@ -94,9 +96,9 @@
 - 202 lessons
 - 11 大分類
 - 112 個 visual models
-- 2116 個 deterministic visual traces
-- 每課目前被現有 audit 標記為 concrete
-- 每課 10～20 animation frames
+- 1390 個 deterministic step-specific visual traces
+- 202 / 202 lessons 為 execution-driven，semantic-only = 0
+- 每課目前被 audit 標記為 concrete；frame 數量依真實事件決定，不強制固定 10～20
 - 202 個 Knowledge Units
 - 204 條 prerequisite edges
 - 191 條 extension back-links
@@ -142,7 +144,7 @@
   4. Queue
   5. BFS
   6. Segment Tree
-- 程式碼區有 C++17 token coloring、複製、下載、點行跳動畫。
+- 程式碼區有 C++17 token coloring、複製、下載教學片段、點行跳動畫；介面不再把所有片段誤稱為「完整模板」。
 - 程式碼上方顯示 input / output contract。
 - 顯示目前 implementation 是「完整核心流程」或「延伸實作／依賴先備課」。
 - 動畫、程式碼、解說可調整高度；桌面左右面板可拖曳。
@@ -151,7 +153,7 @@
 
 ## 7. Segment Tree 已做的深度修正
 
-Segment Tree 是目前唯一真正做到完整 lifecycle 並額外以 C++ compiler 驗證的課程。
+Segment Tree 仍是 lifecycle 最完整的基準課之一；C++ audit 現在會掃全部 202 課，而不是只驗 Segment Tree。
 
 目前是 20 步：
 
@@ -195,8 +197,8 @@ npm run audit:cpp
 
 - 202 課與分類完整性
 - visual model 唯一映射
-- 10～20 frames
-- trace / animation / code line 同步
+- 至少 3 個真實 execution events，且不超過 20 個 authored events
+- trace / animation / active code line 同步
 - beginner explanations
 - sources、usage、practice problems
 
@@ -207,7 +209,7 @@ npm run audit:cpp
 - lesson header
 - 無已知 placeholder pattern
 - 行長
-- 每個 teaching line 有 animation mapping 與 code guide
+- 每個 teaching line 有完整 code guide；動畫只映射真實 execution event，不要求每一行都製造動畫步驟
 
 注意：這個 audit 叫 `templateReady`，不代表真的能被 C++ compiler 編譯。
 
@@ -224,7 +226,7 @@ npm run audit:cpp
 
 ### `audit:cpp`
 
-目前只實際編譯 `segment-tree`。
+目前會以 `c++ -std=c++17 -fsyntax-only` 掃描全部 202 課。最近基準為 **31 / 202 standalone compile-verified**、171 份仍是需要題目／shared environment 的教學 snippet；此 audit 為獨立 report workflow。
 
 ## 9. 非常重要的真實限制
 
@@ -232,26 +234,26 @@ npm run audit:cpp
 
 目前狀態：
 
-- 202 課都有結構化 knowledge unit、implementation contract、逐行 guide 與動畫映射。
+- 202 課都有結構化 knowledge unit、implementation contract、逐行 guide 與 execution trace。
 - 但很多 completion lessons 的 code 仍是核心 algorithm snippet，可能依賴未定義 helper、type 或 shared primitive。
 - 例如部分 Flow、Geometry、Dynamic Tree、Voronoi、Delaunay 等原始資料中仍存在 `findAugmentingPath`、`bottleneck`、`superTriangle`、`inCircumcircle`、`beachLine` 等抽象 helper。
 - 某些 code 雖然長得像 C++，本質仍接近 outline。
 - `src/pedagogy.ts` 現在會加上 `#include <bits/stdc++.h>` 與 `using namespace std;`，但這只補標準函式庫，不會補課程特定 helper。
-- 大量 completion lessons 是由 `completionFactory.ts` 的三個 concepts 擴成 10 步，步驟文字可能比以前詳細，但仍不等於每一課都有人工作者逐步模擬。
+- Stage 4 已移除以 code-line count 製造 10–20 假 timeline 的 production generator；目前 202 課皆通過 execution-trace gate，但仍需要真正的 browser / human visual review 才能宣稱逐頁視覺驗收完成。
 - Knowledge Unit 有一部分由 category / visual model 規則生成，再加 lesson-specific dependency 與術語；並非 202 課每句都已人工校稿。
 - `knowledge.extensions` 最多只顯示 8 個，以避免 UI 過長。
-- 最終 bundle 約 830 KB，Vite 有 >500 KB chunk warning，但不影響部署。
-- GitHub workflow 有 Node 20 deprecated annotation；Actions 被 runner 強制以 Node 24 執行，目前仍成功。
+- 首頁 app chunk 已降到約 **17.4 KB / 6.4 KB gzip**；LessonPlayer（約 24.8 KB gzip）與 Motion（約 41.7 KB gzip）按需載入。
+- 完整 `algorithms-*.js` 已退出 client bundle；build 產生 202 份單課 JSON，平均約 **28.5 KB**、P95 **43.6 KB**、最大 **87.3 KB**（segment-tree），並有 150 KB payload gate。
 
 ## 10. 下一階段最高優先級
 
-### P0：把其餘 201 份 code 變成真正可編譯的競賽模板
+### P0：逐批提升目前 171 份 teaching snippet 的 standalone compilation coverage
 
 這是現在最大的未完成項。
 
 建議做法：
 
-1. 擴充 `scripts/auditCpp.ts`，不要一次宣稱全部成功。
+1. 以現有全 catalog `scripts/auditCpp.ts` 報告作基線，不要把 snippet 誤標為 standalone。
 2. 依 family 批次處理，每批 5～15 課。
 3. 為 shared primitives 建立清楚且可見的完整基礎模板，例如：
    - Graph / WeightedEdge
@@ -261,10 +263,10 @@ npm run audit:cpp
    - Modular arithmetic
    - Tree node / traversal state
 4. Advanced lesson 可以是 extension snippet，但頁面必須明確連到已可編譯的 base lesson，而且 extension 本身要補齊所有新增 state / operation。
-5. 每修完一課，把它加入 `auditCpp.ts` targets。
-6. 只有 targets 達 202 且零錯誤，才能宣稱 202 templates 全部 compile-verified。
+5. 每修完一課重新跑全 catalog compilation coverage。
+6. 只有 202 / 202 實際 compiler success 時，才能宣稱 202 templates 全部 compile-verified。
 
-### P0：修正「知識寫完整、動畫仍不完整」的落差
+### P0：用 browser / human review 驗證 execution trace 的視覺品質
 
 Segment Tree 已修好，但其他資料結構還要逐一做 lifecycle 動畫：
 
@@ -276,7 +278,7 @@ Segment Tree 已修好，但其他資料結構還要逐一做 lifecycle 動畫�
 - Sparse Table：log table → build → query
 - Flow：addEdge → residual graph → augment → update reverse edge → termination
 
-不要只在 Knowledge Unit 表格補 operations；動畫 timeline 與右側 code 也必須真的演完整 lifecycle。
+資料層目前已是 202 / 202 execution；下一步不是再製造更多 frame，而是用實際瀏覽器逐課確認 timeline、renderer、文字與 code 在桌面／手機上真的可讀且一致。
 
 ### P1：逐課人工內容校稿
 
@@ -389,9 +391,10 @@ npm run build
 npm run audit:catalog
 npm run audit:templates
 npm run audit:knowledge
+npm run audit:deep
 npm run audit:cpp
 npm run dev
 ```
 
-接著先以 Segment Tree 頁面作為品質基準，再選一個 family 完成整批，不要直接宣告全站完成。
+接著先以 Segment Tree 與各 renderer family 的代表頁作為 browser 品質基準，再逐批做真實 UI 驗收；不要把 source/data/CI audit 通過等同於 202 頁都已像素級人工驗收。
 
