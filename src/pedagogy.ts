@@ -259,13 +259,13 @@ const buildEnvDeclarations = (code: string[]): string[] => {
   // s 在圖論課常是「起點節點索引」：出現在 dist[s]、parent[s]、q.push(s) 等
   // 索引/佇列語境且未被宣告時，補 int s（不能誤補成 string s）。
   if (uses('s') && !declaredAny('s') && /\w+\[s\]|\w+\(s\)|\w+\(s,/.test(joined)) declarations.push('int s; // 起點（節點索引）')
-  if (uses('graph')) {
+  if (uses('graph') && !declaredAny('graph')) {
     if (/\bgraph\[\w+\]\s*;/.test(joined) || /for\s*\(\s*auto\s*\[\w+,\s*\w+\]\s*:\s*graph/.test(joined) && /int\s+\w+\s*=\s*\w+\.first|pair/.test(joined)) declarations.push('vector<vector<pair<int,long long>>> graph; // 帶權鄰接表')
     else if (/\bvector<vector<int>>\s*graph\b/.test(joined)) declarations.push('vector<vector<int>> graph; // 無權鄰接表')
     else if (/for\s*\(\s*int\s+\w+\s*:\s*graph\[/.test(joined) || /for\s*\(\s*auto\s+\w+\s*:\s*graph\[/.test(joined)) declarations.push('vector<vector<int>> graph; // 無權鄰接表')
     else declarations.push('vector<vector<pair<int,long long>>> graph; // 帶權鄰接表')
   }
-  if (uses('dist')) {
+  if (uses('dist') && !declaredAny('dist')) {
     if (/dist\[[^\]]+\]\[[^\]]+\]/.test(joined)) declarations.push('vector<vector<long long>> dist; // 點對距離矩陣')
     else declarations.push('vector<long long> dist; // 距離陣列')
   }
@@ -275,7 +275,23 @@ const buildEnvDeclarations = (code: string[]): string[] => {
   if (uses('edges') && !declaredAny('edges')) declarations.push('vector<tuple<int,int,long long>> edges; // {u, v, w}')
   if (uses('negativeCycle') && !declaredAny('negativeCycle')) declarations.push('bool negativeCycle = false;')
   if (uses('prefix') && !declaredAny('prefix')) declarations.push('vector<long long> prefix; // 前綴和')
-  if (uses('a') && !declaredAny('a') && /\ba\[[^]]*\]/.test(joined)) declarations.push('vector<long long> a; // 輸入陣列')
+  if (uses('a') && !declaredAny('a') && (/\ba\[[^]]*\]/.test(joined) || /\bvalues\s*=\s*a\b/.test(joined) || /:\s*a\s*\)/.test(joined))) declarations.push('vector<long long> a; // 輸入陣列')
+  if (uses('x') && !declaredAny('x') && /\b(?:push|push_back)\s*\(x\)/.test(joined)) declarations.push('int x = 0; // 範例輸入值')
+  if (uses('s') && !declaredAny('s') && /for\s*\(\s*char\s+\w+\s*:\s*s\s*\)/.test(joined)) declarations.push('string s; // 輸入字串')
+  if (uses('st') && !declaredAny('st') && /\bst\.(?:top|push|pop|empty)\b/.test(joined)) declarations.push(/for\s*\(\s*char\s+\w+\s*:\s*s\s*\)/.test(joined) ? 'stack<char> st;' : 'stack<int> st;')
+  if (uses('dq') && !declaredAny('dq') && /\bdq\.(?:front|back|push_back|push_front|pop_back|pop_front|empty)\b/.test(joined)) declarations.push('deque<int> dq;')
+  if (uses('answer') && !declaredAny('answer') && /\banswer\s*\[/.test(joined)) declarations.push('vector<long long> answer;')
+  if (uses('answer') && !declaredAny('answer') && /\banswer\.push_back\b/.test(joined)) declarations.push('vector<long long> answer;')
+  if (uses('sources') && !declaredAny('sources')) declarations.push('vector<int> sources; // 多個起點')
+  if (uses('order') && !declaredAny('order') && /\border\.push_back\b/.test(joined)) declarations.push('vector<int> order;')
+  if (uses('cycleExists') && !declaredAny('cycleExists')) declarations.push('bool cycleExists = false;')
+  if (uses('grid') && !declaredAny('grid')) declarations.push('vector<vector<int>> grid;')
+  if (uses('oldColor') && !declaredAny('oldColor')) declarations.push('int oldColor = 0;')
+  if (uses('newColor') && !declaredAny('newColor')) declarations.push('int newColor = 1;')
+  if (uses('directions') && !declaredAny('directions')) declarations.push('const vector<pair<int,int>> directions{{1,0},{-1,0},{0,1},{0,-1}};')
+  if (/\binside\s*\(/.test(joined) && !/\bbool\s+inside\s*\(/.test(joined)) declarations.push('bool inside(int r, int c) { return 0 <= r && r < (int)grid.size() && 0 <= c && c < (int)grid[r].size(); }')
+  if (/\bisOpen\s*\(/.test(joined) && !/\bbool\s+isOpen\s*\(/.test(joined)) declarations.push("bool isOpen(char c) { return c == '(' || c == '[' || c == '{'; }")
+  if (/\bmatch\s*\(/.test(joined) && !/\bbool\s+match\s*\(/.test(joined)) declarations.push("bool match(char l, char r) { return (l=='('&&r==')') || (l=='['&&r==']') || (l=='{'&&r=='}'); }")
   // 高頻的未宣告型別／運算輔助：幾何、DP 與常見容器
   if (uses('Point') && !/\bstruct\s+Point|\bclass\s+Point/.test(joined)) declarations.push('struct Point { long long x, y; };')
   if (uses('Edge') && !/\bstruct\s+Edge|\bclass\s+Edge/.test(joined)) declarations.push('struct Edge { int u, v; long long w; };')
