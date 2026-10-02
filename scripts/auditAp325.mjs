@@ -130,6 +130,8 @@ const algoIds = new Set([...lessonSource.matchAll(/\bid\s*:\s*['"`]([^'"`]+)['"`
 const missingVisual = [...new Set(visualIds)].filter(id => !algoIds.has(id))
 if (missingVisual.length) fail(`AP325 references missing AlgoVista lessons: ${missingVisual.join(', ')}`)
 else ok(`all ${new Set(visualIds).size} referenced AlgoVista lessons exist`)
+if (!curriculum.includes("getVisualUrl = (lessonId) => `../?lesson=${encodeURIComponent(lessonId)}`")) fail('AP325 visual lesson URL does not navigate back to the AlgoVista root')
+else ok('AP325 visual lesson URLs resolve from /ap325/ back to the AlgoVista root')
 
 const moduleRefs = [...curriculum.slice(curriculum.indexOf('const rawProblems = [')).matchAll(/\['[PQ]-\d+-[^']+'\s*,\s*'([^']+)'/g)].map(m=>m[1])
 const invalidModuleRefs = [...new Set(moduleRefs.filter(id => !moduleIds.includes(id)))]
