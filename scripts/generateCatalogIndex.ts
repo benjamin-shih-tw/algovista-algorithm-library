@@ -58,6 +58,7 @@ writeFileSync('public/catalog-index.json',JSON.stringify(payload))
 const lessonDir='public/lessons'
 rmSync(lessonDir,{recursive:true,force:true})
 mkdirSync(lessonDir,{recursive:true})
+const lessonPayloadSizes:{id:string;bytes:number}[]=[]
 for(const lesson of lessons){
   assertJsonSafe(lesson,`lesson.${lesson.id}`)
   const serialized=JSON.stringify(lesson)
@@ -65,8 +66,21 @@ for(const lesson of lessons){
   if(restored.id!==lesson.id||restored.frames?.length!==lesson.frames.length){
     throw new Error(`lesson serialization mismatch: ${lesson.id}`)
   }
+  lessonPayloadSizes.push({id:lesson.id,bytes:Buffer.byteLength(serialized,'utf8')})
   writeFileSync(`${lessonDir}/${lesson.id}.json`,serialized)
 }
+const sortedSizes=[...lessonPayloadSizes].sort((a,b)=>a.bytes-b.bytes)
+const totalBytes=sortedSizes.reduce((sum,item)=>sum+item.bytes,0)
+const p95=sortedSizes[Math.max(0,Math.ceil(sortedSizes.length*.95)-1)]
+const largest=sortedSizes.at(-1)!
+const average=Math.round(totalBytes/Math.max(1,sortedSizes.length))
+mkdirSync('.tmp',{recursive:true})
+writeFileSync('.tmp/lesson-payload-sizes.json',JSON.stringify({
+  totalLessons:sortedSizes.length,totalBytes,averageBytes:average,p95Bytes:p95.bytes,maxBytes:largest.bytes,maxLesson:largest.id,
+  lessons:sortedSizes,
+},null,2))
 
 console.log(`catalog index: ${payload.lessons.length} lessons, ${payload.categories.length} categories`)
 console.log(`lesson payloads: ${lessons.length} files in ${lessonDir}`)
+console.log(`lesson payload size: avg ${average} B · p95 ${p95.bytes} B · max ${largest.bytes} B (${largest.id})`)
+if(largest.bytes>150_000) throw new Error(`lesson payload too large: ${largest.id} is ${largest.bytes} bytes`)
