@@ -350,7 +350,7 @@ function render(scrollTop=true,historyMode='replace'){
   if(scrollTop)window.scrollTo({top:0})
 }
 function bind(){
-  $('[data-action]').forEach(el=>el.addEventListener('click',async()=>{
+  $$('[data-action]').forEach(el=>el.addEventListener('click',async()=>{
     const a=el.dataset.action
     if(a==='home'){state.chapter=null;state.view='path';render(true,'push')}
     if(a==='view'){state.chapter=null;state.view=el.dataset.view;render(true,'push')}

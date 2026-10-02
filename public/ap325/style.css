@@ -162,7 +162,10 @@ footer a{text-decoration:none}
   .toc-links{display:none}
 }
 @media(max-width:620px){
-  .topbar-inner{padding:0 13px}
+  .topbar-inner{padding:0 13px;gap:8px}
+  .brand{flex:0 0 auto;max-width:64px;line-height:1.05;text-align:left}
+  .topbar nav{min-width:0;flex:1;overflow-x:auto;scrollbar-width:none}
+  .topbar nav>*{flex:0 0 auto}
   .topbar nav a:first-of-type{display:none}
   .page,.home{width:calc(100% - 26px);padding-top:30px}
   .chapter-page{width:calc(100% - 26px)}

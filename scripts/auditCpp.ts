@@ -3,6 +3,14 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { lessons } from '../src/algorithms'
 
 type Result={id:string;ok:boolean;err:string}
+type SnippetReason='missing-external-context'|'declaration-conflict'|'type-or-signature-mismatch'|'syntax-or-other'
+
+const snippetReason=(diagnostic:string):SnippetReason=>{
+  if(/undeclared identifier|unknown type name|no member named/.test(diagnostic))return 'missing-external-context'
+  if(/redefinition|ambiguous/.test(diagnostic))return 'declaration-conflict'
+  if(/no matching function|no viable conversion|reference to overloaded function/.test(diagnostic))return 'type-or-signature-mismatch'
+  return 'syntax-or-other'
+}
 
 const compileLesson=(lesson:(typeof lessons)[number])=>new Promise<Result>((resolve)=>{
   const codeContent=lesson.code.join('\n')
@@ -51,16 +59,44 @@ await Promise.all(Array.from({length:concurrency},()=>worker()))
 
 const completed=results.filter((item):item is Result=>Boolean(item))
 const compiled=completed.filter((item)=>item.ok).map((item)=>item.id)
-const failed=completed.filter((item)=>!item.ok).map(({id,err})=>({id,err}))
+const failed=completed.filter((item)=>!item.ok).map(({id,err})=>({id,err,reason:snippetReason(err)}))
+const reasonCounts=Object.fromEntries(failed.reduce((counts,{reason})=>counts.set(reason,(counts.get(reason)??0)+1),new Map<SnippetReason,number>()))
 const report={
+  schemaVersion:2,
   total:lessons.length,
   compiled:compiled.length,
   snippet:failed.length,
+  summary:{standalone:compiled.length,snippet:failed.length,snippetReasons:reasonCounts},
   compiledIds:compiled,
   failed,
+  lessons:completed.map(({id,ok,err})=>ok
+    ? {id,status:'standalone' as const}
+    : {id,status:'snippet' as const,reason:snippetReason(err),diagnostic:err}),
 }
 mkdirSync('.tmp',{recursive:true})
 writeFileSync('.tmp/cppAuditReport.json',JSON.stringify(report,null,2))
+const markdown=[
+  '# C++17 Compilation Coverage',
+  '',
+  `- Standalone syntax-verified: **${compiled.length} / ${lessons.length}**`,
+  `- Teaching snippets requiring lesson/problem context: **${failed.length} / ${lessons.length}**`,
+  '',
+  'A snippet result is a classification, not a release failure. The audit does not invent judge I/O, domain helpers, or fake APIs to force standalone compilation.',
+  '',
+  '## Snippet reasons',
+  '',
+  '| Reason | Count |',
+  '|---|---:|',
+  ...Object.entries(reasonCounts).map(([reason,count])=>`| ${reason} | ${count} |`),
+  '',
+  '## Teaching snippets',
+  '',
+  '| Lesson | Reason | First compiler diagnostic |',
+  '|---|---|---|',
+  ...failed.map(({id,reason,err})=>`| ${id} | ${reason} | ${err.replace(/\|/g,'\\|')} |`),
+  '',
+]
+writeFileSync('.tmp/cppAuditReport.md',markdown.join('\n'))
 
 console.log(`compile-verified: ${compiled.length}/${lessons.length}`)
 console.log(`remaining snippets: ${failed.length}`)
