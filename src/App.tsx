@@ -521,8 +521,25 @@ export default function App() {
   const [theme,setTheme]=useThemeSettings()
   const directLessonId=new URLSearchParams(window.location.search).get('lesson')
   const [selected,setSelected]=useState<AlgorithmLesson|null>(()=>lessons.find((lesson)=>lesson.id===directLessonId)??null)
-  const selectLesson=(lesson:AlgorithmLesson)=>{window.history.replaceState(null,'',`?lesson=${lesson.id}`);setSelected(lesson)}
-  const clearLesson=()=>{window.history.replaceState(null,'',window.location.pathname);setSelected(null)}
+  useEffect(()=>{
+    const syncFromLocation=()=>{
+      const lessonId=new URLSearchParams(window.location.search).get('lesson')
+      setSelected(lessons.find((lesson)=>lesson.id===lessonId)??null)
+    }
+    window.addEventListener('popstate',syncFromLocation)
+    return()=>window.removeEventListener('popstate',syncFromLocation)
+  },[])
+  const selectLesson=(lesson:AlgorithmLesson)=>{
+    const url=new URL(window.location.href)
+    url.searchParams.set('lesson',lesson.id)
+    url.searchParams.delete('step')
+    window.history.pushState({algovista:'lesson',lessonId:lesson.id},'',url.pathname+`?${url.searchParams.toString()}`)
+    setSelected(lesson)
+  }
+  const clearLesson=()=>{
+    window.history.pushState({algovista:'library'},'',window.location.pathname)
+    setSelected(null)
+  }
   const catalogManifest=JSON.stringify(lessons.map(({id,visualModel,frames})=>({id,visualModel,steps:frames.length})))
   return <div className="app-shell" data-accent-mode={theme.accentMode} style={themeStyle(theme)}><script id="catalog-manifest" type="application/json">{catalogManifest}</script><ThemeControls theme={theme} onChange={setTheme}/>{selected?<LessonPlayer lesson={selected} onBack={clearLesson} onNavigate={selectLesson}/>:<Library onSelect={selectLesson}/>}</div>
 }
