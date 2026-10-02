@@ -187,7 +187,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'while(n%p==0)','p=2：連除三次','360→180→90→45，所以記錄 2^3。',{p:2,sequence:['360','180','90','45'],exponent:3,operation:'extract factor 2'}),
     eventFrame(lesson,'for(long long p=2','p=3：45 可再除兩次','45→15→5，記錄 3^2。',{p:3,sequence:['45','15','5'],exponent:2,operation:'extract factor 3'}),
     eventFrame(lesson,'for(long long p=2','接下來 p*p > n','目前 n=5；不必再試到原本 sqrt(360)，因剩餘 n 已縮小。',{remaining:5,operation:'stop trial loop'}),
-    eventFrame(lesson,'if(n>1)','剩餘 5 本身是質數','加入 5^1。',{factor:'5^1',operation:'append residual prime'}),
+    eventFrame(lesson,'if(n>1)','剩餘 5 本身是質數','迴圈結束後剩餘 n=5 大於 1，因此它本身就是最後一個質因數，記錄為 5^1。',{factor:'5^1',operation:'append residual prime'}),
     eventFrame(lesson,'return out','結果 360=2^3×3^2×5','乘回 8×9×5=360。',{factors:['2^3','3^2','5'],check:360,operation:'return factors'}),
   ],
 
@@ -206,7 +206,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'cur=b','i=0：cur=5，不在 Baby Table','繼續乘 factor。',{i:0,cur:5,hit:'no',operation:'probe giant step'}),
     eventFrame(lesson,'cur=cur*factor','i=1：cur=5×9≡6','6 也不在 table。',{i:1,cur:6,hit:'no',operation:'advance giant step'}),
     eventFrame(lesson,'baby.count','i=2：cur=6×9≡2，命中 j=1','因此 x=iM+j=2×4+1=9。',{i:2,cur:2,j:1,x:9,operation:'find collision'}),
-    eventFrame(lesson,'return i*M+baby[cur]','驗證 2^9 mod13 =5','解 x=9。',{result:9,check:'512 mod13=5',operation:'return discrete log'}),
+    eventFrame(lesson,'return i*M+baby[cur]','驗證 2^9 mod13 =5','碰撞給出 x=2×4+1=9，代回驗證 2^9 mod 13=5，因此離散對數答案就是 9。',{result:9,check:'512 mod13=5',operation:'return discrete log'}),
   ],
 
   'fast-walsh-hadamard-transform':lesson=>[
