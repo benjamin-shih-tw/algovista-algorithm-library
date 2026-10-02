@@ -1,0 +1,36 @@
+name: AlgoVista C++ Coverage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpp-coverage
+  cancel-in-progress: true
+
+jobs:
+  cpp-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Audit C++17 compilation coverage
+        continue-on-error: true
+        run: mkdir -p .tmp && CPP_AUDIT_VERBOSE=1 npm run audit:cpp
+      - name: Upload C++17 compilation audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp17-compilation-audit
+          path: .tmp/cppAuditReport.json
