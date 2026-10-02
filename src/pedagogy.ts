@@ -325,6 +325,35 @@ const needsMainWrap = (code: string[]): boolean => {
   return false
 }
 
+const TOP_LEVEL_FUNCTION_RE = /^(?!\b(?:if|else|while|for|do|switch)\b)[\w:<>,&*\s]+\w+\s*\([^;]*\)\s*\{/
+const GLOBAL_DECLARATION_RE = /^(?:const\s+)?(?:int|long\s+long|double|bool|char|string|vector\s*<.*>|queue\s*<.*>|deque\s*<.*>|stack\s*<.*>|priority_queue\s*<.*>|set\s*<.*>|multiset\s*<.*>|map\s*<.*>|unordered_map\s*<.*>)\s+[^;]+;$/
+
+const prepareMixedTopLevelCode = (source: string[]) => {
+  const functionBlocks: { index: number; line: string }[] = []
+  const globalDeclarations: { index: number; line: string }[] = []
+  const mainStatements: { index: number; line: string }[] = []
+  let index = 0
+  while (index < source.length) {
+    const raw = source[index]
+    const line = raw.trim()
+    if (!line) { index += 1; continue }
+    if (TOP_LEVEL_FUNCTION_RE.test(line)) {
+      let depth = 0
+      do {
+        const current = source[index]
+        functionBlocks.push({ index, line: current })
+        for (const ch of current) { if (ch === '{') depth += 1; else if (ch === '}') depth -= 1 }
+        index += 1
+      } while (index < source.length && depth > 0)
+      continue
+    }
+    if (GLOBAL_DECLARATION_RE.test(line)) globalDeclarations.push({ index, line: raw })
+    else mainStatements.push({ index, line: raw })
+    index += 1
+  }
+  return { functionBlocks, globalDeclarations, mainStatements }
+}
+
 const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
   const envDeclarations = buildEnvDeclarations(lesson.code)
   const wrapInMain = needsMainWrap(lesson.code)
@@ -343,18 +372,37 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
     code.push('')
   }
   const lineMap = new Map<number, number[]>()
-  if (wrapInMain) {
+  const hasTopLevelFunction = lesson.code.some((line) => TOP_LEVEL_FUNCTION_RE.test(line.trim()))
+  if (wrapInMain && hasTopLevelFunction) {
+    const mixed = prepareMixedTopLevelCode(lesson.code)
+    const emit = (item: { index: number; line: string }, indent = '') => {
+      const expanded = expandReadableLine(item.line)
+      const mapped = expanded.map((expandedLine) => { code.push(indent + expandedLine); return code.length })
+      lineMap.set(item.index + 1, mapped)
+    }
+    mixed.globalDeclarations.forEach((item) => emit(item))
+    if (mixed.globalDeclarations.length) code.push('')
+    mixed.functionBlocks.forEach((item) => emit(item))
+    if (mixed.functionBlocks.length) code.push('')
     code.push('int main() {')
-    code.push('  // 以下為本課核心流程片段')
-  }
-  lesson.code.forEach((line, index) => {
-    const expanded = expandReadableLine(line)
-    const mapped = expanded.map((expandedLine) => { code.push(expandedLine); return code.length })
-    lineMap.set(index + 1, mapped)
-  })
-  if (wrapInMain) {
+    code.push('  // 以下只示範本課頂層流程；題目輸入請依實際題意填入')
+    mixed.mainStatements.forEach((item) => emit(item, '  '))
     code.push('  return 0;')
     code.push('}')
+  } else {
+    if (wrapInMain) {
+      code.push('int main() {')
+      code.push('  // 以下為本課核心流程片段')
+    }
+    lesson.code.forEach((line, index) => {
+      const expanded = expandReadableLine(line)
+      const mapped = expanded.map((expandedLine) => { code.push(expandedLine); return code.length })
+      lineMap.set(index + 1, mapped)
+    })
+    if (wrapInMain) {
+      code.push('  return 0;')
+      code.push('}')
+    }
   }
   const frames = lesson.frames.map((frame) => {
     const codeLines = [...new Set(frame.codeLines.flatMap((line) => lineMap.get(line) ?? []))]
