@@ -27,6 +27,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Audit catalog integrity
+        run: npm run audit:catalog
+      - name: Audit teaching templates
+        run: npm run audit:templates
+      - name: Audit knowledge graph
+        run: npm run audit:knowledge
       - name: Audit AP325 Guide
         run: npm run audit:ap325
       - name: Audit animation structure
@@ -68,6 +74,13 @@ jobs:
         with:
           name: stage5-execution-progress
           path: .tmp/stage5-execution-progress.json
+      - name: Audit C++17 compilation coverage
+        run: mkdir -p .tmp && CPP_AUDIT_VERBOSE=1 npm run audit:cpp
+      - name: Upload C++17 compilation audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp17-compilation-audit
+          path: .tmp/cppAuditReport.json
       - name: Build
         run: npm run build
       - name: Configure Pages
