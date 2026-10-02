@@ -246,6 +246,7 @@ const buildEnvDeclarations = (code: string[]): string[] => {
   const declaredAny = (token: string) => declarationLines.some((line) => {
     const direct = new RegExp(`\\b${scalarOrContainerType}\\s*[&*]*\\s*${token}\\b`).test(line)
     if (direct) return true
+    if (new RegExp('\\bvector\\s*<[^;\\n]+>\\s*[&*]*\\s*' + token + '\\b').test(line)) return true
     const declaration = line.match(new RegExp(`^\\s*(?:const\\s+)?${scalarOrContainerType}\\s+(.+?);?\\s*$`))
     if (!declaration) return false
     return declaration[1].split(',').some((part) => new RegExp(`^\\s*[&*]*\\s*${token}\\b`).test(part))

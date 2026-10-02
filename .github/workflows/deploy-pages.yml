@@ -69,6 +69,8 @@ jobs:
             .tmp/stage2-remediation-matrix.md
       - name: Audit primary animation-code sync
         run: npm run audit:animation:stage3
+      - name: Audit user-visible animation semantics
+        run: npm run audit:animation:semantics
       - name: Upload Stage 3 code-sync audit
         uses: actions/upload-artifact@v4
         with:

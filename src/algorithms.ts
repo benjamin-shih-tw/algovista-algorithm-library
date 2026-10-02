@@ -120,6 +120,7 @@ export interface Frame {
   distances?: Record<string, number | '∞'>
   hull?: string[]
   segmentStep?: ReturnType<typeof createQueryTrace>[number]
+  segmentNodeValues?: Record<string, number>
   codeLines: number[]
   state?: Record<string, string | number | string[]>
   executionView?: ExecutionView
@@ -244,7 +245,7 @@ const dijkstraFrames: Frame[] = [
 
 const dijkstraGuidedFrames: Frame[] = [
   { title: '確認 Dijkstra 的使用前提', explanation: '起點是 A，所有邊權都非負。非負性保證 priority queue 取出的最新最小距離，不可能再被尚未處理的路徑改善。', codeLine: 'void dijkstra(int source) {', codeLines: [1,2,3], state: { source: 'A', prerequisite: 'all edge weights ≥ 0', invariant: 'heap top is minimum tentative distance' }, active: ['A'], accepted: [], priorityQueue: [], distances: { A: '∞', B: '∞', C: '∞', D: '∞', E: '∞', F: '∞' } },
-  { title: '把所有距離設為無限大', explanation: '目前還不知道任何路徑，因此 dist[A..F] 全部初始化為 INF。Min-heap 會使用 pair 的第一個欄位，也就是距離來排序。', codeLine: 'fill(dist.begin(), dist.end(), INF);', codeLines: [3,4], state: { operation: 'initialize distances', priorityQueue: [], fixed: [] }, active: [], accepted: [], priorityQueue: [], distances: { A: '∞', B: '∞', C: '∞', D: '∞', E: '∞', F: '∞' } },
+  { title: '把所有距離設為無限大', explanation: '目前還不知道任何路徑，因此 dist[A..F] 全部初始化為 INF。Min-heap 會使用 pair 的第一個欄位，也就是距離來排序。', codeLine: 'dist.assign(graph.size(), INF);', codeLines: [4], state: { operation: 'initialize distances', priorityQueue: [], fixed: [] }, active: [], accepted: [], priorityQueue: [], distances: { A: '∞', B: '∞', C: '∞', D: '∞', E: '∞', F: '∞' } },
   { title: '設定起點並加入 Min-Heap', explanation: '空路徑長度為 0，所以令 dist[A]=0，並把 (0,A) 推入 min-priority queue；其他節點仍不可達。', codeLine: 'pq.push({0, source});', codeLines: [5,6], state: { operation: 'dist[A]=0; push (0,A)', priorityQueue: ['(0,A)'], fixed: [] }, active: ['A'], accepted: [], priorityQueue: ['(0,A)'], distances: { A: 0, B: '∞', C: '∞', D: '∞', E: '∞', F: '∞' } },
   { title: '取出目前最小的 A', explanation: 'heap top 是 (0,A)。取出後 d 等於 dist[A]，不是過期資訊；A 因而成為第一個距離確定的節點。', codeLine: 'auto [d, u] = pq.top();', codeLines: [7,8,9,10], state: { current: '(0,A)', decision: 'fresh entry', priorityQueue: [], fixed: ['A'] }, active: ['A'], accepted: ['A'], priorityQueue: [], distances: { A: 0, B: '∞', C: '∞', D: '∞', E: '∞', F: '∞' } },
   { title: '鬆弛邊 A → B', explanation: '經過 A 到 B 的候選距離是 0+4=4，小於 INF，因此更新 dist[B]=4，並把 (4,B) 加入 heap。', codeLine: 'if (d + w < dist[v]) {', codeLines: [11,12,13,14], state: { edge: 'A → B (4)', comparison: '0 + 4 < ∞', update: 'B: ∞ → 4' }, active: ['A','B'], accepted: ['A'], priorityQueue: ['(4,B)'], distances: { A: 0, B: 4, C: '∞', D: '∞', E: '∞', F: '∞' } },
@@ -307,14 +308,13 @@ const makeSegmentStep = (id: string, kind: NonNullable<Frame['segmentStep']>['ki
 }
 const queryTrace = createQueryTrace(segmentValues, 1, 5).filter((step) => step.kind !== 'visit')
 const selectedQueryTrace = [queryTrace[0], queryTrace[1], queryTrace[3], queryTrace[5], queryTrace[7], queryTrace[10], queryTrace.at(-2)!, queryTrace.at(-1)!].filter(Boolean)
-const buildAccepted = (maximumDepth: number) => segmentNodes.filter((node) => node.depth >= maximumDepth).map((node) => node.id)
 const updatedSegmentValues = [2, 5, 1, 4, 10, 3, 7, 6]
 const segmentBuildFrames: Frame[] = [
   { title:'01 · 先定義每個節點的責任', explanation:'SegmentTree 物件保存 n 與 tree。節點 node 代表固定閉區間 [l,r]，值是該區間總和；左右孩子分別代表 [l,mid] 與 [mid+1,r]。', codeLine:'struct SegmentTree {', codeLines:[1,2,3], state:{phaseName:'build',operationType:'structure',nodeMeaning:'tree[node] = sum of [l,r]'}, segmentStep:makeSegmentStep('build-structure','start',['0-7'],[],'定義節點區間','根節點先代表完整陣列') },
   { title:'02 · 配置 Tree 並呼叫 Build', explanation:'建構子先配置約 4n 個位置，再以 build(1,0,n−1,a) 從根開始。空陣列不進入遞迴，避免出現 [0,−1]。', codeLine:'if (n) build(1, 0, n - 1, a);', codeLines:[4,5], state:{phaseName:'build',operationType:'initialize',n:8,storage:'4n',rootInterval:'[0,7]'}, segmentStep:makeSegmentStep('build-init','start',['0-7'],[],'配置並開始建樹','root=[0,7]') },
   { title:'03 · 遞迴拆到單點葉節點', explanation:'只要 l<r，就用 mid 把區間拆成兩半。每次區間長度至少減半，最後一定到達 l=r 的葉節點。', codeLine:'int mid = l + (r - l) / 2;', codeLines:[7,9,10,11], state:{phaseName:'build',operationType:'split',interval:'[0,7] → [0,3] + [4,7]',invariant:'children are disjoint and cover parent'}, segmentStep:makeSegmentStep('build-split','partial',['0-7','0-3','4-7'],[],'拆分區間','左右孩子互斥且聯集等於父區間') },
-  { title:'04 · 葉節點直接讀原陣列', explanation:'當 l=r，這個節點只包含 a[l]，因此 tree[node]=a[l]。葉節點是整棵樹所有聚合值的 base case。', codeLine:'tree[node] = a[l];', codeLines:[8], state:{phaseName:'build',operationType:'write leaf',leafValues:'2,5,1,4,9,3,7,6'}, segmentStep:makeSegmentStep('build-leaves','accept',['7-7'],buildAccepted(3),'寫入葉節點','每個葉節點等於一個原始值') },
-  { title:'05 · 由孩子向上 Pull', explanation:'左右孩子完成後，父節點以 tree[left]+tree[right] 重算。這個 pull 關係同時會在之後的 point update 重複使用。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[12], state:{phaseName:'build',operationType:'pull',example:'[0,1] = 2 + 5 = 7'}, segmentStep:makeSegmentStep('build-pull','return',['0-1'],[...buildAccepted(3),'0-1'],'合併孩子','父節點等於左右子節點總和',7) },
+  { title:'04 · 第一個葉節點讀原陣列', explanation:'遞迴到 [0,0] 時 l=r，tree[node]=a[0]=2。其他節點仍未寫入；接著會以相同方式處理其餘葉節點。', codeLine:'tree[node] = a[l];', codeLines:[8], state:{phaseName:'build',operationType:'write leaf',leaf:'[0,0]',value:2}, segmentStep:makeSegmentStep('build-leaves','accept',['0-0'],['0-0'],'寫入第一個葉節點','[0,0] = 2') },
+  { title:'05 · 由孩子向上 Pull', explanation:'再寫入 [1,1]=5 後，父節點 [0,1] 以 2+5=7 重算。其餘子樹隨遞迴陸續建好；尚未計算的節點不顯示總和。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[12], state:{phaseName:'build',operationType:'pull',example:'[0,1] = 2 + 5 = 7'}, segmentStep:makeSegmentStep('build-pull','return',['0-1'],['0-0','1-1','0-1'],'合併孩子','父節點等於左右子節點總和',7) },
   { title:'06 · Build 完成，根保存總和 37', explanation:'所有內部節點都已由葉節點向上合併，根節點 [0,7] 保存 37。建樹拜訪每個節點一次，因此時間與記憶體都是 O(n)。', codeLine:'tree[node] = tree[node * 2] + tree[node * 2 + 1];', codeLines:[12,13], state:{phaseName:'build',operationType:'build complete',rootSum:37,complexity:'O(n)'}, segmentStep:makeSegmentStep('build-complete','complete',['0-7'],segmentNodes.map((node)=>node.id),'建樹完成','所有節點值已可供 query 使用',37) },
 ]
 const segmentQueryFrames: Frame[] = selectedQueryTrace.map((step, index) => ({
@@ -334,7 +334,21 @@ const segmentUpdateFrames: Frame[] = [
   { title:'19 · 再次 Query 會讀到新答案', explanation:'update 已維持「每個父節點等於左右孩子合併」的不變量，因此後續任何 query 都會使用更新後的 10，而不會讀到舊值 9。', codeLine:'long long query(int l, int r) const', codeLines:[22], state:{phaseName:'verify',operationType:'query after update',invariant:'every node equals merge(children)'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('update-verify','complete',['0-7'],segmentNodes.map((node)=>node.id),'驗證更新後結構','build → query → update 共享同一個節點 invariant',38) },
   { title:'20 · 完整 lifecycle 已閉合', explanation:'Build 建立所有節點；Query 只讀取並合併互斥節點；Update 改葉節點後 Pull 回根。三個操作共用同一個區間定義與合併規則。', codeLine:'void update(int index, long long value)', codeLines:[30,31], state:{phaseName:'verify',operationType:'lifecycle complete',result:'build O(n) · query O(log n) · update O(log n)'}, values:updatedSegmentValues, segmentStep:makeSegmentStep('lifecycle-complete','complete',['0-7'],segmentNodes.map((node)=>node.id),'完整操作關係','build → query → update',38) },
 ]
-const segmentFrames: Frame[] = [...segmentBuildFrames, ...segmentQueryFrames, ...segmentUpdateFrames]
+const initialNodeValues = Object.fromEntries(segmentNodes.map((node) => [node.id, node.sum]))
+const updatedNodeValues = Object.fromEntries(buildTree(updatedSegmentValues).map((node) => [node.id, node.sum]))
+const segmentSnapshots: Record<string, Record<string, number>> = {
+  'build-structure': {}, 'build-init': {}, 'build-split': {},
+  'build-leaves': { '0-0': initialNodeValues['0-0'] },
+  'build-pull': { '0-0': initialNodeValues['0-0'], '1-1': initialNodeValues['1-1'], '0-1': initialNodeValues['0-1'] },
+  'update-descend': initialNodeValues,
+  'update-leaf': { ...initialNodeValues, '4-4': updatedNodeValues['4-4'] },
+  'update-pull-1': { ...initialNodeValues, '4-4': updatedNodeValues['4-4'], '4-5': updatedNodeValues['4-5'] },
+  'update-pull-root': updatedNodeValues, 'update-verify': updatedNodeValues, 'lifecycle-complete': updatedNodeValues,
+}
+const segmentFrames: Frame[] = [...segmentBuildFrames, ...segmentQueryFrames, ...segmentUpdateFrames].map((frame) => ({
+  ...frame,
+  segmentNodeValues: segmentSnapshots[frame.segmentStep!.id] ?? initialNodeValues,
+}))
 
 const binaryCode = [
   'int binarySearch(const vector<int>& a, int target) {',
@@ -377,7 +391,7 @@ const bfsCode = [
 ]
 const dijkstraCode = [
   'void dijkstra(int source) {', '  using State = pair<long long, int>;', '  priority_queue<State, vector<State>, greater<State>> pq;',
-  '  fill(dist.begin(), dist.end(), INF);', '  dist[source] = 0;', '  pq.push({0, source});', '  while (!pq.empty()) {',
+  '  dist.assign(graph.size(), INF);', '  dist[source] = 0;', '  pq.push({0, source});', '  while (!pq.empty()) {',
   '    auto [d, u] = pq.top();', '    pq.pop();', '    if (d != dist[u]) continue;', '    for (auto [v, w] : graph[u]) {',
   '      if (d + w < dist[v]) {', '        dist[v] = d + w;', '        pq.push({dist[v], v});', '      }', '    }', '  }', '}',
 ]

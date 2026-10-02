@@ -11,6 +11,17 @@ import { applyS2MiscOverride } from './s2ExecutionOverridesMisc'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
+const prefixMatrix = (cells: string[][], activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
+  kind: 'matrix', title: '2D PREFIX · pref[r][c] = sum of [0,r) × [0,c)', cells,
+  rowLabels: ['0', '1', '2', '3'], colLabels: ['0', '1', '2', '3'], activeCells,
+})
+const prefixBorder = [
+  ['0', '0', '0', '0'], ['0', '—', '—', '—'], ['0', '—', '—', '—'], ['0', '—', '—', '—'],
+]
+const prefixComplete = [
+  ['0', '0', '0', '0'], ['0', '1', '3', '6'], ['0', '5', '12', '21'], ['0', '12', '27', '45'],
+]
+
 const overrides: Record<string, TraceBuilder> = {
   'prefix-xor': (lesson) => [
     eventFrame(lesson,'vector<int> px','建立 px[0]=0','使用 a=[5,2,7,3,2]。px[i] 表示 a[0..i) 的 XOR。',{input:['5','2','7','3','2'],px:['0'],operation:'initialize prefix xor'},{values:[5,2,7,3,2]}),
@@ -22,12 +33,12 @@ const overrides: Record<string, TraceBuilder> = {
   ],
 
   'prefix-sum-2d': (lesson) => [
-    eventFrame(lesson,'for(int r=0','使用 3×3 Matrix','a=[[1,2,3],[4,5,6],[7,8,9]]；pref 多一列與一欄 0。',{matrix:['1 2 3','4 5 6','7 8 9'],prefBorder:'row0/col0 = 0',operation:'initialize 2d prefix'}),
-    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[1][1]','1 + 上0 + 左0 - 左上0 = 1。',{cell:'pref[1][1]',formula:'1+0+0-0',value:1,operation:'build cell'}),
-    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[1][2]','2 + 上0 + 左1 - 左上0 = 3。',{cell:'pref[1][2]',formula:'2+0+1-0',value:3,operation:'build cell'}),
-    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[2][2]','5 + pref[1][2](3) + pref[2][1](5) - pref[1][1](1) = 12。',{cell:'pref[2][2]',formula:'5+3+5-1',value:12,operation:'inclusion exclusion build'}),
-    eventFrame(lesson,'pref[r+1][c+1]','Prefix Table 完成','pref=[[0,0,0,0],[0,1,3,6],[0,5,12,21],[0,12,27,45]]。',{pref:['0 0 0 0','0 1 3 6','0 5 12 21','0 12 27 45'],operation:'finish table'}),
-    eventFrame(lesson,'return pref[r2+1][c2+1]','Query rows 1..2, cols 1..2','右下 2×2 是 [[5,6],[8,9]]。45 - 上6 - 左12 + 左上1 = 28。',{query:'r1=1,c1=1,r2=2,c2=2',formula:'45-6-12+1',result:28,operation:'rectangle query'}),
+    eventFrame(lesson,'for(int r=0','使用 3×3 Matrix','a=[[1,2,3],[4,5,6],[7,8,9]]；畫面顯示多一列與一欄 0 的 pref，未計算格暫不顯示值。',{matrix:['1 2 3','4 5 6','7 8 9'],prefBorder:'row0/col0 = 0',operation:'initialize 2d prefix'},{executionView:prefixMatrix(prefixBorder)}),
+    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[1][1]','1 + 上0 + 左0 - 左上0 = 1。',{cell:'pref[1][1]',formula:'1+0+0-0',value:1,operation:'build cell'},{executionView:prefixMatrix(prefixBorder.map((row,r)=>row.map((value,c)=>r===1&&c===1?'1':value)),['1,1'])}),
+    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[1][2]','2 + 上0 + 左1 - 左上0 = 3。',{cell:'pref[1][2]',formula:'2+0+1-0',value:3,operation:'build cell'},{executionView:prefixMatrix(prefixBorder.map((row,r)=>row.map((value,c)=>r===1&&c===1?'1':r===1&&c===2?'3':value)),['1,2'])}),
+    eventFrame(lesson,'pref[r+1][c+1]','計算 pref[2][2]','5 + pref[1][2](3) + pref[2][1](5) - pref[1][1](1) = 12。',{cell:'pref[2][2]',formula:'5+3+5-1',value:12,operation:'inclusion exclusion build'},{executionView:prefixMatrix([['0','0','0','0'],['0','1','3','6'],['0','5','12','—'],['0','—','—','—']],['2,2'])}),
+    eventFrame(lesson,'pref[r+1][c+1]','Prefix Table 完成','pref=[[0,0,0,0],[0,1,3,6],[0,5,12,21],[0,12,27,45]]。',{pref:['0 0 0 0','0 1 3 6','0 5 12 21','0 12 27 45'],operation:'finish table'},{executionView:prefixMatrix(prefixComplete)}),
+    eventFrame(lesson,'return pref[r2+1][c2+1]','Query rows 1..2, cols 1..2（0-based）','右下 2×2 是 [[5,6],[8,9]]。45 - 上6 - 左12 + 左上1 = 28。',{query:'r1=1,c1=1,r2=2,c2=2',formula:'45-6-12+1',result:28,operation:'rectangle query'},{executionView:prefixMatrix(prefixComplete,['3,3','1,3','3,1','1,1'])}),
   ],
 
   'counting-sort': (lesson) => [

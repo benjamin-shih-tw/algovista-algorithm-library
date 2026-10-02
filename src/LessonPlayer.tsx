@@ -161,7 +161,7 @@ function SegmentScene({ frame }: { frame: Frame }) {
     <div className="mini-array">{values.map((value, index) => <span key={index} className={isUpdate?index===4?'selected':'':index >= 1 && index <= 5 ? 'selected' : ''}>{value}</span>)}</div>
     <svg viewBox="0 0 1000 430">
       {segmentNodes.filter((node) => node.parentId).map((node) => { const parent = segmentNodes.find((item) => item.id === node.parentId)!; return <line key={node.id} x1={parent.x*10} y1={parent.y*4} x2={node.x*10} y2={node.y*4} className={`seg-edge ${step.statuses[node.id]}`} /> })}
-      {segmentNodes.map((node) => {const sum=values.slice(node.left,node.right+1).reduce((total,value)=>total+value,0);return <g key={node.id}><rect x={node.x*10-42} y={node.y*4-21} width="84" height="42" rx="13" className={`seg-node ${step.statuses[node.id]}`} /><text x={node.x*10} y={node.y*4-2} className="seg-range">[{node.left+1},{node.right+1}]</text><text x={node.x*10} y={node.y*4+12} className="seg-sum">Σ {sum}</text></g>})}
+      {segmentNodes.map((node) => {const sum=frame.segmentNodeValues?.[node.id];return <g key={node.id}><rect x={node.x*10-42} y={node.y*4-21} width="84" height="42" rx="13" className={`seg-node ${step.statuses[node.id]}`} /><text x={node.x*10} y={node.y*4-2} className="seg-range">[{node.left+1},{node.right+1}]</text><text x={node.x*10} y={node.y*4+12} className="seg-sum">Σ {sum ?? '—'}</text></g>})}
     </svg>
   </div>
 }

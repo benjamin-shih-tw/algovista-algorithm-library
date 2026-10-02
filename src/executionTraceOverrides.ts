@@ -3,6 +3,13 @@ import { eventFrame } from './traceAuthoring'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
 
+const floydMatrix = (aToC: string, aToD: string, bToD: string, activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
+  kind: 'matrix', title: 'FLOYD–WARSHALL · dist[i][j]',
+  rowLabels: ['A', 'B', 'C', 'D'], colLabels: ['A', 'B', 'C', 'D'],
+  cells: [['0', '3', aToC, aToD], ['∞', '0', '2', bToD], ['∞', '∞', '0', '1'], ['∞', '∞', '∞', '0']],
+  activeCells,
+})
+
 const codeOverrides: Record<string, string[]> = {
   'connected-components': [
     'void dfs(int u) {',
@@ -339,10 +346,10 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','Add(3,+5)：更新 bit[3]','lowbit(3)=1，所以第一個被更新的分組右端是 3。',{i:3,lowbit:1,bit:'bit[3]:0→5',path:['3','4','8'],operation:'update bit[3]'},{values:[0,0,5,0,0,0,0,0],active:['2']}),
     eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','i=4：更新 bit[4]','3+lowbit(3)=4；bit[4] 代表 [1,4]，也必須包含位置 3 的 +5。',{i:4,lowbit:4,bit:'bit[4]:0→5',path:['3','4','8'],operation:'update bit[4]'},{values:[0,0,5,5,0,0,0,0],active:['3']}),
     eventFrame(lesson,'for (; i <= n; i += i & -i) bit[i] += delta;','i=8：更新 bit[8]','4+lowbit(4)=8；bit[8] 代表 [1,8]。下一步 i=16 超界，add 結束。',{i:8,lowbit:8,bit:'bit[8]:0→5',path:['3','4','8'],operation:'update bit[8]'},{values:[0,0,5,5,0,0,0,5],active:['7']}),
-    eventFrame(lesson,'long long s = 0;','Prefix(6)：累加器從 0 開始','查詢前綴 [1,6]，先令 s=0。',{query:'prefix(6)',i:6,sum:0,operation:'initialize prefix'}),
-    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','讀 bit[6]','lowbit(6)=2，bit[6] 代表 [5,6]；目前值為 0，所以 s 仍為 0。',{i:6,lowbit:2,covered:'[5,6]',sum:'0+0=0',operation:'accumulate bit[6]'},{active:['5']}),
-    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','i=4：讀 bit[4]','6−lowbit(6)=4；bit[4] 代表 [1,4]，值為 5，所以 s=5。',{i:4,lowbit:4,covered:'[1,4]',sum:'0+5=5',operation:'accumulate bit[4]'},{active:['3'],accepted:['2']}),
-    eventFrame(lesson,'return s;','Prefix(6)=5','4−lowbit(4)=0，查詢結束；位置 3 的 +5 正確落在前綴中。',{query:'prefix(6)',result:5,operation:'return prefix'},{accepted:['2']}),
+    eventFrame(lesson,'long long s = 0;','Prefix(6)：累加器從 0 開始','查詢前綴 [1,6]，先令 s=0。',{query:'prefix(6)',i:6,sum:0,operation:'initialize prefix'},{values:[0,0,5,5,0,0,0,5]}),
+    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','讀 bit[6]','lowbit(6)=2，bit[6] 代表 [5,6]；目前值為 0，所以 s 仍為 0。',{i:6,lowbit:2,covered:'[5,6]',sum:'0+0=0',operation:'accumulate bit[6]'},{values:[0,0,5,5,0,0,0,5],active:['5']}),
+    eventFrame(lesson,'for (; i > 0; i -= i & -i) s += bit[i];','i=4：讀 bit[4]','6−lowbit(6)=4；bit[4] 代表 [1,4]，值為 5，所以 s=5。',{i:4,lowbit:4,covered:'[1,4]',sum:'0+5=5',operation:'accumulate bit[4]'},{values:[0,0,5,5,0,0,0,5],active:['3'],accepted:['2']}),
+    eventFrame(lesson,'return s;','Prefix(6)=5','4−lowbit(4)=0，查詢結束；位置 3 的 +5 正確落在前綴中。',{query:'prefix(6)',result:5,operation:'return prefix'},{values:[0,0,5,5,0,0,0,5],accepted:['2']}),
   ],
 
   'sparse-table': (lesson) => [
@@ -388,12 +395,12 @@ const overrides: Record<string, TraceBuilder> = {
   ],
 
   'floyd-warshall': (lesson) => [
-    eventFrame(lesson,'for (int k = 0; k < n; ++k)','初始矩陣：只允許直接邊','A→B=3、A→C=10、A→D=20、B→C=2、B→D=8、C→D=1。尚未允許任何中繼點。',{k:'none',AtoC:10,AtoD:20,BtoD:8,operation:'initial distances'},{active:['A','B','C','D']}),
-    eventFrame(lesson,'dist[i][j] = min','k=B：A→C 改成 5','比較 direct 10 與 A→B→C = 3+2=5，取 5。',{k:'B',pair:'A→C',direct:10,via:'3+2=5',result:5,operation:'relax via B'},{active:['A','B','C']}),
-    eventFrame(lesson,'dist[i][j] = min','k=B：A→D 改成 11','A→B→D = 3+8=11，比原本 20 好。',{k:'B',pair:'A→D',direct:20,via:'3+8=11',result:11,operation:'relax via B'},{active:['A','B','D']}),
-    eventFrame(lesson,'dist[i][j] = min','k=C：B→D 改成 3','B→C→D = 2+1=3，比直接邊 8 好。',{k:'C',pair:'B→D',direct:8,via:'2+1=3',result:3,operation:'relax via C'},{active:['B','C','D']}),
-    eventFrame(lesson,'dist[i][j] = min','k=C：A→D 再改成 6','現在 dist[A][C]=5，所以 A→C→D = 5+1=6，比上一輪的 11 更短。',{k:'C',pair:'A→D',before:11,via:'5+1=6',result:6,operation:'relax via C'},{active:['A','C','D']}),
-    eventFrame(lesson,'for (int k = 0; k < n; ++k)','所有中繼點完成','k 依序放在最外層，確保每輪只使用已允許的中繼點。最終 A→D=6。',{allowed:'A,B,C,D',result:'A→D=6',operation:'finish all-pairs'},{accepted:['A','B','C','D']}),
+    eventFrame(lesson,'for (int k = 0; k < n; ++k)','初始矩陣：只允許直接邊','A→B=3、A→C=10、A→D=20、B→C=2、B→D=8、C→D=1。尚未允許任何中繼點。',{k:'none',AtoC:10,AtoD:20,BtoD:8,operation:'initial distances'},{active:['A','B','C','D'],executionView:floydMatrix('10','20','8')}),
+    eventFrame(lesson,'dist[i][j] = min','k=B：A→C 改成 5','比較 direct 10 與 A→B→C = 3+2=5，取 5。',{k:'B',pair:'A→C',direct:10,via:'3+2=5',result:5,operation:'relax via B'},{active:['A','B','C'],executionView:floydMatrix('5','20','8',['0,2'])}),
+    eventFrame(lesson,'dist[i][j] = min','k=B：A→D 改成 11','A→B→D = 3+8=11，比原本 20 好。',{k:'B',pair:'A→D',direct:20,via:'3+8=11',result:11,operation:'relax via B'},{active:['A','B','D'],executionView:floydMatrix('5','11','8',['0,3'])}),
+    eventFrame(lesson,'dist[i][j] = min','k=C：A→D 再改成 6','在 k=C 的 i=A 回合，dist[A][C]=5，所以 A→C→D = 5+1=6，比上一輪的 11 更短。',{k:'C',pair:'A→D',before:11,via:'5+1=6',result:6,operation:'relax via C'},{active:['A','C','D'],executionView:floydMatrix('5','6','8',['0,3'])}),
+    eventFrame(lesson,'dist[i][j] = min','k=C：B→D 改成 3','接著 i=B，B→C→D = 2+1=3，比直接邊 8 好。',{k:'C',pair:'B→D',direct:8,via:'2+1=3',result:3,operation:'relax via C'},{active:['B','C','D'],executionView:floydMatrix('5','6','3',['1,3'])}),
+    eventFrame(lesson,'for (int k = 0; k < n; ++k)','所有中繼點完成','k 依序放在最外層，確保每輪只使用已允許的中繼點。最終 A→D=6。',{allowed:'A,B,C,D',result:'A→D=6',operation:'finish all-pairs'},{accepted:['A','B','C','D'],executionView:floydMatrix('5','6','3')}),
   ],
 
   'quickselect': (lesson) => [
