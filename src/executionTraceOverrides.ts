@@ -20,6 +20,13 @@ const editMatrix = (step: number): NonNullable<Frame['executionView']> => {
   return { kind:'matrix', title:'EDIT DISTANCE · dp[i][j]', rowLabels:['∅','a','ab'], colLabels:['∅','a','ac','acb'], cells,
     activeCells:active ? [`${active.row},${active.col}`] : [] }
 }
+const lcsMatrix = (frame: Frame): NonNullable<Frame['executionView']> => {
+  const rows = (frame.state?.table as string[] | undefined) ?? ['0 0 0 0','0 0 1 1','0 1 1 1','0 1 1 2']
+  const cell = String(frame.state?.cell ?? '').match(/dp\[(\d+)\]\[(\d+)\]/)
+  const activeCells = cell ? [`${cell[1]},${cell[2]}`] : frame.state?.result === 2 ? ['3,3'] : []
+  return { kind:'matrix', title:'LCS · dp[i][j]', rowLabels:['∅','A','AB','ABC'], colLabels:['∅','B','BA','BAC'],
+    cells:rows.map((row)=>row.split(/\s+/).map((value)=>value==='·'?'—':value)), activeCells }
+}
 
 const codeOverrides: Record<string, string[]> = {
   'connected-components': [
@@ -526,7 +533,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'else dp[i][j]=max','dp[3][1], dp[3][2] 都是 1','C 與 B、A 都不相同，因此沿上/左保留最佳值 1。',{row:3,prefixValues:['1','1'],table:['0 0 0 0','0 0 1 1','0 1 1 1','0 1 1 ·'],operation:'carry best prefix'}),
     eventFrame(lesson,'if (a[i-1]==b[j-1])','dp[3][3]：C == C','最後字元相同，dp[3][3]=dp[2][2]+1=2。',{cell:'dp[3][3]',chars:'C == C',value:2,table:['0 0 0 0','0 0 1 1','0 1 1 1','0 1 1 2'],operation:'diagonal plus one'}),
     eventFrame(lesson,'return dp[n][m]','LCS 長度 = 2','ABC 與 BAC 的 LCS 長度為 2，例如 AC 或 BC。',{result:2,examples:['AC','BC'],operation:'return answer'}),
-  ],
+  ].map((frame) => ({ ...frame, executionView: lcsMatrix(frame) })),
 
   'edit-distance': (lesson) => [
     eventFrame(lesson,'dp[i][0]=i','初始化 "ab" → "acb" 邊界','空字串轉成長度 j 只能插入 j 次；長度 i 轉空字串只能刪除 i 次。',{source:'ab',target:'acb',table:['0 1 2 3','1 · · ·','2 · · ·'],operation:'initialize borders'}),

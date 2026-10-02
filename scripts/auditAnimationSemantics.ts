@@ -87,10 +87,17 @@ if (gridCells.some((cells) => !cells || cells.length !== 3 || cells.some((row) =
     !grid.code.some((line) => line.includes('vector<vector<int>> dp(h,')) || !grid.code.some((line) => line.includes('return dp[h-1][w-1]'))) {
   errors.push('grid-dp: matrix state, row-major order, or code differs from the narrated trace')
 }
+const lcs = lesson('longest-common-subsequence')
+const lcsCells = lcs.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (lcsCells.some((cells) => !cells || cells.length !== 4 || cells.some((row) => row.length !== 4)) ||
+    lcsCells[0]?.[3][3] !== '—' || lcsCells[7]?.[3][3] !== '2' || lcsCells[8]?.[3][3] !== '2' ||
+    !lcs.code.some((line) => line.includes('vector<vector<int>> dp(n + 1')) || !lcs.code.some((line) => line.includes('return dp[n][m]'))) {
+  errors.push('longest-common-subsequence: state table or code differs from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS OK')
 }
