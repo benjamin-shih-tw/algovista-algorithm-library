@@ -4,8 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run generate:catalog-index",
     "dev": "vite",
+    "prebuild": "npm run generate:catalog-index",
     "build": "tsc -b && vite build",
+    "generate:catalog-index": "esbuild scripts/generateCatalogIndex.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-catalog-index.mjs && node /tmp/algovista-catalog-index.mjs",
     "audit:catalog": "esbuild scripts/auditCatalog.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-catalog-audit.mjs && node /tmp/algovista-catalog-audit.mjs",
     "audit:templates": "esbuild scripts/reportTemplates.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-template-audit.mjs && node /tmp/algovista-template-audit.mjs",
     "audit:knowledge": "esbuild scripts/auditKnowledge.ts --bundle --platform=node --format=esm --outfile=/tmp/algovista-knowledge-audit.mjs && node /tmp/algovista-knowledge-audit.mjs",
