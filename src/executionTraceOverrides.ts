@@ -27,8 +27,39 @@ const lcsMatrix = (frame: Frame): NonNullable<Frame['executionView']> => {
   return { kind:'matrix', title:'LCS · dp[i][j]', rowLabels:['∅','A','AB','ABC'], colLabels:['∅','B','BA','BAC'],
     cells:rows.map((row)=>row.split(/\s+/).map((value)=>value==='·'?'—':value)), activeCells }
 }
+const bitmaskView = (step: number): NonNullable<Frame['executionView']> => {
+  const snapshots = [
+    ['0','∞','∞','∞','∞','∞','∞','∞'],
+    ['0','∞','∞','∞','∞','∞','∞','∞'],
+    ['0','4','∞','∞','∞','∞','∞','∞'],
+    ['0','4','2','∞','∞','∞','∞','∞'],
+    ['0','4','2','6','9','12','3','∞'],
+    ['0','4','2','6','9','12','3','7'],
+    ['0','4','2','6','9','12','3','4'],
+    ['0','4','2','6','9','12','3','4'],
+  ]
+  const active = [0,0,1,2,6,7,7,7][step]
+  return {kind:'table',title:'BITMASK DP · dp[mask] minimum cost',columns:['mask','selected','dp[mask]'],
+    rows:snapshots[step].map((value,mask)=>[mask.toString(2).padStart(3,'0'),[0,1,2].filter((bit)=>mask & (1<<bit)).join(',')||'∅',value]),
+    activeRow:active,
+  }
+}
 
 const codeOverrides: Record<string, string[]> = {
+  'bitmask-dp': [
+    'long long minMaskCost(int n, const vector<vector<long long>>& costByMask) {',
+    '  const long long INF = numeric_limits<long long>::max() / 4;',
+    '  vector<long long> dp(1 << n, INF);',
+    '  dp[0] = 0;',
+    '  for (int mask=0; mask<(1<<n); ++mask) {',
+    '    if (dp[mask] == INF) continue;',
+    '    for (int x=0; x<n; ++x)',
+    '      if (!(mask>>x&1))',
+    '        dp[mask|(1<<x)] = min(dp[mask|(1<<x)], dp[mask]+costByMask[mask][x]);',
+    '  }',
+    '  return dp[(1<<n)-1];',
+    '}',
+  ],
   'connected-components': [
     'void dfs(int u) {',
     '  seen[u] = true;',
@@ -547,15 +578,15 @@ const overrides: Record<string, TraceBuilder> = {
   ].map((frame, step) => ({ ...frame, executionView: editMatrix(step) })),
 
   'bitmask-dp': (lesson) => [
-    eventFrame(lesson,'for (int mask=0','n=3，從 Mask 000 開始','dp[000]=0，其餘狀態先為 INF。第 x 位 1 代表元素 x 已處理。',{n:3,dp0:0,operation:'initialize mask DAG'}),
+    eventFrame(lesson,'dp[0] = 0;','n=3，從 Mask 000 開始','dp[000]=0，其餘狀態先為 INF。第 x 位 1 代表元素 x 已處理。',{n:3,dp0:0,operation:'initialize mask DAG'}),
     eventFrame(lesson,'if (!(mask>>x&1))','從 000 可選 0、1、2','三個 bit 都是 0，因此三個元素都可作下一步。',{mask:'000',available:['0','1','2'],operation:'enumerate unset bits'}),
     eventFrame(lesson,'dp[mask|(1<<x)] = min','000 → 001，選 0','示例 cost(000,0)=4，所以 dp[001]=4。',{from:'000',choose:0,to:'001',candidate:4,operation:'relax subset'}),
     eventFrame(lesson,'dp[mask|(1<<x)] = min','000 → 010，選 1','cost(000,1)=2，得到 dp[010]=2。',{from:'000',choose:1,to:'010',candidate:2,operation:'relax subset'}),
-    eventFrame(lesson,'dp[mask|(1<<x)] = min','010 → 110，加入 2','從 dp[010]=2 加 cost(010,2)=1，得到 dp[110]=3。',{from:'010',choose:2,to:'110',candidate:'2+1=3',operation:'relax subset'}),
-    eventFrame(lesson,'dp[mask|(1<<x)] = min','011 → 111 先得到 7','另一條路徑可能先把 full mask 更新成 7。',{from:'011',choose:2,to:'111',before:'∞',after:7,operation:'first full-mask candidate'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','010 → 110，加入 2','中間掃過 mask=001：cost(001,1)=2 得 dp[011]=4+2=6；cost(001,2)=8 得 dp[101]=4+8=12。現在 cost(010,2)=1，得到 dp[110]=2+1=3。',{from:'010',choose:2,to:'110',candidate:'2+1=3',operation:'relax subset'}),
+    eventFrame(lesson,'dp[mask|(1<<x)] = min','011 → 111 先得到 7','dp[011]=6，再加 cost(011,2)=1，先把 full mask 更新成 7。',{from:'011',choose:2,to:'111',before:'∞',after:7,operation:'first full-mask candidate'}),
     eventFrame(lesson,'dp[mask|(1<<x)] = min','110 → 111 改善成 4','dp[110]=3，再加入元素 0 的成本 1，候選 4 比 7 好，因此覆寫。',{from:'110',choose:0,to:'111',before:7,after:4,operation:'improve full mask'}),
-    eventFrame(lesson,'for (int mask=0','所有 Mask 依 Popcount 向前','每次轉移都把 0 bit 變成 1，狀態圖沒有環；最終 dp[111]=4。',{target:'111',result:4,operation:'finish subset DP'}),
-  ],
+    eventFrame(lesson,'return dp[(1<<n)-1]','所有 Mask 完成後回傳 4','每次轉移都把 0 bit 變成 1，狀態圖沒有環；最終 dp[111]=4。',{target:'111',result:4,operation:'finish subset DP'}),
+  ].map((frame,step)=>({...frame,executionView:bitmaskView(step)})),
 
   'tsp-dp': (lesson) => [
     eventFrame(lesson,'dp[1 << start][start] = 0','從城市 0 出發','n=4，初始 state 是 mask=0001、u=0，cost=0。',{state:'0001,u=0',cost:0,operation:'initialize TSP'}),

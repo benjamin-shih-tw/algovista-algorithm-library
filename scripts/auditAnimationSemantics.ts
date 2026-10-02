@@ -132,10 +132,21 @@ if (parallelRows.some((rows) => !rows || rows.length !== 3 || rows.some((row) =>
     parallelRows[6]?.[0].join(',') !== 'q0,3,1,1,0') {
   errors.push('parallel-binary-search: per-query bounds do not follow the narrated event sweeps')
 }
+const bitmask = lesson('bitmask-dp')
+const bitmaskRows = bitmask.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (bitmaskRows.some((rows) => !rows || rows.length !== 8 || rows.some((row) => row.length !== 3)) ||
+    bitmaskRows[0]?.[0][2] !== '0' || bitmaskRows[0]?.[7][2] !== '∞' ||
+    bitmaskRows[2]?.[1][2] !== '4' || bitmaskRows[3]?.[2][2] !== '2' ||
+    bitmaskRows[4]?.[3][2] !== '6' || bitmaskRows[4]?.[6][2] !== '3' ||
+    bitmaskRows[5]?.[7][2] !== '7' || bitmaskRows[6]?.[7][2] !== '4' ||
+    !bitmask.code.some((line) => line.includes('vector<long long> dp(1 << n, INF)')) ||
+    !bitmask.frames[7].codeLines.some((line) => bitmask.code[line - 1]?.includes('return dp[(1<<n)-1]'))) {
+  errors.push('bitmask-dp: subset DP snapshots, initialization, or return highlight differ from the trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP OK')
 }
