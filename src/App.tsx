@@ -26,10 +26,19 @@ interface CatalogPayload {
   categories:AlgorithmCategory[]
   lessons:CatalogLesson[]
 }
-let fullLessonMapPromise:Promise<Map<string,AlgorithmLesson>>|null=null
-const loadFullLessonMap=()=>fullLessonMapPromise??=import('./algorithms').then((module)=>new Map(module.lessons.map((lesson)=>[lesson.id,lesson])))
+const lessonPayloads=new Map<string,Promise<AlgorithmLesson>>()
+const loadLessonById=(lessonId:string)=>{
+  const cached=lessonPayloads.get(lessonId)
+  if(cached)return cached
+  const request=fetch(`./lessons/${encodeURIComponent(lessonId)}.json`,{cache:'force-cache'})
+    .then((response)=>{if(!response.ok)throw new Error(`lesson HTTP ${response.status}`);return response.json() as Promise<AlgorithmLesson>})
+    .then((lesson)=>{if(lesson.id!==lessonId)throw new Error(`lesson payload mismatch: ${lessonId}`);return lesson})
+    .catch((error)=>{lessonPayloads.delete(lessonId);throw error})
+  lessonPayloads.set(lessonId,request)
+  return request
+}
 const LazyLessonPlayer=lazy(()=>import('./LessonPlayer'))
-const warmLessonExperience=()=>{void Promise.all([loadFullLessonMap(),import('./LessonPlayer')]).catch(()=>{fullLessonMapPromise=null})}
+const warmLessonExperience=(lessonId:string)=>{void Promise.all([loadLessonById(lessonId),import('./LessonPlayer')]).catch(()=>lessonPayloads.delete(lessonId))}
 
 const BEGINNER_PATH = [
   { id: 'linear-search', step: '01', reason: '先學會逐格讀值、比較條件與排除候選。' },
@@ -42,7 +51,7 @@ const BEGINNER_PATH = [
 
 const beginnerRank = new Map<string,string>(BEGINNER_PATH.map((item) => [item.id, item.step]))
 
-function LessonCard({lesson,onSelect}:{lesson:CatalogLesson;onSelect:(lesson:CatalogLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onPointerEnter={warmLessonExperience} onFocus={warmLessonExperience} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><div className="card-dependency"><Workflow/>{lesson.prerequisiteCount?`${lesson.prerequisiteCount} 堂先備 · 深度 ${lesson.depth}`:'基礎單元'}</div><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
+function LessonCard({lesson,onSelect}:{lesson:CatalogLesson;onSelect:(lesson:CatalogLesson)=>void}) { const rank=beginnerRank.get(lesson.id);return <button className="lesson-card compact" onPointerEnter={()=>warmLessonExperience(lesson.id)} onFocus={()=>warmLessonExperience(lesson.id)} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span className="card-index">{lesson.index}</span>{rank&&<span className="beginner-rank">新手路線 {rank}</span>}<span className="card-category">{lesson.category}</span><h2>{lesson.title}</h2><p>{lesson.zhTitle} · {lesson.description}</p><div className="card-dependency"><Workflow/>{lesson.prerequisiteCount?`${lesson.prerequisiteCount} 堂先備 · 深度 ${lesson.depth}`:'基礎單元'}</div><footer><span>{lesson.complexity}</span><b>開始學習 <ChevronRight size={15}/></b></footer></button> }
 
 function CategoryDetail({category,lessons,onBack,onSelect}:{category:AlgorithmCategory;lessons:CatalogLesson[];onBack:()=>void;onSelect:(lesson:CatalogLesson)=>void}) {
   const categoryLessons=lessons.filter((lesson)=>lesson.categoryId===category.id).sort((a,b)=>a.depth-b.depth||Number(a.index)-Number(b.index))
@@ -61,7 +70,7 @@ function Library({ catalog,onSelect }: { catalog:CatalogPayload;onSelect: (lesso
   if(category) return <CategoryDetail category={category} lessons={lessons} onBack={()=>setCategory(null)} onSelect={onSelect}/>
   return <main className="library-page"><header className="site-header"><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-note">COMPETITIVE PROGRAMMING · VISUALIZED</span></header>
     <section className="library-hero relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"/><span className="relative z-10">STRUCTURED ALGORITHM LIBRARY</span><h1 className="relative z-10">先建立地圖，<br/><em>再理解細節。</em></h1><p className="relative z-10">從演算法領域進入子分類，再學習具體演算法。動畫、資料結構狀態與 C++ 程式碼在每一步保持同步。</p></section>
-    <section className="beginner-path"><header><div><span>第一次來？</span><h2>照這 6 堂建立第一張演算法地圖</h2></div><p>每堂都會先教你看畫面，再讓動畫、變數與 C++ 程式碼逐步同步。</p></header><div>{beginnerLessons.map(({lesson,step,reason})=><button key={lesson.id} onPointerEnter={warmLessonExperience} onFocus={warmLessonExperience} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span>{step}</span><div><b>{lesson.zhTitle}</b><small>{lesson.title}</small><p>{reason}</p></div><ChevronRight size={15}/></button>)}</div></section>
+    <section className="beginner-path"><header><div><span>第一次來？</span><h2>照這 6 堂建立第一張演算法地圖</h2></div><p>每堂都會先教你看畫面，再讓動畫、變數與 C++ 程式碼逐步同步。</p></header><div>{beginnerLessons.map(({lesson,step,reason})=><button key={lesson.id} onPointerEnter={()=>warmLessonExperience(lesson.id)} onFocus={()=>warmLessonExperience(lesson.id)} onClick={()=>onSelect(lesson)} style={{'--lesson-accent':lesson.accent} as React.CSSProperties}><span>{step}</span><div><b>{lesson.zhTitle}</b><small>{lesson.title}</small><p>{reason}</p></div><ChevronRight size={15}/></button>)}</div></section>
     <label className="library-search"><Search/><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="搜尋演算法、分類或中文名稱"/><span>{query?`${matched.length} RESULTS`:`${lessons.length} ALGORITHMS`}</span></label>
     {query?<section className="search-results">{matched.length?matched.map((lesson)=><LessonCard key={lesson.id} lesson={lesson} onSelect={onSelect}/>):<p>找不到符合的演算法。</p>}</section>:<section className="category-grid">{catalog.categories.map((category)=><button key={category.id} className="category-card" onClick={()=>setCategory(category)} style={{'--category-accent':category.accent} as React.CSSProperties}><span>{category.index}</span><Layers3/><small>{category.subcategories.length} SUBCATEGORIES</small><h2>{category.title}</h2><p>{category.zhTitle} · {category.description}</p><footer><b>{lessons.filter((lesson)=>lesson.categoryId===category.id).length} 個演算法</b><ChevronRight/></footer></button>)}</section>}
   </main>
@@ -86,17 +95,13 @@ export default function App() {
     }
     setLessonLoading(true)
     try{
-      const map=await loadFullLessonMap()
-      const lesson=map.get(lessonId)
-      if(request===requestRef.current){
-        setSelected(lesson??null)
-        if(!lesson)setLessonError(`找不到課程：${lessonId}`)
-      }
+      const lesson=await loadLessonById(lessonId)
+      if(request===requestRef.current)setSelected(lesson)
     }catch(error){
-      fullLessonMapPromise=null
+      lessonPayloads.delete(lessonId)
       if(request===requestRef.current){
         setSelected(null)
-        setLessonError(error instanceof Error?error.message:'lesson chunk load failed')
+        setLessonError(error instanceof Error?error.message:'lesson payload load failed')
       }
     }finally{
       if(request===requestRef.current)setLessonLoading(false)
