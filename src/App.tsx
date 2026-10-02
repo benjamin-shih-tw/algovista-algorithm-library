@@ -30,7 +30,7 @@ const lessonPayloads=new Map<string,Promise<AlgorithmLesson>>()
 const loadLessonById=(lessonId:string)=>{
   const cached=lessonPayloads.get(lessonId)
   if(cached)return cached
-  const request=fetch(`./lessons/${encodeURIComponent(lessonId)}.json`,{cache:'force-cache'})
+  const request=fetch(`./lessons/${encodeURIComponent(lessonId)}.json`,{cache:'no-cache'})
     .then((response)=>{if(!response.ok)throw new Error(`lesson HTTP ${response.status}`);return response.json() as Promise<AlgorithmLesson>})
     .then((lesson)=>{if(lesson.id!==lessonId)throw new Error(`lesson payload mismatch: ${lessonId}`);return lesson})
     .catch((error)=>{lessonPayloads.delete(lessonId);throw error})
@@ -110,7 +110,7 @@ export default function App() {
 
   useEffect(()=>{
     let cancelled=false
-    fetch('./catalog-index.json',{cache:'force-cache'})
+    fetch('./catalog-index.json',{cache:'no-cache'})
       .then((response)=>{if(!response.ok)throw new Error(`catalog HTTP ${response.status}`);return response.json() as Promise<CatalogPayload>})
       .then((payload)=>{if(!cancelled){setCatalog(payload);setCatalogError('')}})
       .catch((error)=>{if(!cancelled)setCatalogError(error instanceof Error?error.message:'catalog load failed')})
