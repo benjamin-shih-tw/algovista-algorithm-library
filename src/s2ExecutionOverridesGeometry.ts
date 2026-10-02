@@ -116,7 +116,7 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'dot-cross-product':lesson=>[
-    eventFrame(lesson,'dot(Point a','向量 a=(3,1), b=(1,4)','先算內積。',{a:'(3,1)',b:'(1,4)',operation:'initialize vectors'}),
+    eventFrame(lesson,'dot(Point a','向量 a=(3,1), b=(1,4)','先計算兩向量的 dot product，藉由符號判斷它們夾角是銳角、直角還是鈍角。',{a:'(3,1)',b:'(1,4)',operation:'initialize vectors'}),
     eventFrame(lesson,'a.x*b.x+a.y*b.y','dot=3×1+1×4=7','正值表示夾角為銳角。',{dot:7,interpretation:'acute',operation:'compute dot'}),
     eventFrame(lesson,'cross(Point a','cross=3×4-1×1=11','正值表示 b 位於 a 的逆時針方向，平行四邊形有向面積為 11。',{cross:11,orientation:'counterclockwise',operation:'compute cross'}),
     eventFrame(lesson,'orient(Point a','令 A=(0,0), B=(3,1), C=(1,4)','orient(A,B,C)=cross(B-A,C-A)=11>0。',{A:'(0,0)',B:'(3,1)',C:'(1,4)',orient:11,operation:'orientation predicate'}),
@@ -132,9 +132,9 @@ const overrides:Record<string,TraceBuilder>={
 
   'point-line-distance':lesson=>[
     eventFrame(lesson,'distancePointLine','P=(2,3)，Line A=(0,0)→B=(4,0)','距離等於平行四邊形面積除底長。',{P:'(2,3)',A:'(0,0)',B:'(4,0)',operation:'initialize'}),
-    eventFrame(lesson,'Point ab=b-a','ab=(4,0)，ap=(2,3)','建立相對向量。',{ab:'(4,0)',ap:'(2,3)',operation:'build vectors'}),
+    eventFrame(lesson,'Point ab=b-a','ab=(4,0)，ap=(2,3)','把線段方向寫成 AB，並把點 P 相對於 A 的位移寫成 AP，後面才能用外積求平行四邊形面積。',{ab:'(4,0)',ap:'(2,3)',operation:'build vectors'}),
     eventFrame(lesson,'area2=abs(cross','|cross(ab,ap)|=|4×3-0×2|=12','這是以 |AB| 為底的平行四邊形面積。',{area2:12,operation:'compute cross area'}),
-    eventFrame(lesson,'base=hypot','|AB|=4','底長為 4。',{base:4,operation:'compute base length'}),
+    eventFrame(lesson,'base=hypot','|AB|=4','向量 AB=(4,0) 的歐幾里得長度是 4，這就是面積公式中要除掉的底邊長度。',{base:4,operation:'compute base length'}),
     eventFrame(lesson,'return area2/base','Distance = 12/4 = 3','與水平線 y=0 到 P 的垂直距離一致。',{distance:3,operation:'return distance'}),
   ],
 
