@@ -27,13 +27,13 @@ npm run audit:knowledge
 npm run audit:cpp
 ```
 
-這會檢查重複演算法、分類完整性、每一步的專屬視覺資料、同步程式碼行、使用時機與官方例題；模板稽核確認 202 份程式碼都有用途／複雜度標頭、逐行教學、動畫映射與可讀行寬；知識稽核則強制每課具備動機、先備、狀態、初始化、完整操作、操作關係、分項複雜度、實作契約、範例、錯誤、邊界與延伸，並檢查 dependency graph 不可缺課、不可自我依賴或形成環。
+這會檢查重複演算法、分類完整性、每一步的專屬視覺資料、動畫與程式碼同步、使用時機與官方例題；模板稽核確認 202 份程式碼都有用途／複雜度標頭、完整逐行 code guide、無偽代碼 placeholder 且維持可讀行寬。動畫只對應真實 execution event，不為了覆蓋每一行程式碼製造假步驟；知識稽核則檢查每課的教學結構與 dependency graph 完整性。
 
 ## 功能
 
 - 202 個演算法、11 大分類與完整搜尋
-- 202 個演算法全部採 10–20 步的 deterministic guided animation
-- 全站共 2116 個可重播、具唯一識別的 step-specific visual traces
+- 202 個演算法全部採 deterministic execution trace；每課只保留真實演算法事件，不強制為了湊固定步數製造假 timeline
+- 全站目前共 1390 個可重播、具唯一識別的 step-specific visual traces；CI 會重新計數與驗證
 - 202 個完整 Knowledge Unit 與 204 條知識依賴；分類內依 dependency depth 排列，先備與延伸可直接互相導航
 - 每課都依序建立 Problem / Naive / Core Idea / State / Initialization / Operations / Complexity / Implementation / Example / Mistakes / Extensions
 - 每頁標示 CPPBook、個人 Notion 模板庫或 USACO 的內容來源
@@ -53,4 +53,4 @@ npm run audit:cpp
 - 支援 `?lesson=<algorithm-id>` 直接開啟指定教學頁
 - 桌面與手機響應式介面
 
-主要入口為 `src/algorithms.ts`，完整知識單元與依賴圖在 `src/knowledge.ts`，視覺與例題映射在 `src/lessonMeta.ts`，專屬畫面在 `src/AdaptiveScenes.tsx`，視覺與互動入口在 `src/App.tsx`。
+內容來源仍以 `src/algorithms.ts` 為主，完整知識單元與依賴圖在 `src/knowledge.ts`，視覺與例題映射在 `src/lessonMeta.ts`。Build 時 `scripts/generateCatalogIndex.ts` 會產生輕量 `catalog-index.json` 與 202 份 `lessons/<id>.json`；首頁入口在 `src/App.tsx`，課程播放器與動畫 renderer 已獨立到 `src/LessonPlayer.tsx` 並採 lazy load。
