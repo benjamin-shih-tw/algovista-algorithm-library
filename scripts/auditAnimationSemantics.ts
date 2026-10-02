@@ -143,10 +143,23 @@ if (bitmaskRows.some((rows) => !rows || rows.length !== 8 || rows.some((row) => 
     !bitmask.frames[7].codeLines.some((line) => bitmask.code[line - 1]?.includes('return dp[(1<<n)-1]'))) {
   errors.push('bitmask-dp: subset DP snapshots, initialization, or return highlight differ from the trace')
 }
+const tsp = lesson('tsp-dp')
+const tspRows = tsp.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+const weights = [[0,2,9,10],[2,0,12,4],[9,12,0,3],[10,4,3,0]]
+const tours = [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+const optimum = Math.min(...tours.map(([a,b,c]) => weights[0][a] + weights[a][b] + weights[b][c] + weights[c][0]))
+if (tspRows.some((rows) => !rows || rows.some((row) => row.length !== 4)) ||
+    tspRows[0]?.[0].join(',') !== '0001,0,0,0' || tspRows[4]?.[4].join(',') !== '1011,3,0→1→3,6' ||
+    tspRows[5]?.[5].join(',') !== '1111,2,0→1→3→2,9' ||
+    tspRows[7]?.[6].join(',') !== 'tour,0,return 2→0,18' || optimum !== 18 ||
+    !tsp.code.some((line) => line.includes('vector<vector<long long>> dp(1 << n')) ||
+    !tsp.frames[7].codeLines.some((line) => tsp.code[line - 1]?.includes('return answer'))) {
+  errors.push('tsp-dp: selected path costs, tour optimum, or complete code differ from the trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP OK')
 }

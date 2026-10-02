@@ -44,6 +44,16 @@ const bitmaskView = (step: number): NonNullable<Frame['executionView']> => {
     activeRow:active,
   }
 }
+const tspView = (step: number): NonNullable<Frame['executionView']> => {
+  const states = [
+    ['0001','0','0','0'], ['0011','1','0→1','2'], ['0101','2','0→2','9'],
+    ['1001','3','0→3','10'], ['1011','3','0→1→3','6'], ['1111','2','0→1→3→2','9'],
+  ]
+  return {kind:'table',title:'TSP DP · selected states and tour closure',
+    columns:['mask','end','path','cost'],rows:step<6?states.slice(0,step+1):[...states,['tour','0','return 2→0','18']],
+    activeRow:step<6?step:6,badges:step>=6?['minimum tour = 18']:[],
+  }
+}
 
 const codeOverrides: Record<string, string[]> = {
   'bitmask-dp': [
@@ -115,15 +125,22 @@ const codeOverrides: Record<string, string[]> = {
     '}',
   ],
   'tsp-dp': [
+    'long long shortestTour(const vector<vector<long long>>& w, int start=0) {',
+    '  int n = w.size(); if (n == 0) return 0;',
+    '  const long long INF = numeric_limits<long long>::max() / 4;',
+    '  vector<vector<long long>> dp(1 << n, vector<long long>(n, INF));',
     'dp[1 << start][start] = 0;',
     'for (int mask = 0; mask < (1 << n); ++mask)',
-    '  for (int u = 0; u < n; ++u) if (mask >> u & 1)',
+    '  for (int u = 0; u < n; ++u) if (mask >> u & 1) {',
+    '    if (dp[mask][u] == INF) continue;',
     '    for (int v = 0; v < n; ++v) if (!(mask >> v & 1))',
     '      dp[mask | (1 << v)][v] = min(dp[mask | (1 << v)][v], dp[mask][u] + w[u][v]);',
-    'int full = (1 << n) - 1, answer = INF;',
+    '  }',
+    'int full = (1 << n) - 1; long long answer = INF;',
     'for (int u = 0; u < n; ++u)',
     '  answer = min(answer, dp[full][u] + w[u][start]);',
     'return answer;',
+    '}',
   ],
   'merge-sort': [
     'void mergeSort(int l, int r) {',
@@ -589,7 +606,7 @@ const overrides: Record<string, TraceBuilder> = {
   ].map((frame,step)=>({...frame,executionView:bitmaskView(step)})),
 
   'tsp-dp': (lesson) => [
-    eventFrame(lesson,'dp[1 << start][start] = 0','從城市 0 出發','n=4，初始 state 是 mask=0001、u=0，cost=0。',{state:'0001,u=0',cost:0,operation:'initialize TSP'}),
+    eventFrame(lesson,'dp[1 << start][start] = 0','從城市 0 出發','n=4，初始 state 是 mask=0001、u=0，cost=0。示例對稱邊權為 w01=2、w02=9、w03=10、w12=12、w13=4、w23=3。',{state:'0001,u=0',cost:0,operation:'initialize TSP'}),
     eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 1','w[0][1]=2，所以 dp[0011][1]=2。',{from:'0001,0',edge:'0→1',to:'0011,1',candidate:2,operation:'visit city 1'}),
     eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 2','另一個候選 dp[0101][2]=9。',{from:'0001,0',edge:'0→2',to:'0101,2',candidate:9,operation:'visit city 2'}),
     eventFrame(lesson,'dp[mask | (1 << v)][v]','0 → 3','dp[1001][3]=10。',{from:'0001,0',edge:'0→3',to:'1001,3',candidate:10,operation:'visit city 3'}),
@@ -597,7 +614,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'dp[mask | (1 << v)][v]','1011,3 → 1111,2','再走 3→2 成本 3，完整拜訪所有城市時落在 2，成本 9。',{from:'1011,3',edge:'3→2 (3)',to:'1111,2',candidate:'6+3=9',operation:'complete visit mask'}),
     eventFrame(lesson,'answer = min(answer','加上回到 Start 的最後一邊','從城市 2 回 0 的成本是 9，因此 tour 候選為 9+9=18。',{state:'1111,2',returnEdge:'2→0 (9)',tourCost:18,operation:'close tour'}),
     eventFrame(lesson,'return answer','最短巡迴成本 18','另一方向 0→2→3→1→0 也得到 18；答案為 18。',{result:18,tour:'0→1→3→2→0',operation:'return tour cost'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:tspView(step)})),
 
   'euler-circuit': (lesson) => [
     eventFrame(lesson,'stack<int> st; st.push(start)','從 A 開始','底圖現在就是 6-cycle：A-B-D-F-E-C-A，每個節點度數 2，所有非零度節點連通。',{stack:['A'],unusedEdges:6,operation:'push start'},{active:['A']}),
