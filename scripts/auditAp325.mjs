@@ -143,6 +143,8 @@ for (const token of ["guideByModule", "pdfSupplements", "chapterView", "topicSec
 }
 if(!app.includes("chapterTitles") || !app.includes("chapterModules")) fail("chapter-first AP325 reading flow missing")
 else ok("chapter-first AP325 reading flow present")
+if(!app.includes("history.pushState")||!app.includes("popstate")||!app.includes("syncStateFromUrl")) fail("AP325 browser back/forward navigation wiring missing")
+else ok("AP325 browser history navigation wiring present")
 if (!app.includes('colorizeCpp(block.code')) fail('C++ code blocks are not statically tokenized at render time')
 else ok('C++ code blocks are statically tokenized before DOM insertion')
 if(!process.exitCode) ok('AP325 Guide rendering wiring present')
