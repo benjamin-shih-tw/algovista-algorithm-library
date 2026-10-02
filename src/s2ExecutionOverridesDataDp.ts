@@ -215,7 +215,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'bit[i][j]+=v','i=2,j=4：bit[2][4]+=5','j=4 再加 4 會超界；接著 i=2+2=4。',{i:2,j:4,cell:'bit[2][4]',value:'0→5',operation:'update row ancestor'}),
     eventFrame(lesson,'bit[i][j]+=v','i=4：更新 [4][3] 與 [4][4]','最後四個被改到的 BIT cell 是 (2,3),(2,4),(4,3),(4,4)。',{cells:['(2,3)','(2,4)','(4,3)','(4,4)'],operation:'finish nested update'}),
     eventFrame(lesson,'ll prefix(int x,int y)','查 Prefix(3,3)','x 方向走 3→2→0；每個 x 下 y 方向走 3→2→0。',{query:'prefix(3,3)',xPath:['3','2'],yPath:['3','2'],operation:'start prefix query'}),
-    eventFrame(lesson,'s+=bit[i][j]','讀 (3,3),(3,2)：都是 0','目前 s=0。',{cells:['(3,3)=0','(3,2)=0'],sum:0,operation:'accumulate first x row'}),
+    eventFrame(lesson,'s+=bit[i][j]','讀 (3,3),(3,2)：都是 0','這兩個查詢到的 BIT 儲存格都是 0，因此目前 prefix 累加值仍維持 s=0。',{cells:['(3,3)=0','(3,2)=0'],sum:0,operation:'accumulate first x row'}),
     eventFrame(lesson,'s+=bit[i][j]','i=2：bit[2][3]=5','再讀 bit[2][2]=0，所以 prefix(3,3)=5。',{cells:['(2,3)=5','(2,2)=0'],sum:5,operation:'finish prefix'}),
   ],
 
@@ -307,7 +307,7 @@ const overrides:Record<string,TraceBuilder>={
   'fibonacci-dp':lesson=>[
     eventFrame(lesson,'long long prev2=0,prev1=1','計算 F(7)：初值 F0=0,F1=1','只保留前兩項即可。',{n:7,prev2:0,prev1:1,operation:'initialize rolling states'}),
     eventFrame(lesson,'long long cur=prev1+prev2','i=2：cur=1','1+0=1，接著 prev2=1,prev1=1。',{i:2,cur:1,next:['prev2=1','prev1=1'],operation:'compute F2'}),
-    eventFrame(lesson,'long long cur=prev1+prev2','i=3：cur=2','1+1=2。',{i:3,cur:2,operation:'compute F3'}),
+    eventFrame(lesson,'long long cur=prev1+prev2','i=3：cur=2','由前兩個 rolling state 相加得到 F3=1+1=2，下一輪會把這個 2 往前推成新的 prev1。',{i:3,cur:2,operation:'compute F3'}),
     eventFrame(lesson,'prev2=prev1; prev1=cur','i=4,5 依序得到 3、5','每輪先算 cur，再把 rolling window 向前推。',{steps:['F4=3','F5=5'],prev2:3,prev1:5,operation:'roll states'}),
     eventFrame(lesson,'long long cur=prev1+prev2','i=6 得 8；i=7 得 13','最後 prev1=13。',{steps:['F6=8','F7=13'],operation:'finish recurrence'}),
     eventFrame(lesson,'return n?prev1:prev2','回傳 13','每個 Fibonacci 狀態只算一次，O(n) time / O(1) space。',{result:13,operation:'return Fibonacci'}),
