@@ -426,8 +426,8 @@ function SyncedCodePanel({lesson,frame,onSeek}:{lesson:AlgorithmLesson;frame:Fra
   const copyTemplate=async()=>{try{await navigator.clipboard.writeText(templateText);setActionStatus('已複製');setTimeout(()=>setActionStatus(''),1600)}catch{setActionStatus('複製失敗')}}
   const downloadTemplate=()=>{const blob=new Blob([templateText],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`${lesson.id}.cpp`;anchor.click();URL.revokeObjectURL(url);setActionStatus('已下載')}
   return <aside className="code-panel">
-    <header><div><i/><i/><i/><span>C++17</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製完整模板"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載 .cpp"><Download/><span>下載</span></button>{actionStatus&&<output>{actionStatus}</output>}</div></header>
-    <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} 完整 C++ 程式碼`}>
+    <header><div><i/><i/><i/><span>C++17 · 教學片段</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製本課程程式片段"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載教學片段 .cpp"><Download/><span>下載片段</span></button>{actionStatus&&<output>{actionStatus}</output>}</div></header>
+    <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} C++17 教學程式碼片段`}>
       <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=lineNumber===primaryLineNumber,targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLine.trim()===line.trim() || candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></button></div>})}</pre>
     </div>
   </aside>
