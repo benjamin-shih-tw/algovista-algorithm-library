@@ -72,10 +72,25 @@ if (floydCells.some((cells) => !cells || cells.length !== 4 || cells.some((row) 
 } else if (floydCells[3]![0][3] !== '6' || floydCells[3]![1][3] !== '8' || floydCells[4]![1][3] !== '3' || floyd.frames[3].state?.pair !== 'A→D' || floyd.frames[4].state?.pair !== 'B→D') {
   errors.push('floyd-warshall: k=C transitions do not follow the displayed k/i/j loop order')
 }
+const edit = lesson('edit-distance')
+const editCells = edit.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (editCells.some((cells) => !cells || cells.length !== 3 || cells.some((row) => row.length !== 4)) ||
+    editCells[0]?.[2][3] !== '—' || editCells[6]?.[2][3] !== '1' ||
+    !edit.code.some((line) => line.includes('vector<vector<int>> dp(n + 1')) || !edit.code.some((line) => line.includes('return dp[n][m]'))) {
+  errors.push('edit-distance: matrix writes or complete function differ from the narrated trace')
+}
+const grid = lesson('grid-dp')
+const gridCells = grid.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (gridCells.some((cells) => !cells || cells.length !== 3 || cells.some((row) => row.length !== 3)) ||
+    gridCells[1]?.[0][2] !== '5' || gridCells[1]?.[1][0] !== '—' || gridCells[2]?.[1][0] !== '2' ||
+    gridCells[4]?.[2][2] !== '7' || !grid.frames[1].title.includes('第 0 列') ||
+    !grid.code.some((line) => line.includes('vector<vector<int>> dp(h,')) || !grid.code.some((line) => line.includes('return dp[h-1][w-1]'))) {
+  errors.push('grid-dp: matrix state, row-major order, or code differs from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP OK')
 }

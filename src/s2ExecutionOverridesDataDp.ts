@@ -3,6 +3,19 @@ import { eventFrame } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
+const gridDpSnapshots = [
+  [['1','—','—'],['—','—','—'],['—','—','—']],
+  [['1','4','5'],['—','—','—'],['—','—','—']],
+  [['1','4','5'],['2','—','—'],['—','—','—']],
+  [['1','4','5'],['2','7','—'],['—','—','—']],
+  [['1','4','5'],['2','7','6'],['6','8','7']],
+]
+const gridDpView = (step:number):NonNullable<Frame['executionView']> => ({
+  kind:'matrix',title:'GRID DP · minimum path cost',cells:gridDpSnapshots[Math.min(step,4)],
+  rowLabels:['0','1','2'],colLabels:['0','1','2'],
+  activeCells:step===5?['0,0','0,1','0,2','1,2','2,2']:step===0?['0,0']:step===1?['0,1','0,2']:step===2?['1,0']:step===3?['1,1']:[],
+})
+
 const treePoints:Point[]=[
   {id:'A',x:12,y:46,label:'A'},{id:'B',x:34,y:22,label:'B'},
   {id:'C',x:34,y:76,label:'C'},{id:'D',x:60,y:16,label:'D'},
@@ -78,17 +91,6 @@ const codeOverrides:Record<string,string[]>={
     '    }',
     '  }',
   ],
-  'grid-dp':[
-    'dp[0][0]=grid[0][0];',
-    'for(int r=0;r<H;++r)',
-    '  for(int c=0;c<W;++c) if(r||c) {',
-    '    dp[r][c]=INF;',
-    '    if(r) dp[r][c]=min(dp[r][c],dp[r-1][c]+grid[r][c]);',
-    '    if(c) dp[r][c]=min(dp[r][c],dp[r][c-1]+grid[r][c]);',
-    '  }',
-    'return dp[H-1][W-1];',
-  ],
-
   'matrix-chain-multiplication':[
     'for(int len=2;len<=n;++len)',
     '  for(int l=0;l+len<=n;++l) {',
@@ -332,12 +334,12 @@ const overrides:Record<string,TraceBuilder>={
   ],
   'grid-dp':lesson=>[
     eventFrame(lesson,'dp[0][0]=grid[0][0]','3×3 Cost Grid','grid=[[1,3,1],[1,5,1],[4,2,1]]，只能向右或向下。',{grid:['1 3 1','1 5 1','4 2 1'],dp00:1,operation:'initialize start'}),
-    eventFrame(lesson,'if(r) dp[r][c]=min','算 (1,0)','只能從上面來：dp[1][0]=1+1=2。',{cell:'(1,0)',value:2,operation:'from top'}),
-    eventFrame(lesson,'if(c) dp[r][c]=min','算 (0,1)','只能從左來：dp[0][1]=1+3=4。',{cell:'(0,1)',value:4,operation:'from left'}),
-    eventFrame(lesson,'dp[r][c]=INF','算中心 (1,1)','從上：4+5=9；從左：2+5=7，因此 dp[1][1]=7。',{cell:'(1,1)',choices:['9','7'],value:7,operation:'choose min predecessor'}),
+    eventFrame(lesson,'if(c) dp[r][c]=min','先填第 0 列','row-major 會先算 (0,1)=1+3=4，再算 (0,2)=4+1=5；這一列只能從左邊來。',{row0:['1','4','5'],operation:'fill top row'}),
+    eventFrame(lesson,'if(r) dp[r][c]=min','再算 (1,0)','第 0 列完成後才進入 r=1；(1,0) 只能從上方來，dp[1][0]=1+1=2。',{cell:'(1,0)',value:2,operation:'from top'}),
+    eventFrame(lesson,'if(c) dp[r][c]=min','算中心 (1,1)','從上：4+5=9；從左：2+5=7，因此 dp[1][1]=7。',{cell:'(1,1)',choices:['9','7'],value:7,operation:'choose min predecessor'}),
     eventFrame(lesson,'if(c) dp[r][c]=min','填完整張表','最終 dp=[[1,4,5],[2,7,6],[6,8,7]]。',{dp:['1 4 5','2 7 6','6 8 7'],operation:'finish grid'}),
-    eventFrame(lesson,'return dp[H-1][W-1]','右下角答案 7','路徑 1→3→1→1→1，總成本 7。',{answer:7,path:['(0,0)','(0,1)','(0,2)','(1,2)','(2,2)'],operation:'return'}),
-  ],
+    eventFrame(lesson,'return dp[h-1][w-1]','右下角答案 7','路徑 1→3→1→1→1，總成本 7。',{answer:7,path:['(0,0)','(0,1)','(0,2)','(1,2)','(2,2)'],operation:'return'}),
+  ].map((frame,step)=>({...frame,executionView:gridDpView(step)})),
 
   'matrix-chain-multiplication':lesson=>[
     eventFrame(lesson,'for(int len=2','矩陣尺寸 10×30, 30×5, 5×60','dim=[10,30,5,60]，三個矩陣。',{dim:['10','30','5','60'],operation:'define chain'}),

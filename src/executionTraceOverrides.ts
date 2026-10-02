@@ -9,6 +9,17 @@ const floydMatrix = (aToC: string, aToD: string, bToD: string, activeCells: stri
   cells: [['0', '3', aToC, aToD], ['∞', '0', '2', bToD], ['∞', '∞', '0', '1'], ['∞', '∞', '∞', '0']],
   activeCells,
 })
+const editWrites = [
+  { row: 1, col: 1, value: '0' }, { row: 1, col: 2, value: '1' }, { row: 1, col: 3, value: '2' },
+  { row: 2, col: 1, value: '1' }, { row: 2, col: 2, value: '1' }, { row: 2, col: 3, value: '1' },
+]
+const editMatrix = (step: number): NonNullable<Frame['executionView']> => {
+  const cells = [['0','1','2','3'],['1','—','—','—'],['2','—','—','—']]
+  for (const write of editWrites.slice(0, step)) cells[write.row][write.col] = write.value
+  const active = editWrites[step - 1]
+  return { kind:'matrix', title:'EDIT DISTANCE · dp[i][j]', rowLabels:['∅','a','ab'], colLabels:['∅','a','ac','acb'], cells,
+    activeCells:active ? [`${active.row},${active.col}`] : [] }
+}
 
 const codeOverrides: Record<string, string[]> = {
   'connected-components': [
@@ -526,7 +537,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'int cost=','dp[2][2]：b vs c，cost=1','刪除、插入、替換三種候選都是從已完成子問題出發；替換給 1。',{cell:'dp[2][2]',chars:'b!=c',choices:['2','2','1'],value:1,operation:'replace transition'}),
     eventFrame(lesson,'dp[i][j]=min','dp[2][3]：b == b','字元相同，沿左上 dp[1][2]=1，不增加成本。',{cell:'dp[2][3]',chars:'b==b',value:1,table:['0 1 2 3','1 0 1 2','2 1 1 1'],operation:'match transition'}),
     eventFrame(lesson,'return dp[n][m]','編輯距離 = 1','只要在 a 與 b 中間插入 c：ab → acb。',{result:1,script:['insert c at index 1'],operation:'return answer'}),
-  ],
+  ].map((frame, step) => ({ ...frame, executionView: editMatrix(step) })),
 
   'bitmask-dp': (lesson) => [
     eventFrame(lesson,'for (int mask=0','n=3，從 Mask 000 開始','dp[000]=0，其餘狀態先為 INF。第 x 位 1 代表元素 x 已處理。',{n:3,dp0:0,operation:'initialize mask DAG'}),
