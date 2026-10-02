@@ -122,10 +122,20 @@ if (intervalCells.some((cells) => !cells || cells.length !== 4 || cells.some((ro
     !interval.code.some((line) => line.includes('vector<vector<long long>> dp(n,'))) {
   errors.push('interval-dp: interval table, execution order, return highlight, or code differs from the narrated trace')
 }
+const parallel = lesson('parallel-binary-search')
+const parallelRows = parallel.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (parallelRows.some((rows) => !rows || rows.length !== 3 || rows.some((row) => row.length !== 5)) ||
+    parallelRows[1]?.[0].join(',') !== 'q0,3,0,4,2' ||
+    parallelRows[2]?.[2].join(',') !== 'q2,10,3,4,2' ||
+    parallelRows[4]?.[1].join(',') !== 'q1,6,2,2,1' ||
+    parallelRows[5]?.[2].join(',') !== 'q2,10,4,4,3' ||
+    parallelRows[6]?.[0].join(',') !== 'q0,3,1,1,0') {
+  errors.push('parallel-binary-search: per-query bounds do not follow the narrated event sweeps')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search OK')
 }

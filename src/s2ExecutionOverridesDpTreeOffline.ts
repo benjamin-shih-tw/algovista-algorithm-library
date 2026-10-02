@@ -3,6 +3,25 @@ import { eventFrame } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
+const parallelSearchView=(step:number):NonNullable<Frame['executionView']>=>{
+  const intervals=[
+    [[0,4],[0,4],[0,4]],
+    [[0,4],[0,4],[0,4]],
+    [[0,2],[0,2],[3,4]],
+    [[0,2],[0,2],[3,4]],
+    [[0,1],[2,2],[3,4]],
+    [[0,1],[2,2],[4,4]],
+    [[1,1],[2,2],[4,4]],
+  ][step]
+  const mids=[['—','—','—'],['2','2','2'],['2','2','2'],['1','1','3'],['1','1','3'],['1','1','3'],['0','—','—']][step]
+  return {kind:'table',title:'PARALLEL BINARY SEARCH · earliest prefix threshold',
+    columns:['Query','Threshold','lo','hi','mid'],
+    rows:intervals.map(([lo,hi],index)=>[`q${index}`,String([3,6,10][index]),String(lo),String(hi),mids[index]]),
+    activeRow:step===4?1:step===5?2:step===6?0:undefined,
+    badges:step===2?['t=2 · prefix=6']:step===4?['t=1 · prefix=3']:step===5?['t=3 · prefix=8']:step===6?['答案 1, 2, 4']:[],
+  }
+}
+
 const treePoints:Point[]=[
   {id:'A',x:12,y:46,label:'A'},{id:'B',x:34,y:22,label:'B'},
   {id:'C',x:34,y:76,label:'C'},{id:'D',x:60,y:16,label:'D'},
@@ -194,7 +213,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'apply(event[t])','t=1 Total=3','q0 threshold3 成立→hi1；q1 threshold6 不成立→lo2，因此 q1 已收斂 t=2。',{t:1,total:3,updates:['q0 hi=1','q1 lo=2=hi'],operation:'resolve q1'}),
     eventFrame(lesson,'predicate(q)','t=3 Total=8，q2 仍不成立','q2 lo=4=hi，答案 t=4。',{t:3,total:8,update:'q2 lo=4',operation:'resolve q2'}),
     eventFrame(lesson,'while(existsUnresolvedQuery','最後 q0 在 Mid=0 測 Total=2','2<3，因此 lo=1=hi。最終答案 q0=1,q1=2,q2=4。',{answers:['q0=1','q1=2','q2=4'],operation:'finish all binary searches'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:parallelSearchView(step)})),
 }
 
 export const applyS2DpTreeOfflineOverride=(lesson:AlgorithmLesson):AlgorithmLesson=>{
