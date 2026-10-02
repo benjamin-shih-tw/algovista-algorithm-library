@@ -15,6 +15,13 @@ const gridDpView = (step:number):NonNullable<Frame['executionView']> => ({
   rowLabels:['0','1','2'],colLabels:['0','1','2'],
   activeCells:step===5?['0,0','0,1','0,2','1,2','2,2']:step===0?['0,0']:step===1?['0,1','0,2']:step===2?['1,0']:step===3?['1,1']:[],
 })
+const chainView = (step:number):NonNullable<Frame['executionView']> => ({
+  kind:'matrix',title:'MATRIX CHAIN · dp[l][r) scalar multiplications',
+  rowLabels:['l=0','l=1','l=2'],colLabels:['r=0','r=1','r=2','r=3'],
+  cells:[['—','0',step>=1?'1500':'—',step>=4?'4500':step===3?'27000':'—'],
+    ['—','—','0',step>=1?'9000':'—'],['—','—','—','0']],
+  activeCells:step===1?['0,2','1,3']:step>=3?['0,3']:[],
+})
 
 const treePoints:Point[]=[
   {id:'A',x:12,y:46,label:'A'},{id:'B',x:34,y:22,label:'B'},
@@ -91,15 +98,6 @@ const codeOverrides:Record<string,string[]>={
     '    }',
     '  }',
   ],
-  'matrix-chain-multiplication':[
-    'for(int len=2;len<=n;++len)',
-    '  for(int l=0;l+len<=n;++l) {',
-    '    int r=l+len; dp[l][r]=INF;',
-    '    for(int k=l+1;k<r;++k)',
-    '      dp[l][r]=min(dp[l][r],dp[l][k]+dp[k][r]+dim[l]*dim[k]*dim[r]);',
-    '  }',
-  ],
-
   'interval-dp':[
     'for(int len=1;len<=n;++len)',
     '  for(int l=0;l+len<=n;++l) {',
@@ -343,12 +341,12 @@ const overrides:Record<string,TraceBuilder>={
 
   'matrix-chain-multiplication':lesson=>[
     eventFrame(lesson,'for(int len=2','矩陣尺寸 10×30, 30×5, 5×60','dim=[10,30,5,60]，三個矩陣。',{dim:['10','30','5','60'],operation:'define chain'}),
-    eventFrame(lesson,'dp[l][r]=INF','長度 2 的區間','A1A2 成本 10*30*5=1500；A2A3 成本 30*5*60=9000。',{dp:['dp[0][2]=1500','dp[1][3]=9000'],operation:'solve short intervals'}),
+    eventFrame(lesson,'dp[l][r]=min','長度 2 的區間','A1A2 成本 10*30*5=1500；A2A3 成本 30*5*60=9000。',{dp:['dp[0][2]=1500','dp[1][3]=9000'],operation:'solve short intervals'}),
     eventFrame(lesson,'for(int k=l+1','求整段 [0,3)','有兩個最後切點 k=1 或 k=2。',{interval:'[0,3)',splits:['k=1','k=2'],operation:'enumerate split'}),
     eventFrame(lesson,'dp[l][r]=min','k=1：A1 | (A2A3)','0 + 9000 + 10*30*60 = 27000。',{k:1,cost:27000,operation:'evaluate split'}),
     eventFrame(lesson,'dp[l][r]=min','k=2：(A1A2) | A3','1500 + 0 + 10*5*60 = 4500。',{k:2,cost:4500,operation:'evaluate split'}),
-    eventFrame(lesson,'dp[l][r]=min','答案 4500','最佳括號化是 (A1A2)A3。',{answer:4500,parenthesization:'(A1A2)A3',operation:'finish'}),
-  ],
+    eventFrame(lesson,'return dp[0][n]','答案 4500','最佳括號化是 (A1A2)A3。',{answer:4500,parenthesization:'(A1A2)A3',operation:'finish'}),
+  ].map((frame,step)=>({...frame,executionView:chainView(step)})),
 
   'interval-dp':lesson=>[
     eventFrame(lesson,'for(int len=1','取數遊戲 a=[4,7,2,9]','dp[l][r] 表示目前玩家相對對手能取得的最大分差。',{a:['4','7','2','9'],operation:'define interval state'}),

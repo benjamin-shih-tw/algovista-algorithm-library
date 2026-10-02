@@ -94,10 +94,18 @@ if (lcsCells.some((cells) => !cells || cells.length !== 4 || cells.some((row) =>
     !lcs.code.some((line) => line.includes('vector<vector<int>> dp(n + 1')) || !lcs.code.some((line) => line.includes('return dp[n][m]'))) {
   errors.push('longest-common-subsequence: state table or code differs from the narrated trace')
 }
+const chain = lesson('matrix-chain-multiplication')
+const chainCells = chain.frames.map((frame) => frame.executionView?.kind === 'matrix' ? frame.executionView.cells : undefined)
+if (chainCells.some((cells) => !cells || cells.length !== 3 || cells.some((row) => row.length !== 4)) ||
+    chainCells[0]?.[0][3] !== '—' || chainCells[1]?.[0][2] !== '1500' || chainCells[1]?.[1][3] !== '9000' ||
+    chainCells[3]?.[0][3] !== '27000' || chainCells[4]?.[0][3] !== '4500' ||
+    !chain.code.some((line) => line.includes('vector<vector<long long>> dp(n + 1')) || !chain.code.some((line) => line.includes('return dp[0][n]'))) {
+  errors.push('matrix-chain-multiplication: interval costs or code differ from the narrated trace')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain OK')
 }
