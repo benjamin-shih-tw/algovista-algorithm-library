@@ -33,6 +33,13 @@ jobs:
         run: npm run audit:templates
       - name: Audit knowledge graph
         run: npm run audit:knowledge
+      - name: Deep renderer safety scan
+        run: npm run audit:deep
+      - name: Upload deep renderer scan
+        uses: actions/upload-artifact@v4
+        with:
+          name: deep-renderer-scan
+          path: .tmp/deep-scan.json
       - name: Audit AP325 Guide
         run: npm run audit:ap325
       - name: Audit animation structure
