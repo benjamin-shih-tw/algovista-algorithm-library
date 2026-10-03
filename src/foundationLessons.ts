@@ -210,7 +210,7 @@ export const foundationLessons: AlgorithmLesson[] = [
     {title:'Top 只讀取頂端',explanation:'top() 回傳最後加入且尚未移除的元素 5，不改變 stack 內容。',lines:[4],state:{stack:['2','5'],returned:5},active:[1]},
     {title:'Pop 移除頂端',explanation:'pop() 移除 5 後，2 成為新的 top。空 stack 不可呼叫 top 或 pop。',lines:[5],state:{stack:['2'],top:2},values:[2],accepted:[0]},
   ]}),
-  make({ id:'parentheses-matching',index:'19',category:'STACK',categoryId:'linear-structures',subcategory:'Stack',title:'Parentheses Matching',zhTitle:'括號匹配',description:'用 Stack 保存尚未配對的左括號。',complexity:'O(n)',accent:'#62e4d0',values:[1,2,3,4,5,6],code:['for (char c : s) {','  if (isOpen(c)) st.push(c);','  else {','    if (st.empty() || !match(st.top(), c)) return false;','    st.pop();','  }','}','return st.empty();'],phases:[
+  make({ id:'parentheses-matching',index:'19',category:'STACK',categoryId:'linear-structures',subcategory:'Stack',title:'Parentheses Matching',zhTitle:'括號匹配',description:'用 Stack 保存尚未配對的左括號。',complexity:'O(n)',accent:'#62e4d0',values:[1,2,3,4,5,6],code:['for (char c : s) {','  if (isOpen(c)) {','    st.push(c);','  } else {','    if (st.empty()) return false;','    if (!match(st.top(), c)) return false;','    st.pop();','  }','}','return st.empty();'],phases:[
     {title:'左括號入 Stack',explanation:'讀到左括號時尚不知道它與誰配對，因此依出現順序壓入；最內層括號位於 top。',lines:[1,2],state:{input:'([{}])',stack:['(','[','{']},active:[2]},
     {title:'右括號必須匹配 Top',explanation:'巢狀結構要求最晚出現的左括號最先閉合；若右括號與 top 類型不同，序列立即非法。',lines:[3,4],state:{current:'}',top:'{',match:'true'},active:[3]},
     {title:'全部讀完還必須為空',explanation:'每次成功配對就 pop。結尾 stack 為空代表沒有未閉合左括號，整串才合法。',lines:[5,8],state:{stack:[],result:'valid'},accepted:[0,1,2,3,4,5]},
