@@ -459,3 +459,220 @@ body{
   .explanation-card .step-number{left:16px!important;top:16px!important}
   .lesson-context{grid-template-columns:1fr!important}
 }
+
+
+/* 2026-10 studio red typography layer */
+:root{
+  font-family:"Helvetica Neue","Arial Nova",Arial,"PingFang TC","Noto Sans TC",sans-serif;
+  color:#f5f5f3;
+  background:#08090b;
+  --line:rgba(255,255,255,.12);
+  --muted:#8b8e96;
+  font-synthesis:none;
+}
+body{
+  color:#f5f5f3;
+  background:
+    radial-gradient(circle at 50% -20%,rgba(255,77,79,.055),transparent 34%),
+    #08090b;
+  font-weight:400;
+  letter-spacing:-.008em;
+}
+button,input,textarea,select{font-family:inherit}
+code,pre,kbd,samp,
+.card-index,.header-note,.header-count,.lesson-meta-strip>*,
+.stage-top,.queue>span,.rich-scene-head,.rich-sequence>span{
+  font-family:"SFMono-Regular","Cascadia Code","JetBrains Mono",Consolas,monospace;
+}
+
+/* Force the new default custom palette across authored lesson/category accents. */
+.app-shell[data-accent-mode="custom"] .player-page,
+.app-shell[data-accent-mode="custom"] .player-page *,
+.app-shell[data-accent-mode="custom"] .lesson-card,
+.app-shell[data-accent-mode="custom"] .lesson-card *,
+.app-shell[data-accent-mode="custom"] .category-card,
+.app-shell[data-accent-mode="custom"] .category-card *,
+.app-shell[data-accent-mode="custom"] .category-heading,
+.app-shell[data-accent-mode="custom"] .beginner-path{
+  --lesson-accent:var(--theme-accent)!important;
+  --category-accent:var(--theme-accent)!important;
+  --frame-accent:var(--theme-accent)!important;
+}
+.wordmark svg{color:var(--theme-accent)!important}
+.library-hero>span,
+.category-heading>span,
+.lesson-heading>div>span,
+.beginner-path>header span{
+  color:var(--theme-accent)!important;
+}
+
+/* Reference-like display typography: dense, large, high contrast. */
+.wordmark{
+  color:#f7f7f5;
+  font-weight:800;
+  letter-spacing:.18em;
+}
+.library-hero.hero-frame h1,
+.category-heading.category-frame h1,
+.lesson-heading.lesson-frame h1{
+  font-family:"Helvetica Neue","Arial Nova",Arial,"PingFang TC","Noto Sans TC",sans-serif;
+  color:#f7f7f5;
+  font-weight:760;
+  letter-spacing:-.072em;
+  text-wrap:balance;
+}
+.library-hero.hero-frame h1 em{
+  color:#f3f3f1!important;
+  font-weight:220;
+  letter-spacing:-.06em;
+}
+.library-hero.hero-frame>span,
+.category-heading.category-frame .frame-content>span,
+.lesson-heading.lesson-frame>div>span{
+  font-family:"Helvetica Neue","Arial Nova",Arial,"PingFang TC",sans-serif;
+  font-weight:400;
+  letter-spacing:-.015em;
+  text-transform:none;
+}
+.library-hero.hero-frame>span{
+  font-size:clamp(15px,1.45vw,21px);
+}
+.library-hero.hero-frame p,
+.category-heading.category-frame p,
+.lesson-heading.lesson-frame p{
+  color:#a7a8ad;
+  font-weight:300;
+  letter-spacing:-.015em;
+}
+.library-hero.hero-frame p{
+  font-size:15px;
+  line-height:1.72;
+}
+
+/* Cards use bold titles, thin supporting copy. */
+.category-card h2,.lesson-card h2{
+  color:#f4f4f2;
+  font-weight:700;
+  letter-spacing:-.045em;
+}
+.category-card p,.lesson-card p,
+.beginner-path button p,
+.card-dependency{
+  color:#92949b;
+  font-weight:300;
+}
+.card-category,.beginner-rank,
+.category-card>small{
+  font-weight:500;
+}
+.category-card footer b,.lesson-card footer b{
+  color:#f0f0ee;
+  font-weight:600;
+}
+
+/* Strong/Light rhythm inspired by the supplied reference. */
+.beginner-path>header h2,
+.explanation-card h2,
+.knowledge-trigger h2{
+  color:#f5f5f3;
+  font-weight:720;
+  letter-spacing:-.045em;
+}
+.beginner-path>header p,
+.explanation-card .step-summary,
+.knowledge-trigger p{
+  font-weight:300;
+}
+.subcategory>header span{
+  color:#f0f0ee;
+  font-weight:600;
+}
+.subcategory>header b{
+  color:#7f8289;
+  font-weight:400;
+}
+
+/* Darker, flatter surfaces matching the screenshot. */
+.ui-frame,
+.lesson-stage.ui-stage-frame,
+.theme-panel,
+.player-controls{
+  background-color:#0b0c0f!important;
+}
+.ui-frame{
+  box-shadow:0 24px 70px rgba(0,0,0,.22)!important;
+}
+.frame-dot-pattern{
+  fill:#667085!important;
+}
+.app-shell[data-accent-mode="custom"] .frame-dot-pattern{
+  fill:#667085!important;
+}
+.frame-corners i{
+  border-color:var(--theme-accent)!important;
+  background:var(--theme-accent)!important;
+  box-shadow:none!important;
+}
+.ui-frame,
+.lesson-stage.ui-stage-frame{
+  border-color:color-mix(in srgb,var(--theme-accent) 74%,transparent)!important;
+}
+.category-card.ui-frame,.lesson-card.ui-frame{
+  border-color:rgba(255,255,255,.11)!important;
+}
+.category-card.ui-frame:hover,.lesson-card.ui-frame:hover{
+  border-color:var(--theme-accent)!important;
+}
+
+/* Keep code readable but visually related to the reference palette. */
+.code-scroll,.algorithm-scene-wrap,.rich-execution-scene{
+  background:#08090b!important;
+}
+.code-panel>header,.visual-column>header,.stage-top{
+  background:#0d0f12!important;
+}
+.code-line.active{
+  background:linear-gradient(90deg,rgba(255,77,79,.16),transparent 82%)!important;
+  border-left-color:var(--theme-accent)!important;
+}
+.code-focus-card,.code-contract{
+  background:#0b0d10!important;
+}
+.graph-edge{stroke:#656972}
+.graph-node{fill:#0f1115;stroke:#5f646d}
+.big-cell,.seg-node,.queue i{
+  border-radius:2px!important;
+}
+
+/* Controls: red focus, white foreground, no purple leftovers. */
+.back-button:hover,.reset-layout:hover,.code-actions button:hover,
+.theme-panel>header svg,.theme-scale output,
+.theme-presets button.active,.accent-mode button.active{
+  color:var(--theme-accent)!important;
+}
+.player-controls button.play{
+  background:#f4f4f2!important;
+  color:#08090b!important;
+}
+.player-controls>.progress i{background:var(--theme-accent)!important}
+
+/* Thin labels resemble the light half of the reference composition. */
+.header-note,.header-count,.card-index,
+.lesson-meta-strip>span,.lesson-meta-strip>b,
+.library-search>span{
+  color:#7e8189;
+  font-weight:400;
+}
+.lesson-meta-strip b{color:var(--theme-accent)}
+
+/* Chinese text needs slightly safer tracking than Latin display text. */
+:lang(zh),[lang^="zh"]{
+  letter-spacing:0;
+}
+@media(max-width:620px){
+  .library-hero.hero-frame h1,
+  .category-heading.category-frame h1,
+  .lesson-heading.lesson-frame h1{
+    letter-spacing:-.055em;
+  }
+}
