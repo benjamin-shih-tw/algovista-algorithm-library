@@ -330,27 +330,44 @@ if (inversions.frames.length !== 7 || inversions.frames.some((frame, step) =>
 }
 const functional = lesson('functional-graph')
 const functionalStates = [
-  '0,0,0,0,0,0', '1,1,1,0,0,0', '1,1,1,0,0,0',
-  '-1,-1,-1,0,0,0', '-1,-1,-1,-1,0,0', '-1,-1,-1,-1,-1,-1',
+  '0,0,0,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '-1,-1,-1,0,0,0',
+  '-1,-1,-1,0,0,0',
+  '-1,-1,-1,4,0,0',
+  '-1,-1,-1,-1,0,0',
+  '-1,-1,-1,-1,0,0',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,-1,-1',
+  '-1,-1,-1,-1,-1,-1',
 ]
 const functionalViewMismatch = functional.frames.some((frame, step) =>
     frame.executionView?.kind !== 'table' ||
     frame.executionView.rows.map((row) => row[2]).join(',') !== functionalStates[step] ||
-    frame.executionView.rows.map((row) => row[1]).join(',') !== 'B,C,B,C,F,F' ||
-    (step===2 && frame.executionView.badges?.includes('cycle = B→C→B') !== true) ||
-    (step===5 && frame.executionView.badges?.includes('cycles = [B,C], [F]') !== true))
-if (functional.frames.length !== 6 || functionalViewMismatch ||
+    frame.executionView.rows.map((row) => row[1]).join(',') !== 'B,C,B,C,F,F')
+if (functional.frames.length !== 16 || functionalViewMismatch ||
+    functional.frames[3].executionView?.badges?.includes('cycle = B→C→B') !== true ||
+    functional.frames.at(-1)?.executionView?.badges?.includes('cycles = [B,C], [F]') !== true ||
     !functional.code.some((line) => line.includes('findFunctionalCycles(')) ||
+    !functional.code.some((line) => line.trim() === 'state[u]=s+1;') ||
+    !functional.code.some((line) => line.trim() === 'u=next[u];') ||
+    !functional.code.some((line) => line.trim() === 'state[u]=-1;') ||
     functional.code.some((line) => line.includes('recordCycle(') || line.includes('競賽環境')) ||
     !functional.description.includes('不計算跳躍查詢') ||
     !functional.practice?.[0]?.note.includes('進階延伸') ||
     functional.knowledge?.localPrerequisites.map((item) => item.term).join(',') !== '唯一出邊,走訪標記') {
-  errors.push('functional-graph: displayed successors, visit marks, discovered cycles, code, or scope disagree')
+  errors.push('functional-graph: 16-step walk, visit marks, cycles, code, or scope disagree')
 }
 
 const graphTreeCases = [
   ['kruskal', 6, 'structure', 'cost = 13'],
-  ['prim', 8, 'structure', 'cost = 13'],
+  ['prim', 20, 'structure', 'cost = 13'],
   ['boruvka', 6, 'structure', 'cost = 13'],
   ['dag-shortest-path', 6, 'network', 'E = 4'],
   ['negative-cycle-reconstruction', 5, 'network', 'weight = -2'],
