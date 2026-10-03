@@ -1,5 +1,5 @@
 import type { AlgorithmLesson, Frame, Point } from './algorithms'
-import { eventFrame } from './traceAuthoring'
+import { eventFrame, lineNumber } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
@@ -27,6 +27,28 @@ const bridgeEdges=[
   {from:'B',to:'D'},{from:'D',to:'E'},{from:'E',to:'F'},{from:'F',to:'D'},
 ]
 
+const functionalGraphView=(step:number):NonNullable<Frame['executionView']>=>{
+  const nodes=['A','B','C','D','E','F']
+  const successors=['B','C','B','C','F','F']
+  const marks=[
+    ['0','0','0','0','0','0'],
+    ['1','1','1','0','0','0'],
+    ['1','1','1','0','0','0'],
+    ['-1','-1','-1','0','0','0'],
+    ['-1','-1','-1','-1','0','0'],
+    ['-1','-1','-1','-1','-1','-1'],
+  ][step]
+  return {kind:'table',title:'FUNCTIONAL GRAPH · one successor per node',
+    columns:['node','next[node]','state','role'],
+    rows:nodes.map((node,index)=>[node,successors[index],marks[index],
+      step>=5&&node==='F'||step>=2&&(node==='B'||node==='C')?'cycle':
+      marks[index]==='0'?'unseen':node==='A'||node==='D'||step>=5&&node==='E'?'entry path':'walking']),
+    activeRow:[0,2,1,0,3,5][step],
+    badges:['0 = unseen · positive = this walk · -1 = done',
+      ...(step===2?['cycle = B→C→B']:step===5?['cycles = [B,C], [F]']:[])],
+  }
+}
+
 const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
   'kruskal':{points,edges:mstEdges},
   'prim':{points,edges:mstEdges},
@@ -37,7 +59,25 @@ const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
   'tree-center':{points,edges:treeEdges},
   'tree-distance-queries':{points,edges:treeEdges},
   'prufer-code':{points,edges:treeEdges},
-  'functional-graph':{points,edges:[
+  'functional-graph':{description:'沿每點唯一出邊找出所有有向環；本動畫不計算跳躍查詢或到環距離。',code:[
+    'vector<vector<int>> findFunctionalCycles(const vector<int>& next) {',
+    '  int n=next.size();',
+    '  vector<int> state(n,0);',
+    '  vector<vector<int>> cycles;',
+    '  for(int s=0;s<n;++s) if(state[s]==0){',
+    '    int u=s;',
+    '    while(state[u]==0){ state[u]=s+1; u=next[u]; }',
+    '    if(state[u]==s+1){',
+    '      vector<int> cycle;',
+    '      int v=u;',
+    '      do { cycle.push_back(v); v=next[v]; } while(v!=u);',
+    '      cycles.push_back(cycle);',
+    '    }',
+    '    u=s;',
+    '    while(state[u]==s+1){ state[u]=-1; u=next[u]; }',
+    '  }',
+    '  return cycles;',
+    '}'],points,edges:[
     {from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'B'},
     {from:'D',to:'C'},{from:'E',to:'F'},{from:'F',to:'F'},
   ]},
@@ -87,9 +127,13 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'while(state[u]==0)','A→B→C 依序打本輪標記','state[A]=state[B]=state[C]=1，下一步從 C 到 B。',{path:['A','B','C'],state:'A=B=C=1',next:'C→B',operation:'follow successors'},{active:['A','B','C']}),
     eventFrame(lesson,'if(state[u]==s+1)','再次到 B：找到 Cycle B→C→B','B 已帶本輪編號 1，因此從 B 開始的重訪段就是新 cycle。',{repeat:'B',cycle:['B','C'],operation:'record cycle'},{active:['B','C'],accepted:['B','C']}),
     eventFrame(lesson,'while(state[u]==s+1)','清理 A、B、C 為完成狀態 -1','從 A 沿 successor 清理本輪標記，避免之後重做。',{cleared:['A','B','C'],operation:'finalize component'}),
-    eventFrame(lesson,'for(int s=0','D 走到已完成 C，不產生新 Cycle','D→C，但 C 已是 -1；D 是掛在既有 cycle 的入樹。',{start:'D',path:['D'],hits:'C completed',operation:'attach to old component'},{active:['D','C']}),
-    eventFrame(lesson,'if(state[u]==s+1)','E→F→F 找到第二個 Cycle {F}','F 在同一輪被重訪，因此自環 F→F 是 cycle；E 是其入樹。',{start:'E',path:['E','F'],cycle:['F'],operation:'record self cycle'},{active:['E','F'],accepted:['B','C','F']}),
-  ],
+    eventFrame(lesson,'while(state[u]==0)','D 走到已完成 C，不產生新 Cycle','D→C，但 C 已是 -1；本輪只清理 D，不會再次記錄 B-C 環。',{start:'D',path:['D'],hits:'C completed',operation:'attach to old component'},{active:['D','C']}),
+    eventFrame(lesson,'if(state[u]==s+1)','E→F→F 找到第二個 Cycle {F}','F 在同一輪被重訪，自環 F→F 是第二個 cycle；記錄後把 E、F 清理為 -1。',{start:'E',path:['E','F'],cycle:['F'],operation:'record self cycle'},{active:['E','F'],accepted:['B','C','F']}),
+  ].map((frame,step)=>({...frame,
+    codeLines:step===2||step===5?[lineNumber(lesson,'if(state[u]==s+1)'),lineNumber(lesson,'cycle.push_back(v)'),lineNumber(lesson,'cycles.push_back(cycle)')]:frame.codeLines,
+    state:step===2||step===5?{...frame.state,highlightCodeLines:'all'}:frame.state,
+    executionView:functionalGraphView(step),
+  })),
 
   'dag-shortest-path':lesson=>[
     eventFrame(lesson,'topologicalSort','Topo Order = A,B,C,D,E','圖無環；處理一個節點前，它所有前驅都已完成。',{order:['A','B','C','D','E'],operation:'topological order'}),

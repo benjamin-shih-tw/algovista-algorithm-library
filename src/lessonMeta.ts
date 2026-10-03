@@ -160,6 +160,7 @@ const practiceById: Record<string, PracticeProblem> = {
 }
 
 const usageById: Record<string, [string,string]> = {
+  'functional-graph': ['每個節點恰好有一條出邊，要找出所有有向環及辨識走入既有環的路徑時。','本課函式只回傳環；若要回答跳躍查詢，需另建到環距離、環上索引與倍增表。'],
   'inversion-counting': ['要計算原序列中 i<j 且 a[i]>a[j] 的逆序對數量時。','合併排序先讓左右半部各自有序；若右值比左指標值小，一次加入左半剩餘元素數 m−i，而不是只加 1。'],
   'huffman-coding': ['需要反覆合併兩個最小權重，求最小總合併成本或最優前綴碼樹的加權路徑長時。','本課程式只回傳成本；如果題目要求每個符號的實際編碼字，還必須保存左右子樹並走訪完成的樹。'],
   'linear-search': ['資料沒有排序，而你要找某個值或第一個符合條件的位置時。','資料量不大或只查一次；每個被排除的位置都必須親自比較，不能憑大小跳過。'],
@@ -226,7 +227,7 @@ const practiceByModel: Partial<Record<VisualModel, PracticeProblem>> = {
   'scc-clusters': cses('Planets and Kingdoms','1683','把互相可達節點縮成強連通分量。'),
   lowlink: cses('Necessary Roads','2076','用 tin/low 判斷橋與連通結構。'),
   'mst-growth': cses('Road Reparation','1675','依邊或前沿逐步建立最小生成樹。'),
-  'functional-graph': cses('Planets Queries II','1160','利用環與入樹結構回答跳躍查詢。'),
+  'functional-graph': cses('Planets Queries II','1160','進階延伸：本課只找環；要回答最少跳躍次數，還須到環距離、環上位置與倍增。'),
   'two-sat': cses('Giant Pizza','1684','把布林限制轉成 implication graph。'),
   'dynamic-connectivity': cses('Network Breakdown','1677','倒序加入邊或離線處理連通變化。'),
   'tree-traversal': cses('Tree Diameter','1131','以樹遍歷計算深度、端點與子樹資訊。'),

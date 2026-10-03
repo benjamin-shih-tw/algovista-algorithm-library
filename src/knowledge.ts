@@ -104,7 +104,7 @@ const dependencyById: Record<string, KnowledgeDependency[]> = {
   'connected-components': [{ lessonId: 'dfs', reason: '每次 DFS 完整標記一個連通分量。' }],
   'bipartite-coloring': [{ lessonId: 'bfs', reason: '逐層染相反顏色並偵測衝突。' }],
   'cycle-detection': [{ lessonId: 'dfs', reason: '需要區分 DFS 的未進入、遞迴中與已完成狀態。' }],
-  'functional-graph': [{ lessonId: 'dfs', reason: '每個連通塊由一個環與指向環的樹組成。' }, { lessonId: 'lca-binary-lifting', reason: '長距離跳躍沿用倍增表。' }],
+  'functional-graph': [{ lessonId: 'dfs', reason: '先理解沿唯一後繼走訪、重訪與完成標記。' }],
   'euler-circuit': [{ lessonId: 'dfs', reason: 'Hierholzer 沿未使用邊深入並在死路回程輸出。' }, { lessonId: 'stack', reason: '顯式 Stack 保存目前尚未封閉的路徑。' }],
   'kosaraju-scc': [{ lessonId: 'dfs', reason: '兩趟 DFS 分別建立完成順序與收集分量。' }],
   'tarjan-scc': [{ lessonId: 'dfs', reason: 'disc、low 與遞迴 Stack 都建立在 DFS 樹上。' }],
@@ -283,6 +283,10 @@ const localPrerequisiteByCategory: Record<CategoryId, KnowledgeTerm[]> = {
 }
 
 const localPrerequisiteById: Record<string, KnowledgeTerm[]> = {
+  'functional-graph': [
+    { term: '唯一出邊', meaning: '每個節點恰有一個 next[u]；持續跟隨後繼，最終一定重訪某個節點。' },
+    { term: '走訪標記', meaning: '0 是未見、正數是目前這輪的編號、-1 是已完成；只有重訪同一輪標記才代表發現新環。' },
+  ],
   'inversion-counting': [
     { term: '半開區間', meaning: '[l,r) 包含 l、不包含 r；切點 m 把它分成不重疊的 [l,m) 與 [m,r)。' },
     { term: '合併緩衝區', meaning: '左右半部已各自排序；比較兩端後先寫入 buffer，整段合併完成才複製回原陣列。' },

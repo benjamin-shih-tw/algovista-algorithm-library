@@ -328,10 +328,29 @@ if (inversions.frames.length !== 7 || inversions.frames.some((frame, step) =>
     !inversions.usage?.[0]?.includes('逆序對')) {
   errors.push('inversion-counting: merge buffer and inversion total are missing or inconsistent across seven frames')
 }
+const functional = lesson('functional-graph')
+const functionalStates = [
+  '0,0,0,0,0,0', '1,1,1,0,0,0', '1,1,1,0,0,0',
+  '-1,-1,-1,0,0,0', '-1,-1,-1,-1,0,0', '-1,-1,-1,-1,-1,-1',
+]
+const functionalViewMismatch = functional.frames.some((frame, step) =>
+    frame.executionView?.kind !== 'table' ||
+    frame.executionView.rows.map((row) => row[2]).join(',') !== functionalStates[step] ||
+    frame.executionView.rows.map((row) => row[1]).join(',') !== 'B,C,B,C,F,F' ||
+    (step===2 && frame.executionView.badges?.includes('cycle = B→C→B') !== true) ||
+    (step===5 && frame.executionView.badges?.includes('cycles = [B,C], [F]') !== true))
+if (functional.frames.length !== 6 || functionalViewMismatch ||
+    !functional.code.some((line) => line.includes('findFunctionalCycles(')) ||
+    functional.code.some((line) => line.includes('recordCycle(') || line.includes('競賽環境')) ||
+    !functional.description.includes('不計算跳躍查詢') ||
+    !functional.practice?.[0]?.note.includes('進階延伸') ||
+    functional.knowledge?.localPrerequisites.map((item) => item.term).join(',') !== '唯一出邊,走訪標記') {
+  errors.push('functional-graph: displayed successors, visit marks, discovered cycles, code, or scope disagree')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, inversion counting, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, inversion counting, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost, functional graph OK')
 }
