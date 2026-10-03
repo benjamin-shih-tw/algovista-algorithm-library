@@ -317,10 +317,21 @@ if (huffman.frames.length !== 6 || huffman.frames.some((frame, step) =>
       !frame.codeLines.some((line) => huffman.code[line - 1]?.includes('pq.push(a+b)')))) {
   errors.push('huffman-coding: visible heap, accumulated merge cost, code, or lesson scope differs from the six-frequency example')
 }
+const inversions = lesson('inversion-counting')
+const inversionBuffers = ['', '', '1', '1,2', '1,2,3', '1,2,3,4,5', '1,2,3,4,5']
+if (inversions.frames.length !== 7 || inversions.frames.some((frame, step) =>
+    frame.executionView?.kind !== 'table' ||
+    frame.executionView.rows[2]?.[1] !== (inversionBuffers[step] ? `[${inversionBuffers[step]}]` : '∅') ||
+    frame.executionView.rows[3]?.[1] !== String([0,0,2,2,3,3,3][step])) ||
+    !inversions.code.some((line) => line.includes('long long countInversions(')) ||
+    inversions.knowledge?.localPrerequisites.map((item) => item.term).join(',') !== '半開區間,合併緩衝區' ||
+    !inversions.usage?.[0]?.includes('逆序對')) {
+  errors.push('inversion-counting: merge buffer and inversion total are missing or inconsistent across seven frames')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, inversion counting, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost OK')
 }

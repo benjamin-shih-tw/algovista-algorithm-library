@@ -32,6 +32,16 @@ const countingSortView = (step:number):NonNullable<Frame['executionView']> => {
     badges:[`input = 4,2,2,5,3,2,1`,`output = ${output}`],
   }
 }
+const inversionMergeView = (frame:Frame,step:number):NonNullable<Frame['executionView']> => {
+  const buffer=Array.isArray(frame.state?.buffer)?frame.state.buffer:step>=5?['1','2','3','4','5']:[]
+  const answer=frame.state?.answer??frame.state?.result??0
+  return {kind:'table',title:'INVERSION COUNTING · merge two sorted halves',
+    columns:['part','current state'],
+    rows:[['left sorted','[2,4]'],['right sorted','[1,3,5]'],['merge buffer',buffer.length?`[${buffer.join(',')}]`:'∅'],['counted pairs',String(answer)]],
+    activeRow:step>=5?3:step>=2?2:undefined,
+    badges:[step>=5?'a = [1,2,3,4,5]':'a = [2,4,1,3,5]',...(frame.state?.add!==undefined?[`this comparison +${frame.state.add}`]:[])],
+  }
+}
 const fractionalKnapsackCode = [
   'struct FractionalItem { double weight,value; };',
   'double fractionalKnapsack(vector<FractionalItem> items,double capacity) {',
@@ -296,11 +306,11 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'int m=(l+r)/2','輸入 [2,4,1,3,5] Split','先遞迴排序左右半；逆序分成左內、右內、跨半三類。',{input:['2','4','1','3','5'],split:'[2,4] | [1,3,5]',operation:'divide'},{values:[2,4,1,3,5]}),
     eventFrame(lesson,'countInversions(a,l,m','左右半先各自排序','左 [2,4] 無逆序；右 [1,3,5] 無逆序，answer 目前 0。',{left:['2','4'],right:['1','3','5'],answer:0,operation:'recursive counts'},{values:[2,4,1,3,5]}),
     eventFrame(lesson,'else { answer+=m-i','比較 2 與 1：加 2','右值 1 < 左值 2；因左半已排序，1 也小於剩餘的 4，所以一次加入 m-i=2 個逆序：(2,1),(4,1)。',{leftFront:2,rightFront:1,add:2,answer:2,buffer:['1'],operation:'count cross inversions'},{values:[2,4,1,3,5],active:['0','2']}),
-    eventFrame(lesson,'if (a[i]<=a[j])','比較 2 與 3：取 2','2≤3，不新增逆序，buffer=[1,2]。',{leftFront:2,rightFront:3,answer:2,buffer:['1','2'],operation:'merge left value'},{active:['0','3']}),
-    eventFrame(lesson,'else { answer+=m-i','比較 4 與 3：再加 1','3<4，所以新增 (4,3) 一個逆序，answer=3。',{leftFront:4,rightFront:3,add:1,answer:3,buffer:['1','2','3'],operation:'count cross inversion'},{active:['1','3']}),
+    eventFrame(lesson,'if (a[i]<=a[j])','比較 2 與 3：取 2','2≤3，不新增逆序，buffer=[1,2]。',{leftFront:2,rightFront:3,answer:2,buffer:['1','2'],operation:'merge left value'},{values:[2,4,1,3,5],active:['0','3']}),
+    eventFrame(lesson,'else { answer+=m-i','比較 4 與 3：再加 1','3<4，所以新增 (4,3) 一個逆序，answer=3。',{leftFront:4,rightFront:3,add:1,answer:3,buffer:['1','2','3'],operation:'count cross inversion'},{values:[2,4,1,3,5],active:['1','3']}),
     eventFrame(lesson,'for (int k=l;k<r;++k)','Merge 完成並寫回','接上 4、5 後得到 [1,2,3,4,5]；總逆序數 3。',{sorted:['1','2','3','4','5'],answer:3,operation:'copy merged result'},{values:[1,2,3,4,5],accepted:['0','1','2','3','4']}),
     eventFrame(lesson,'return answer','回傳 3','原陣列逆序對就是 (2,1)、(4,1)、(4,3)。',{result:3,pairs:['(2,1)','(4,1)','(4,3)'],operation:'return inversion count'},{values:[1,2,3,4,5]}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:inversionMergeView(frame,step)})),
 
   'interval-scheduling': (lesson) => [
     eventFrame(lesson,'sort(intervals.begin()','依 End 排序','區間 [(1,4),(3,5),(0,6),(5,7),(3,9),(5,9),(6,10),(8,11)] 依結束時間排序。',{ordered:['(1,4)','(3,5)','(0,6)','(5,7)','(3,9)','(5,9)','(6,10)','(8,11)'],operation:'sort by end'}),

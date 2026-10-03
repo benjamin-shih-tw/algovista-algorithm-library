@@ -283,6 +283,10 @@ const localPrerequisiteByCategory: Record<CategoryId, KnowledgeTerm[]> = {
 }
 
 const localPrerequisiteById: Record<string, KnowledgeTerm[]> = {
+  'inversion-counting': [
+    { term: '半開區間', meaning: '[l,r) 包含 l、不包含 r；切點 m 把它分成不重疊的 [l,m) 與 [m,r)。' },
+    { term: '合併緩衝區', meaning: '左右半部已各自排序；比較兩端後先寫入 buffer，整段合併完成才複製回原陣列。' },
+  ],
   'huffman-coding': [
     { term: '最小堆', meaning: '每次取出權重最小的兩棵樹；合併後把新樹權重放回，下一輪仍能取到全域最小值。' },
     { term: '加權路徑長', meaning: '每個葉節點的頻率乘上它到根的深度，再全部相加；每次合併成本的總和正好等於這個值。' },

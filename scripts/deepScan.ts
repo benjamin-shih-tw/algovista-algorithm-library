@@ -23,6 +23,10 @@ for(const lesson of lessons){
 
   frames.forEach((frame,index)=>{
     const step=index+1
+    if(visual==='array'&&lesson.fidelity!=='semantic'&&!frame.executionView&&!frame.values) bugs.push({
+      lessonId:id,type:'CRITICAL_CRASH',frame:step,
+      description:'ArrayScene requires frame.values when no rich execution view is present',
+    })
     for(const line of frame.codeLines){
       if(line<1||line>code.length) bugs.push({
         lessonId:id,type:'CRITICAL_CRASH',frame:step,
