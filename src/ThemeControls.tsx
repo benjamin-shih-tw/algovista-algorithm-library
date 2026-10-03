@@ -14,23 +14,24 @@ export type ThemeSettings = {
   fontScale: number
 }
 
-const STORAGE_KEY = 'algovista-theme-v1'
+const STORAGE_KEY = 'algovista-theme-v2'
 
 export const DEFAULT_THEME: ThemeSettings = {
-  preset: 'midnight',
-  accentMode: 'lesson',
-  accent: '#a995ff',
-  background: '#080a0f',
-  panel: '#10131b',
-  codeBackground: '#090c12',
-  codeText: '#d7dce5',
-  codeKeyword: '#c7a7ff',
-  codeType: '#82b1ff',
+  preset: 'reference',
+  accentMode: 'custom',
+  accent: '#ff4d4f',
+  background: '#08090b',
+  panel: '#0d0f12',
+  codeBackground: '#08090b',
+  codeText: '#f4f4f2',
+  codeKeyword: '#ff5b5e',
+  codeType: '#d8d9dd',
   fontScale: 1,
 }
 
 const PRESETS: { id: string; label: string; values: Partial<ThemeSettings> }[] = [
-  { id: 'midnight', label: 'Midnight', values: DEFAULT_THEME },
+  { id: 'reference', label: 'Studio Red', values: DEFAULT_THEME },
+  { id: 'midnight', label: 'Midnight', values: { accentMode: 'lesson', accent: '#a995ff', background: '#080a0f', panel: '#10131b', codeBackground: '#090c12', codeText: '#d7dce5', codeKeyword: '#c7a7ff', codeType: '#82b1ff', fontScale: 1 } },
   { id: 'ocean', label: 'Ocean', values: { accentMode: 'custom', accent: '#55d6ff', background: '#061017', panel: '#0c1a24', codeBackground: '#07131c', codeText: '#d9f3ff', codeKeyword: '#69d5ff', codeType: '#8ab4ff' } },
   { id: 'ember', label: 'Ember', values: { accentMode: 'custom', accent: '#ffad72', background: '#110b09', panel: '#1c1210', codeBackground: '#120c0b', codeText: '#f4ddd2', codeKeyword: '#ff9d76', codeType: '#ffd17d' } },
   { id: 'contrast', label: 'Contrast', values: { accentMode: 'custom', accent: '#6fffd2', background: '#020504', panel: '#080d0b', codeBackground: '#020604', codeText: '#f5fff9', codeKeyword: '#84ffd8', codeType: '#8cc8ff', fontScale: 1.08 } },
