@@ -274,7 +274,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'u=next[u];','Follow Successor：C 回到 B','與上一行交替執行 A→B、B→C、C→B；最後 u=B，而 state[B] 已不是 0，離開 while。',{walk:['A→B','B→C','C→B'],u:'B',operation:'advance successor'},{active:['B','C']}),
     eventFrame(lesson,'if(state[u]==s+1)','B 帶本輪編號：確認出現新 Cycle','state[B]=1 且 s+1=1，表示重訪的是本輪 path 上節點，而不是舊 component。',{repeat:'B',decision:'same walk → cycle',operation:'detect cycle'},{active:['B','C'],accepted:['B','C']}),
     eventFrame(lesson,'cycle.push_back(v);','沿 B→C→B 收集 Cycle 節點','do-while 中這一行先 push B，再下一輪 push C；回到 B 時停止，所以 cycle=[B,C]。',{cycle:['B','C'],operation:'collect cycle vertices'},{active:['B','C'],accepted:['B','C']}),
-    eventFrame(lesson,'cycles.push_back(cycle);','保存 Cycle [B,C]','局部 cycle 收集完成後，真正把 [B,C] 加入答案 cycles。',{cycles:[['B','C']],operation:'save cycle'},{accepted:['B','C']}),
+    eventFrame(lesson,'cycles.push_back(cycle);','保存 Cycle [B,C]','局部 cycle 收集完成後，真正把 [B,C] 加入答案 cycles。',{cycles:['[B,C]'],operation:'save cycle'},{accepted:['B','C']}),
     eventFrame(lesson,'state[u]=-1;','Cleanup A、B、C','u 重設為 A 後，cleanup while 依序把本輪的 A、B、C 設成 -1，表示已完成。',{cleared:['A','B','C'],operation:'mark walk done'},{accepted:['B','C']}),
     eventFrame(lesson,'int u=s;','下一個 Unseen 起點是 D','外層會略過已完成的 B、C；到 s=D 時重新令 u=D。',{start:'D',u:'D',operation:'start second walk'},{active:['D']}),
     eventFrame(lesson,'state[u]=s+1;','Mark D，再走向 C','D 被標成本輪編號 4；接著 successor 是已完成的 C，因此 walk 只含 D。',{path:['D'],stateD:4,operation:'mark entry path'},{active:['D','C']}),
@@ -283,8 +283,8 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'int u=s;','下一個 Unseen 起點是 E','外層前進到 E，開始第三次 walk。',{start:'E',u:'E',operation:'start third walk'},{active:['E']}),
     eventFrame(lesson,'state[u]=s+1;','Mark E、F 為本輪 Path','state[E]=state[F]=5；F 的 successor 仍是 F。',{path:['E','F'],state:'E=F=5',operation:'mark self-loop walk'},{active:['E','F'],accepted:['B','C']}),
     eventFrame(lesson,'if(state[u]==s+1)','F 被本輪重訪：找到 Self-Cycle','沿 E→F→F 後 u=F，且 state[F]=5=s+1，因此確認新 cycle。',{repeat:'F',cycle:['F'],operation:'detect self cycle'},{active:['F'],accepted:['B','C','F']}),
-    eventFrame(lesson,'cycles.push_back(cycle);','收集並保存 Cycle [F]','do-while 的 cycle.push_back(v) 只執行一次就回到 F，接著將 [F] 加進 cycles。',{cycles:[['B','C'],['F']],operation:'save self cycle'},{active:['F'],accepted:['B','C','F']}),
-    eventFrame(lesson,'state[u]=-1;','Cleanup E、F，演算法完成','最後把 E、F 設成 -1；所有節點都完成，答案為 cycles=[[B,C],[F]]。',{cleared:['E','F'],cycles:[['B','C'],['F']],operation:'finish all walks'},{accepted:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'cycles.push_back(cycle);','收集並保存 Cycle [F]','do-while 的 cycle.push_back(v) 只執行一次就回到 F，接著將 [F] 加進 cycles。',{cycles:['[B,C]','[F]'],operation:'save self cycle'},{active:['F'],accepted:['B','C','F']}),
+    eventFrame(lesson,'state[u]=-1;','Cleanup E、F，演算法完成','最後把 E、F 設成 -1；所有節點都完成，答案為 cycles=[[B,C],[F]]。',{cleared:['E','F'],cycles:['[B,C]','[F]'],operation:'finish all walks'},{accepted:['A','B','C','D','E','F']}),
   ].map((frame,step)=>({...frame,executionView:functionalGraphView(step)})),
 
   'dag-shortest-path':lesson=>[
