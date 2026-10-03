@@ -231,7 +231,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'addEdge(v,TT,-balance[v]);','Negative Balance A：加 A→TT cap2','A 必須把 2 單位缺口送到超級匯 TT。',{edge:'A→TT',capacity:2,operation:'add negative-balance edge'},{executionView:{kind:'network',title:'SUPER SINK EDGE',nodes:[...netNodes,{id:'SS',x:70,y:60},{id:'TT',x:930,y:370}],edges:[{from:'SS',to:'B',label:'2'},{from:'A',to:'TT',label:'2',active:true}],path:['A','TT'],badges:['A supplies deficit 2']}}),
     eventFrame(lesson,'addEdge(t,s,INF);','加入 T→S Infinite Edge','原本是有指定 source/sink 的 flow 問題；這條邊把它閉成 circulation，讓可行性統一用 SS→TT max-flow 檢查。',{operation:'close circulation'},{executionView:network('CLOSE CIRCULATION',[{from:'T',to:'S',label:'INF',active:true,dashed:true}],['T','S'])}),
     eventFrame(lesson,'return maxflow(SS,TT)==totalDemand;','檢查所有 Demand Edge 是否飽和','若 maxflow(SS,TT)=totalDemand=2，代表所有 lower-bound imbalance 都能被 residual network 補平；最後再把各 edge 的 lower 加回即得到原問題可行流。',{required:2,sent:2,result:'feasible',operation:'check feasibility'},{executionView:network('FEASIBILITY CHECK',[{from:'A',to:'B',label:'residual + lower'},{from:'SS',to:'B',label:'2',active:true},{from:'A',to:'TT',label:'2',active:true}],[],['sent 2 / demand 2','feasible'])}),
-  ]
+  ],
 
   'circulation-demands':lesson=>[
     eventFrame(lesson,'balance[u]-=low','建立 Node Imbalance','例：A→B [2,4]、B→C [1,3]。lower flow 使 A=-2、B=+1、C=+1。',{balances:['A=-2','B=+1','C=+1'],operation:'lower-bound balances'},{executionView:network('CIRCULATION · IMBALANCE',[
