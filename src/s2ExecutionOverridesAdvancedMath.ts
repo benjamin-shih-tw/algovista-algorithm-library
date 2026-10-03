@@ -180,7 +180,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'if((ans^basis[b])>ans) ans^=basis[b];','bit2：0 XOR 5 = 5，比 0 大','最高位貪心成立，因此這一行把 ans 從 0 改成 5。',{b:2,before:0,candidate:5,after:5,operation:'take bit2 pivot'}),
     eventFrame(lesson,'if((ans^basis[b])>ans) ans^=basis[b];','bit1：5 XOR 3 = 6，比 5 大','再取 basis[1]，ans 由 5 變 6。',{b:1,before:5,candidate:6,after:6,operation:'take bit1 pivot'}),
     eventFrame(lesson,'return ans;','回傳最大可生成 XOR = 6','basis={5,3} 的所有 XOR 為 0,3,5,6，最大值確實是 6。',{result:6,generated:['0','3','5','6'],operation:'return max xor'}),
-  ]
+  ],
 
   'nim':lesson=>[
     eventFrame(lesson,'int nimSum=0','Piles=[3,4,5]','先 XOR 全部石堆。',{piles:['3','4','5'],operation:'initialize'}),
