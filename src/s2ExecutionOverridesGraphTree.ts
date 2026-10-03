@@ -42,10 +42,21 @@ const directed=(title:string,edges:Edge[],groups:Record<string,string>,values:Re
 })
 const mstSelected:Record<string,string[][]>={
   kruskal:[[],['BC'],['BC','AC'],['BC','AC','DE','EF'],['BC','AC','DE','EF'],['BC','AC','DE','EF','BD']],
-  prim:[[],[],[],['AC'],['AC'],['AC','BC'],['AC','BC'],['AC','BC','BD','DE','EF']],
+  prim:[
+    [],[],[],[],[],
+    ['AC'],['AC'],['AC'],
+    ['AC','BC'],['AC','BC'],['AC','BC'],['AC','BC'],['AC','BC'],
+    ['AC','BC','BD'],['AC','BC','BD'],['AC','BC','BD'],
+    ['AC','BC','BD','DE'],['AC','BC','BD','DE'],['AC','BC','BD','DE'],
+    ['AC','BC','BD','DE','EF'],
+  ],
   boruvka:[[],[],[],['BC','AC','DE','EF'],['BC','AC','DE','EF'],['BC','AC','DE','EF','BD']],
 }
-const mstCosts:Record<string,string[]>={kruskal:['0','1','3','8','8','13'],prim:['0','0','0','2','2','3','3','13'],boruvka:['0','0','0','8','8','13']}
+const mstCosts:Record<string,string[]>={
+  kruskal:['0','1','3','8','8','13'],
+  prim:['0','0','0','0','0','2','2','2','3','3','3','3','3','8','8','8','10','10','10','13'],
+  boruvka:['0','0','0','8','8','13'],
+}
 
 const graphTreeView=(lesson:AlgorithmLesson,frame:Frame,step:number):Frame['executionView']=>{
   const id=lesson.id
@@ -54,7 +65,7 @@ const graphTreeView=(lesson:AlgorithmLesson,frame:Frame,step:number):Frame['exec
     return undirected(`${lesson.zhTitle} · 已選邊為亮線`,mstEdges,mstSelected[id][step],focus,
       [`cost = ${mstCosts[id][step]}`,`selected = ${mstSelected[id][step].length} / 5`,
         ...(id==='kruskal'&&step===4?['AB4 rejected: cycle']:[]),
-        ...(id==='prim'&&step===6?['AB4 skipped: stale']:[])])
+        ...(id==='prim'&&step===11?['AB4 skipped: stale']:[])])
   }
   if(id==='dag-shortest-path'){
     const distances=frame.distances??(step===0?{A:'∞',B:'∞',C:'∞',D:'∞',E:'∞'}:{})
@@ -114,28 +125,58 @@ const graphTreeView=(lesson:AlgorithmLesson,frame:Frame,step:number):Frame['exec
 const functionalGraphView=(step:number):NonNullable<Frame['executionView']>=>{
   const nodes=['A','B','C','D','E','F']
   const successors=['B','C','B','C','F','F']
-  const marks=[
+  const marksByStep:string[][]=[
     ['0','0','0','0','0','0'],
     ['1','1','1','0','0','0'],
     ['1','1','1','0','0','0'],
+    ['1','1','1','0','0','0'],
+    ['1','1','1','0','0','0'],
     ['-1','-1','-1','0','0','0'],
+    ['-1','-1','-1','0','0','0'],
+    ['-1','-1','-1','4','0','0'],
     ['-1','-1','-1','-1','0','0'],
+    ['-1','-1','-1','-1','0','0'],
+    ['-1','-1','-1','-1','5','5'],
+    ['-1','-1','-1','-1','5','5'],
+    ['-1','-1','-1','-1','5','5'],
+    ['-1','-1','-1','-1','5','5'],
     ['-1','-1','-1','-1','-1','-1'],
-  ][step]
+    ['-1','-1','-1','-1','-1','-1'],
+  ]
+  const marks=marksByStep[Math.min(step,marksByStep.length-1)]
+  const activeRows=[0,2,1,1,1,0,3,3,3,4,5,5,5,5,4,5]
+  const bccKnown=step>=2
+  const selfKnown=step>=11
   return {kind:'table',title:'FUNCTIONAL GRAPH · one successor per node',
     columns:['node','next[node]','state','role'],
     rows:nodes.map((node,index)=>[node,successors[index],marks[index],
-      step>=5&&node==='F'||step>=2&&(node==='B'||node==='C')?'cycle':
-      marks[index]==='0'?'unseen':node==='A'||node==='D'||step>=5&&node==='E'?'entry path':'walking']),
-    activeRow:[0,2,1,0,3,5][step],
+      selfKnown&&node==='F'?'cycle':
+      bccKnown&&(node==='B'||node==='C')?'cycle':
+      marks[index]==='0'?'unseen':
+      node==='A'||node==='D'||node==='E'?'entry path':'walking']),
+    activeRow:activeRows[Math.min(step,activeRows.length-1)],
     badges:['0 = unseen · positive = this walk · -1 = done',
-      ...(step===2?['cycle = B→C→B']:step===5?['cycles = [B,C], [F]']:[])],
+      ...(selfKnown?['cycles = [B,C], [F]']:bccKnown?['cycle = B→C→B']:[])],
   }
 }
 
 const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
   'kruskal':{points,edges:mstEdges},
-  'prim':{points,edges:mstEdges},
+  'prim':{points,edges:mstEdges,code:[
+    'priority_queue<Edge,vector<Edge>,greater<Edge>> pq;',
+    'pq.push({0,s,-1});',
+    'while(!pq.empty()){',
+    '  auto [w,u,p]=pq.top();',
+    '  pq.pop();',
+    '  if(used[u]) continue;',
+    '  used[u]=true; cost+=w;',
+    '  for(auto e:g[u]) {',
+    '    if(!used[e.to]) {',
+    '      pq.push(e);',
+    '    }',
+    '  }',
+    '}',
+  ]},
   'boruvka':{points,edges:mstEdges},
   'kosaraju-scc':{points,edges:sccEdges},
   'condensation-graph':{points,edges:sccEdges},
@@ -150,15 +191,24 @@ const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
     '  vector<vector<int>> cycles;',
     '  for(int s=0;s<n;++s) if(state[s]==0){',
     '    int u=s;',
-    '    while(state[u]==0){ state[u]=s+1; u=next[u]; }',
+    '    while(state[u]==0){',
+    '      state[u]=s+1;',
+    '      u=next[u];',
+    '    }',
     '    if(state[u]==s+1){',
     '      vector<int> cycle;',
     '      int v=u;',
-    '      do { cycle.push_back(v); v=next[v]; } while(v!=u);',
+    '      do {',
+    '        cycle.push_back(v);',
+    '        v=next[v];',
+    '      } while(v!=u);',
     '      cycles.push_back(cycle);',
     '    }',
     '    u=s;',
-    '    while(state[u]==s+1){ state[u]=-1; u=next[u]; }',
+    '    while(state[u]==s+1){',
+    '      state[u]=-1;',
+    '      u=next[u];',
+    '    }',
     '  }',
     '  return cycles;',
     '}'],points,edges:[
@@ -187,15 +237,27 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'prim':lesson=>[
-    eventFrame(lesson,'pq.push({0,s,-1})','從 A 啟動 Prim','Heap 先放虛擬邊 (0,A)。used 全 false。',{heap:['0:A'],used:[],cost:0,operation:'seed heap'},{active:['A']}),
-    eventFrame(lesson,'used[u]=true; cost+=w','Pop A，加入 MST','A 首次出 heap，used[A]=true，cost 仍 0。',{pop:'A(0)',used:['A'],cost:0,operation:'take vertex'},{active:['A'],accepted:['A']}),
-    eventFrame(lesson,'for(auto e:g[u])','把 A-B4、A-C2 Push','它們是 used 集合跨到外部的候選邊。',{from:'A',heap:['AC2','AB4'],operation:'push cut edges'},{active:['A','B','C']}),
-    eventFrame(lesson,'used[u]=true; cost+=w','Pop AC2：加入 C','最小 crossing edge 是 AC2，cost=2。',{edge:'A-C(2)',used:['A','C'],cost:2,operation:'take minimum crossing edge'},{active:['A','C'],accepted:['A','C']}),
-    eventFrame(lesson,'for(auto e:g[u])','C 加入候選 BC1、CD8、CE10','Heap 現在最小會是 BC1。',{from:'C',heap:['BC1','AB4','CD8','CE10'],operation:'expand frontier'}),
-    eventFrame(lesson,'used[u]=true; cost+=w','Pop BC1：加入 B','B 尚未 used，接受邊 BC，cost=3。',{edge:'B-C(1)',used:['A','B','C'],cost:3,operation:'take B'},{active:['B','C'],accepted:['A','B','C']}),
-    eventFrame(lesson,'if(used[u]) continue','之後 AB4 變成過期候選','A、B 都已 used，pop AB4 時直接 continue，不重複加 cost。',{edge:'A-B(4)',decision:'stale/skip',cost:3,operation:'skip stale edge'},{active:['A','B']}),
-    eventFrame(lesson,'used[u]=true; cost+=w','BD5、DE2、EF3 完成 MST','依序加入 D（+5）、E（+2）、F（+3），總 cost=13。',{chosen:['BD5','DE2','EF3'],used:['A','B','C','D','E','F'],cost:13,operation:'finish MST'},{accepted:['A','B','C','D','E','F']}),
-  ],
+    eventFrame(lesson,'pq.push({0,s,-1})','Seed：把 A 放入 Min-Heap','先放虛擬候選 (0,A)。它只用來讓起點以 cost 0 被第一個取出。',{heap:['0:A'],used:[],cost:0,operation:'seed heap'},{active:['A']}),
+    eventFrame(lesson,'pq.pop();','Extract A(0)','top() 讀到目前最小候選 A(0)，接著 pq.pop() 真正把它從 heap 移除。',{pop:'A(0)',heap:[],used:[],cost:0,operation:'extract minimum'},{active:['A']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 A','A 尚未 used，因此執行 used[A]=true；虛擬邊權重為 0，所以 cost 仍為 0。',{used:['A'],cost:0,operation:'accept start vertex'},{active:['A'],accepted:['A']}),
+    eventFrame(lesson,'pq.push(e);','從 A Push AB4、AC2','for 逐邊檢查未使用鄰點；同一行 pq.push(e) 依序執行兩次，heap 變成 AC2、AB4。',{from:'A',pushed:['AB4','AC2'],heap:['AC2','AB4'],used:['A'],cost:0,operation:'push frontier edges'},{active:['A','B','C'],accepted:['A']}),
+    eventFrame(lesson,'pq.pop();','Extract AC2','heap 最小候選是 AC2；pop 後 AB4 暫時留在 heap。',{pop:'AC2',heap:['AB4'],used:['A'],cost:0,operation:'extract minimum'},{active:['A','C'],accepted:['A']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 AC2：加入 C','C 尚未 used，因此接受這條 crossing edge；used[C]=true，cost 由 0 變 2。',{edge:'A-C(2)',used:['A','C'],cost:2,operation:'accept crossing edge'},{active:['A','C'],accepted:['A','C']}),
+    eventFrame(lesson,'pq.push(e);','從 C Push BC1、CD8、CE10','AC 指回已 used 的 A 不入 heap；其餘三條邊在 pq.push(e) 這行依序加入。',{from:'C',pushed:['BC1','CD8','CE10'],heap:['BC1','AB4','CD8','CE10'],used:['A','C'],cost:2,operation:'expand frontier'},{active:['B','C','D','E'],accepted:['A','C']}),
+    eventFrame(lesson,'pq.pop();','Extract BC1','目前最小候選 BC1 被取出。',{pop:'BC1',heap:['AB4','CD8','CE10'],used:['A','C'],cost:2,operation:'extract minimum'},{active:['B','C'],accepted:['A','C']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 BC1：加入 B','B 尚未 used，故 used[B]=true 並累加 1；cost=3。',{edge:'B-C(1)',used:['A','B','C'],cost:3,operation:'accept crossing edge'},{active:['B','C'],accepted:['A','B','C']}),
+    eventFrame(lesson,'pq.push(e);','從 B 只 Push BD5','BA、BC 都指向已 used 節點，只有 BD5 通過 if(!used[e.to]) 並執行 pq.push(e)。',{from:'B',pushed:['BD5'],heap:['AB4','BD5','CD8','CE10'],used:['A','B','C'],cost:3,operation:'expand frontier'},{active:['B','D'],accepted:['A','B','C']}),
+    eventFrame(lesson,'pq.pop();','Extract AB4','AB4 權重 4 比 BD5 小，所以它會先被取出；但 B 已在 MST 中。',{pop:'AB4',heap:['BD5','CD8','CE10'],used:['A','B','C'],cost:3,operation:'extract stale candidate'},{active:['A','B'],accepted:['A','B','C']}),
+    eventFrame(lesson,'if(used[u]) continue','AB4 是 Stale Edge：Skip','候選終點 B 已 used，因此 continue；不改 used、不加 cost，也不展開 B。',{edge:'A-B(4)',decision:'stale → continue',used:['A','B','C'],cost:3,operation:'skip stale edge'},{active:['A','B'],accepted:['A','B','C']}),
+    eventFrame(lesson,'pq.pop();','Extract BD5','下一個最小候選是 BD5。',{pop:'BD5',heap:['CD8','CE10'],used:['A','B','C'],cost:3,operation:'extract minimum'},{active:['B','D'],accepted:['A','B','C']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 BD5：加入 D','D 尚未 used，接受 BD5；cost 3→8。',{edge:'B-D(5)',used:['A','B','C','D'],cost:8,operation:'accept crossing edge'},{active:['B','D'],accepted:['A','B','C','D']}),
+    eventFrame(lesson,'pq.push(e);','從 D Push DE2、DF6','DB、DC 指向 used；DE2 與 DF6 依序執行 pq.push(e)，其中 DE2 成為新的 heap minimum。',{from:'D',pushed:['DE2','DF6'],heap:['DE2','DF6','CD8','CE10'],used:['A','B','C','D'],cost:8,operation:'expand frontier'},{active:['D','E','F'],accepted:['A','B','C','D']}),
+    eventFrame(lesson,'pq.pop();','Extract DE2','DE2 是目前最小 crossing edge。',{pop:'DE2',heap:['DF6','CD8','CE10'],used:['A','B','C','D'],cost:8,operation:'extract minimum'},{active:['D','E'],accepted:['A','B','C','D']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 DE2：加入 E','E 尚未 used，接受 DE2；cost 8→10。',{edge:'D-E(2)',used:['A','B','C','D','E'],cost:10,operation:'accept crossing edge'},{active:['D','E'],accepted:['A','B','C','D','E']}),
+    eventFrame(lesson,'pq.push(e);','從 E Push EF3','EC、ED 已 used；只有 EF3 新增到 heap，且比既有 DF6 更小。',{from:'E',pushed:['EF3'],heap:['EF3','DF6','CD8','CE10'],used:['A','B','C','D','E'],cost:10,operation:'expand frontier'},{active:['E','F'],accepted:['A','B','C','D','E']}),
+    eventFrame(lesson,'pq.pop();','Extract EF3','EF3 是最後需要的最小 crossing edge。',{pop:'EF3',heap:['DF6','CD8','CE10'],used:['A','B','C','D','E'],cost:10,operation:'extract minimum'},{active:['E','F'],accepted:['A','B','C','D','E']}),
+    eventFrame(lesson,'used[u]=true; cost+=w','接受 EF3：MST 完成','F 加入後 6 個頂點全部 used；cost=13，已選邊 AC2、BC1、BD5、DE2、EF3 構成 MST。',{edge:'E-F(3)',used:['A','B','C','D','E','F'],cost:13,mst:['AC2','BC1','BD5','DE2','EF3'],operation:'finish MST'},{accepted:['A','B','C','D','E','F']}),
+  ]
 
   'boruvka':lesson=>[
     eventFrame(lesson,'while(dsu.components()>1)','初始 6 個 Components','每個頂點都是獨立 DSU component。',{components:['A','B','C','D','E','F'],cost:0,operation:'start round'}),
@@ -207,17 +269,23 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'functional-graph':lesson=>[
-    eventFrame(lesson,'for(int s=0','從 A 開始新的 Walk','next: A→B→C→B；本輪 id 用 s+1 標記尚未完成的路徑。',{start:'A',path:[],operation:'start component walk'},{active:['A']}),
-    eventFrame(lesson,'while(state[u]==0)','A→B→C 依序打本輪標記','state[A]=state[B]=state[C]=1，下一步從 C 到 B。',{path:['A','B','C'],state:'A=B=C=1',next:'C→B',operation:'follow successors'},{active:['A','B','C']}),
-    eventFrame(lesson,'if(state[u]==s+1)','再次到 B：找到 Cycle B→C→B','B 已帶本輪編號 1，因此從 B 開始的重訪段就是新 cycle。',{repeat:'B',cycle:['B','C'],operation:'record cycle'},{active:['B','C'],accepted:['B','C']}),
-    eventFrame(lesson,'while(state[u]==s+1)','清理 A、B、C 為完成狀態 -1','從 A 沿 successor 清理本輪標記，避免之後重做。',{cleared:['A','B','C'],operation:'finalize component'}),
-    eventFrame(lesson,'while(state[u]==0)','D 走到已完成 C，不產生新 Cycle','D→C，但 C 已是 -1；本輪只清理 D，不會再次記錄 B-C 環。',{start:'D',path:['D'],hits:'C completed',operation:'attach to old component'},{active:['D','C']}),
-    eventFrame(lesson,'if(state[u]==s+1)','E→F→F 找到第二個 Cycle {F}','F 在同一輪被重訪，自環 F→F 是第二個 cycle；記錄後把 E、F 清理為 -1。',{start:'E',path:['E','F'],cycle:['F'],operation:'record self cycle'},{active:['E','F'],accepted:['B','C','F']}),
-  ].map((frame,step)=>({...frame,
-    codeLines:step===2||step===5?[lineNumber(lesson,'if(state[u]==s+1)'),lineNumber(lesson,'cycle.push_back(v)'),lineNumber(lesson,'cycles.push_back(cycle)')]:frame.codeLines,
-    state:step===2||step===5?{...frame.state,highlightCodeLines:'all'}:frame.state,
-    executionView:functionalGraphView(step),
-  })),
+    eventFrame(lesson,'int u=s;','Start A：u=A','外層找到第一個 unseen 起點 A，將本輪游標 u 設為 A。',{start:'A',u:'A',path:[],operation:'start walk'},{active:['A']}),
+    eventFrame(lesson,'state[u]=s+1;','Mark A、B、C 為本輪 Path','while 內這一行會在 u=A、B、C 時各執行一次，因此 state[A]=state[B]=state[C]=1。',{path:['A','B','C'],state:'A=B=C=1',operation:'mark current walk'},{active:['A','B','C']}),
+    eventFrame(lesson,'u=next[u];','Follow Successor：C 回到 B','與上一行交替執行 A→B、B→C、C→B；最後 u=B，而 state[B] 已不是 0，離開 while。',{walk:['A→B','B→C','C→B'],u:'B',operation:'advance successor'},{active:['B','C']}),
+    eventFrame(lesson,'if(state[u]==s+1)','B 帶本輪編號：確認出現新 Cycle','state[B]=1 且 s+1=1，表示重訪的是本輪 path 上節點，而不是舊 component。',{repeat:'B',decision:'same walk → cycle',operation:'detect cycle'},{active:['B','C'],accepted:['B','C']}),
+    eventFrame(lesson,'cycle.push_back(v);','沿 B→C→B 收集 Cycle 節點','do-while 中這一行先 push B，再下一輪 push C；回到 B 時停止，所以 cycle=[B,C]。',{cycle:['B','C'],operation:'collect cycle vertices'},{active:['B','C'],accepted:['B','C']}),
+    eventFrame(lesson,'cycles.push_back(cycle);','保存 Cycle [B,C]','局部 cycle 收集完成後，真正把 [B,C] 加入答案 cycles。',{cycles:[['B','C']],operation:'save cycle'},{accepted:['B','C']}),
+    eventFrame(lesson,'state[u]=-1;','Cleanup A、B、C','u 重設為 A 後，cleanup while 依序把本輪的 A、B、C 設成 -1，表示已完成。',{cleared:['A','B','C'],operation:'mark walk done'},{accepted:['B','C']}),
+    eventFrame(lesson,'int u=s;','下一個 Unseen 起點是 D','外層會略過已完成的 B、C；到 s=D 時重新令 u=D。',{start:'D',u:'D',operation:'start second walk'},{active:['D']}),
+    eventFrame(lesson,'state[u]=s+1;','Mark D，再走向 C','D 被標成本輪編號 4；接著 successor 是已完成的 C，因此 walk 只含 D。',{path:['D'],stateD:4,operation:'mark entry path'},{active:['D','C']}),
+    eventFrame(lesson,'u=next[u];','D→C 命中已完成 Component','u 變成 C，而 state[C]=-1，所以 while 結束；因 -1≠4，也不會進入 cycle 分支。',{walk:['D→C'],u:'C',hit:'completed',operation:'join old component'},{active:['D','C'],accepted:['B','C']}),
+    eventFrame(lesson,'state[u]=-1;','Cleanup D','cleanup 從 D 開始，把 state[D] 由 4 改成 -1；下一步到 C 時停止。',{cleared:['D'],operation:'finish second walk'},{accepted:['B','C']}),
+    eventFrame(lesson,'int u=s;','下一個 Unseen 起點是 E','外層前進到 E，開始第三次 walk。',{start:'E',u:'E',operation:'start third walk'},{active:['E']}),
+    eventFrame(lesson,'state[u]=s+1;','Mark E、F 為本輪 Path','state[E]=state[F]=5；F 的 successor 仍是 F。',{path:['E','F'],state:'E=F=5',operation:'mark self-loop walk'},{active:['E','F'],accepted:['B','C']}),
+    eventFrame(lesson,'if(state[u]==s+1)','F 被本輪重訪：找到 Self-Cycle','沿 E→F→F 後 u=F，且 state[F]=5=s+1，因此確認新 cycle。',{repeat:'F',cycle:['F'],operation:'detect self cycle'},{active:['F'],accepted:['B','C','F']}),
+    eventFrame(lesson,'cycles.push_back(cycle);','收集並保存 Cycle [F]','do-while 的 cycle.push_back(v) 只執行一次就回到 F，接著將 [F] 加進 cycles。',{cycles:[['B','C'],['F']],operation:'save self cycle'},{active:['F'],accepted:['B','C','F']}),
+    eventFrame(lesson,'state[u]=-1;','Cleanup E、F，演算法完成','最後把 E、F 設成 -1；所有節點都完成，答案為 cycles=[[B,C],[F]]。',{cleared:['E','F'],cycles:[['B','C'],['F']],operation:'finish all walks'},{accepted:['A','B','C','D','E','F']}),
+  ].map((frame,step)=>({...frame,executionView:functionalGraphView(step)}))
 
   'dag-shortest-path':lesson=>[
     eventFrame(lesson,'topologicalSort','Topo Order = A,B,C,D,E','圖無環；處理一個節點前，它所有前驅都已完成。',{order:['A','B','C','D','E'],operation:'topological order'}),
