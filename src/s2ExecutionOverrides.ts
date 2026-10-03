@@ -55,6 +55,57 @@ const fractionalKnapsackView = (step:number):NonNullable<Frame['executionView']>
     badges:[`capacity = ${[50,50,50,40,20,20,0][step]}`,`answer = ${[0,0,0,60,160,160,240][step]}`],
   }
 }
+const histogramCode = [
+  'int largestRectangleArea(const vector<int>& height) {',
+  '  int n=height.size(), answer=0;',
+  '  stack<int> st;',
+  '  for(int i=0;i<=n;++i){',
+  '    int h=i==n?0:height[i];',
+  '    while(!st.empty() && height[st.top()]>h){',
+  '      int k=st.top(); st.pop();',
+  '      int left=st.empty()?0:st.top()+1;',
+  '      answer=max(answer,height[k]*(i-left));',
+  '    }',
+  '    st.push(i);',
+  '  }',
+  '  return answer;',
+  '}',
+]
+const histogramView = (step:number):NonNullable<Frame['executionView']> => {
+  const stack=[[],['0(2)'],[],[],['1(1)','2(5)','3(6)'],['1(1)','2(5)'],['1(1)'],[]][step]
+  const active=[[],[0],[0,1],[0],[1,2,3],[3],[2,3],[]][step]
+  const area=step===3?'area = 2 × 1 = 2':step===5?'area = 6 × 1 = 6':step===6?'area = 5 × 2 = 10':undefined
+  return {kind:'table',title:'HISTOGRAM · pop fixes the widest rectangle',
+    columns:['index','height','stack status'],
+    rows:[2,1,5,6,2,3].map((height,index)=>[String(index),String(height),stack.some((entry)=>entry.startsWith(`${index}(`))?'候選':'—']),
+    activeCells:active.map((index)=>`${index},1`),
+    badges:[`stack = [${stack.join(', ')}]`,`best = ${[0,0,0,2,2,6,10,10][step]}`,...(area?[area]:[])],
+  }
+}
+const slidingWindowMaximumCode = [
+  'vector<int> slidingWindowMaximum(const vector<int>& a,int k) {',
+  '  deque<int> dq;',
+  '  vector<int> answer;',
+  '  for(int i=0;i<(int)a.size();++i){',
+  '    while(!dq.empty() && dq.front()<=i-k) dq.pop_front();',
+  '    while(!dq.empty() && a[dq.back()]<=a[i]) dq.pop_back();',
+  '    dq.push_back(i);',
+  '    if(i>=k-1) answer.push_back(a[dq.front()]);',
+  '  }',
+  '  return answer;',
+  '}',
+]
+const windowMaximumView = (step:number):NonNullable<Frame['executionView']> => {
+  const deque=[[],[1],[1,2],[1,2,3],[2,3],[],[4],[7]][step]
+  const window=[undefined,undefined,'[0,2]','[1,3]','[2,4]','[2,4]','[2,4]','[5,7]'][step]
+  const output=['[]','[]','[3]','[3,3]','[3,3]','[3,3]','[3,3,5]','[3,3,5,5,6,7]'][step]
+  return {kind:'table',title:'WINDOW MAXIMUM · deque keeps undominated indices',
+    columns:['index','a[i]','in deque'],
+    rows:[1,3,-1,-3,5,3,6,7].map((value,index)=>[String(index),String(value),deque.includes(index)?'候選':'—']),
+    activeCells:(step===1?[0,1]:step===2?[0,1,2]:step===3?[1,2,3]:step===4?[1,2,3,4]:step===5?[2,3,4]:step===6?[4]:step===7?[7]:[]).map((index)=>`${index},1`),
+    badges:[`deque = [${deque.map((index)=>`${index}(${[1,3,-1,-3,5,3,6,7][index]})`).join(', ')}]`,...(window?[`window = ${window}`]:[]),`output = ${output}`],
+  }
+}
 
 const intervalSchedulingCode = [
   'int maxNonOverlapping(vector<pair<int,int>> intervals) {',
@@ -279,17 +330,18 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'height[st.top()]>h','i=4 Height 2：先 Pop 6','6>2，寬度 1，面積 6。',{i:4,pop:'3(6)',left:3,area:6,answer:6,operation:'settle height 6'},{values:[2,1,5,6,2,3],active:['3','4']}),
     eventFrame(lesson,'answer=max(answer,height[k]*(i-left))','再 Pop 5，面積 10','5>2；pop 後 top 是 index1，因此 left=2，寬度 i-left=2，area=10，成為目前最大。',{pop:'2(5)',left:2,right:3,area:10,answer:10,operation:'settle height 5'},{values:[2,1,5,6,2,3],active:['2','3']}),
     eventFrame(lesson,'int h=i==n?0','Sentinel 0 結算剩餘柱','i=n 時 h=0，會把 stack 裡所有正高度柱依序 pop，確保沒有漏算延伸到最右端的矩形。',{sentinel:0,finalAnswer:10,operation:'flush stack'},{values:[2,1,5,6,2,3],accepted:['2','3']}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:histogramView(step)})),
 
   'sliding-window-maximum': (lesson) => [
     eventFrame(lesson,'deque<int> dq','a=[1,3,-1,-3,5,3,6,7], k=3','Deque 保存索引遞增且值嚴格遞減的候選。',{input:['1','3','-1','-3','5','3','6','7'],k:3,deque:[],operation:'initialize deque'},{values:[1,3,-1,-3,5,3,6,7]}),
     eventFrame(lesson,'a[dq.back()]<=a[i]','i=1：3 支配 1','索引 0 被 pop_back；push 1 後 deque=[1(3)]。',{i:1,popped:['0(1)'],deque:['1(3)'],operation:'remove dominated back'},{values:[1,3,-1,-3,5,3,6,7],active:['0','1']}),
     eventFrame(lesson,'answer.push_back','i=2：第一個視窗最大值 3','push 2(-1) 後 deque=[1(3),2(-1)]，front 對應 3。',{window:'[0,2]',deque:['1(3)','2(-1)'],answer:3,operation:'emit window max'},{values:[1,3,-1,-3,5,3,6,7],low:0,high:2,accepted:['1']}),
+    eventFrame(lesson,'answer.push_back','i=3：第二個視窗最大值仍為 3','push 3(-3) 後 deque=[1(3),2(-1),3(-3)]；視窗 [1,3] 的 front 仍是 1(3)，因此輸出第二個 3。',{window:'[1,3]',deque:['1(3)','2(-1)','3(-3)'],answer:3,operation:'emit second window max'},{values:[1,3,-1,-3,5,3,6,7],low:1,high:3,accepted:['1']}),
     eventFrame(lesson,'dq.front()<=i-k','i=4：索引 1 過期','視窗變 [2,4]，1≤4-3，所以先 pop_front。',{i:4,expired:'1(3)',deque:['2(-1)','3(-3)'],operation:'expire front'},{values:[1,3,-1,-3,5,3,6,7],low:2,high:4}),
     eventFrame(lesson,'a[dq.back()]<=a[i]','新值 5 清掉 -3、-1','5 更大且更晚離開視窗，因此兩個舊候選都被支配。',{i:4,popped:['3(-3)','2(-1)'],deque:[],operation:'remove dominated candidates'},{values:[1,3,-1,-3,5,3,6,7],active:['2','3','4']}),
     eventFrame(lesson,'answer.push_back','Push 4(5)，視窗最大值 5','deque=[4(5)]。',{window:'[2,4]',deque:['4(5)'],answer:5,operation:'emit max 5'},{values:[1,3,-1,-3,5,3,6,7],low:2,high:4,accepted:['4']}),
-    eventFrame(lesson,'a[dq.back()]<=a[i]','後續 6、7 依序清掉較小候選','最後 deque=[7(7)]，所有視窗答案為 [3,3,5,5,6,7]。',{answers:['3','3','5','5','6','7'],deque:['7(7)'],operation:'finish all windows'},{values:[1,3,-1,-3,5,3,6,7],accepted:['7']}),
-  ],
+    eventFrame(lesson,'answer.push_back','後續 6、7 依序清掉較小候選','最後 deque=[7(7)]，所有視窗答案為 [3,3,5,5,6,7]。',{answers:['3','3','5','5','6','7'],deque:['7(7)'],operation:'finish all windows'},{values:[1,3,-1,-3,5,3,6,7],accepted:['7']}),
+  ].map((frame,step)=>({...frame,executionView:windowMaximumView(step)})),
 
   'expression-evaluation': (lesson) => [
     eventFrame(lesson,'for(Token t:tokens)','求值 3 + 4 * 2','tokens=[3,+,4,*,2]。values 與 ops 一開始都空。',{expression:'3 + 4 * 2',values:[],ops:[],operation:'initialize stacks'}),
@@ -306,6 +358,8 @@ const overrides: Record<string, TraceBuilder> = {
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
   if(lesson.id==='counting-sort') lesson={...lesson,code:countingSortCode}
   if(lesson.id==='fractional-knapsack') lesson={...lesson,code:fractionalKnapsackCode}
+  if(lesson.id==='largest-rectangle-histogram') lesson={...lesson,code:histogramCode}
+  if(lesson.id==='sliding-window-maximum') lesson={...lesson,code:slidingWindowMaximumCode}
   if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
   if(lesson.id==='job-scheduling') lesson={...lesson,description:'依截止時間保留最多件可完成的工作。',code:jobSchedulingCode}
   if(lesson.id==='interval-covering') lesson={...lesson,code:intervalCoveringCode}

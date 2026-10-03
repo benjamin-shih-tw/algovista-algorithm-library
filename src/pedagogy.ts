@@ -242,7 +242,7 @@ const buildEnvDeclarations = (code: string[]): string[] => {
   // s 很常是函式參數或區域變數，這裡僅在 dist[s] 這種索引情境且無宣告時才補。
   // range-for 的 `for (auto [u,v,w] : edges)` 不是對容器本身的宣告，先剝除再檢查。
   const declarationLines = joined.split('\n').map((line) => line.replace(/\/\/.*$/, ''))
-  const scalarOrContainerType = String.raw`(?:int|long\\s+long|auto|double|bool|char|string|vector\\s*<[^;]+?>|queue\\s*<[^;]+?>|deque\\s*<[^;]+?>|stack\\s*<[^;]+?>|priority_queue\\s*<[^;]+?>|set\\s*<[^;]+?>|multiset\\s*<[^;]+?>|map\\s*<[^;]+?>|unordered_map\\s*<[^;]+?>)`
+  const scalarOrContainerType = String.raw`(?:int|long\s+long|auto|double|bool|char|string|vector\s*<[^;]+?>|queue\s*<[^;]+?>|deque\s*<[^;]+?>|stack\s*<[^;]+?>|priority_queue\s*<[^;]+?>|set\s*<[^;]+?>|multiset\s*<[^;]+?>|map\s*<[^;]+?>|unordered_map\s*<[^;]+?>)`
   const declaredAny = (token: string) => declarationLines.some((line) => {
     const direct = new RegExp(`\\b${scalarOrContainerType}\\s*[&*]*\\s*${token}\\b`).test(line)
     if (direct) return true

@@ -226,10 +226,30 @@ if (fractionalRows.some((rows) => !rows || rows.length !== 3 || rows.some((row) 
     [3,4,6].some((step) => fractional.frames[step].state?.highlightCodeLines !== 'all' || !fractional.frames[step].codeLines.some((line) => fractional.code[line - 1]?.includes('capacity-=take;')))) {
   errors.push('fractional-knapsack: density, take/commit phases, or code highlights differ from the example')
 }
+const histogram = lesson('largest-rectangle-histogram')
+const histogramRows = histogram.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (histogramRows.some((rows) => !rows || rows.length !== 6 || rows.map((row) => row[1]).join(',') !== '2,1,5,6,2,3') ||
+    histogram.frames[5].executionView?.kind !== 'table' || !histogram.frames[5].executionView.badges?.includes('area = 6 × 1 = 6') ||
+    histogram.frames[6].executionView?.kind !== 'table' || !histogram.frames[6].executionView.badges?.includes('area = 5 × 2 = 10') ||
+    !histogram.code.some((line) => line.includes('int largestRectangleArea(')) ||
+    histogram.code.some((line) => line.includes('競賽環境'))) {
+  errors.push('largest-rectangle-histogram: six bar heights, pop areas, or complete code differ from the narrated example')
+}
+const windowMax = lesson('sliding-window-maximum')
+const windowRows = windowMax.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (windowRows.some((rows) => !rows || rows.length !== 8 || rows.map((row) => row[1]).join(',') !== '1,3,-1,-3,5,3,6,7') ||
+    windowMax.frames[2].executionView?.kind !== 'table' || !windowMax.frames[2].executionView.badges?.includes('output = [3]') ||
+    windowMax.frames[3].executionView?.kind !== 'table' || !windowMax.frames[3].executionView.badges?.includes('window = [1,3]') ||
+    windowMax.frames[6].executionView?.kind !== 'table' || !windowMax.frames[6].executionView.badges?.includes('output = [3,3,5]') ||
+    windowMax.frames[7].executionView?.kind !== 'table' || !windowMax.frames[7].executionView.badges?.includes('output = [3,3,5,5,6,7]') ||
+    !windowMax.code.some((line) => line.includes('vector<int> slidingWindowMaximum(')) ||
+    windowMax.code.some((line) => line.includes('競賽環境'))) {
+  errors.push('sliding-window-maximum: actual array, deque checkpoints, outputs, or complete code differ from the narrated example')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum OK')
 }
