@@ -59,12 +59,12 @@ const overrides:Record<string,TraceBuilder>={
 
   'z-algorithm':(lesson)=>[
     eventFrame(lesson,'for(int i=1;i<n;++i){','s = ababa','z[i] 是 suffix i 與整串 prefix 的 LCP 長度；初始 [l,r) 為空。',{s:'ababa',z:['0','?','?','?','?'],box:'empty',operation:'initialize Z'}),
-    eventFrame(lesson,'while (i+z[i]<n','i=1：b ≠ a，z[1]=0','無法延伸，Z-box 不變。',{i:1,compare:'b vs a',z:['0','0','?','?','?'],operation:'failed extension'}),
-    eventFrame(lesson,'while (i+z[i]<n','i=2：逐字匹配 aba','s[2..]=aba 與 prefix aba 相同三字，因此 z[2]=3。',{i:2,matches:['a=a','b=b','a=a'],z2:3,operation:'extend beyond box'}),
+    eventFrame(lesson,'while(i+z[i]<n,'i=1：b ≠ a，z[1]=0','無法延伸，Z-box 不變。',{i:1,compare:'b vs a',z:['0','0','?','?','?'],operation:'failed extension'}),
+    eventFrame(lesson,'while(i+z[i]<n,'i=2：逐字匹配 aba','s[2..]=aba 與 prefix aba 相同三字，因此 z[2]=3。',{i:2,matches:['a=a','b=b','a=a'],z2:3,operation:'extend beyond box'}),
     eventFrame(lesson,'l=i;','i=2：更新 Z-box 左端 l=2','z[2]=3 已延伸到舊右界之外，所以進入更新 branch；先令 l=i=2。',{i:2,l:2,r:0,z:['0','0','3','?','?'],operation:'update Z-box left'}),
     eventFrame(lesson,'r=i+z[i];','再更新右端 r=5','接著 r=i+z[i]=2+3=5，最右匹配區間正式成為 [2,5)。',{i:2,l:2,r:5,box:'[2,5)',z:['0','0','3','?','?'],operation:'update Z-box right'}),
-    eventFrame(lesson,'if (i<r) z[i]=min','i=3 在 Box 內，重用 z[1]','z[3]=min(r-i=2,z[1]=0)=0，不需重比 box 內已知部分。',{i:3,mirror:1,reused:0,z:['0','0','3','0','?'],operation:'reuse mirror'}),
-    eventFrame(lesson,'if (i<r) z[i]=min','i=4 重用 z[2] 但被邊界截斷','min(r-i=1,z[2]=3)=1，因此 z[4] 先得到 1；已到字串末端，不能再延伸。',{i:4,mirror:2,reused:'min(1,3)=1',z:['0','0','3','0','1'],operation:'reuse clipped value'}),
+    eventFrame(lesson,'if(i<r) z[i]=min,'i=3 在 Box 內，重用 z[1]','z[3]=min(r-i=2,z[1]=0)=0，不需重比 box 內已知部分。',{i:3,mirror:1,reused:0,z:['0','0','3','0','?'],operation:'reuse mirror'}),
+    eventFrame(lesson,'if(i<r) z[i]=min,'i=4 重用 z[2] 但被邊界截斷','min(r-i=1,z[2]=3)=1，因此 z[4] 先得到 1；已到字串末端，不能再延伸。',{i:4,mirror:2,reused:'min(1,3)=1',z:['0','0','3','0','1'],operation:'reuse clipped value'}),
   ],
 
   'trie':(lesson)=>[
