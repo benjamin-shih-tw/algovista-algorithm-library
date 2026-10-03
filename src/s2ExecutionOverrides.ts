@@ -1,5 +1,5 @@
 import type { AlgorithmLesson, Frame } from './algorithms'
-import { eventFrame } from './traceAuthoring'
+import { eventFrame, lineNumber } from './traceAuthoring'
 import { applyS2StringsMathOverride } from './s2ExecutionOverridesStringsMath'
 import { applyS2GraphTreeOverride } from './s2ExecutionOverridesGraphTree'
 import { applyS2DataDpOverride } from './s2ExecutionOverridesDataDp'
@@ -10,6 +10,51 @@ import { applyS2GeometryOverride } from './s2ExecutionOverridesGeometry'
 import { applyS2MiscOverride } from './s2ExecutionOverridesMisc'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
+
+const countingSortCode = [
+  'vector<int> countingSort(vector<int> a,int K) {',
+  '  vector<int> count(K+1,0);',
+  '  for(int x:a) ++count[x];',
+  '  int p=0;',
+  '  for(int value=0;value<=K;++value)',
+  '    for(int copies=0;copies<count[value];++copies) a[p++]=value;',
+  '  return a;',
+  '}',
+]
+const countingSortView = (step:number):NonNullable<Frame['executionView']> => {
+  const counts=step===0?[0,0,0,0,0,0]:step===1?[0,0,2,0,1,0]:[0,1,3,1,1,1]
+  const emitted=step<3?[0,0,0,0,0,0]:step===3?[0,1,0,0,0,0]:step===4?[0,1,3,0,0,0]:[0,1,3,1,1,1]
+  const output=['∅','∅','∅','1','1,2,2,2','1,2,2,2,3,4,5'][step]
+  const active=step===1?[2,4]:step===2?[1,2,3,4,5]:step===3?[1]:step===4?[2]:step===5?[3,4,5]:[]
+  return {kind:'table',title:'COUNTING SORT · count[v] and emitted copies',
+    columns:['value','count[v]','emitted'],rows:counts.map((count,value)=>[String(value),String(count),String(emitted[value])]),
+    activeCells:active.map((value)=>`${value},${step<3?1:2}`),
+    badges:[`input = 4,2,2,5,3,2,1`,`output = ${output}`],
+  }
+}
+const fractionalKnapsackCode = [
+  'struct FractionalItem { double weight,value; };',
+  'double fractionalKnapsack(vector<FractionalItem> items,double capacity) {',
+  '  sort(items.begin(),items.end(),[](auto a,auto b){return a.value*b.weight>b.value*a.weight;});',
+  '  double answer=0;',
+  '  for(auto item:items){',
+  '    double take=min(capacity,item.weight);',
+  '    answer+=take*item.value/item.weight;',
+  '    capacity-=take;',
+  '    if(capacity==0) break;',
+  '  }',
+  '  return answer;',
+  '}',
+]
+const fractionalKnapsackView = (step:number):NonNullable<Frame['executionView']> => {
+  const taken=[['0','0','0'],['0','0','0'],['預計 10','0','0'],['10','0','0'],['10','20','0'],['10','20','預計 20/30'],['10','20','20/30']][step]
+  return {kind:'table',title:'FRACTIONAL KNAPSACK · highest value per weight first',
+    columns:['weight','value','density','taken'],
+    rows:[[10,60,6],[20,100,5],[30,120,4]].map(([weight,value,density],index)=>[String(weight),String(value),String(density),taken[index]]),
+    activeCells:(step===2||step===3?['0,3']:step===4?['1,3']:step>=5?['2,3']:[]),
+    badges:[`capacity = ${[50,50,50,40,20,20,0][step]}`,`answer = ${[0,0,0,60,160,160,240][step]}`],
+  }
+}
 
 const intervalSchedulingCode = [
   'int maxNonOverlapping(vector<pair<int,int>> intervals) {',
@@ -154,13 +199,13 @@ const overrides: Record<string, TraceBuilder> = {
   ],
 
   'counting-sort': (lesson) => [
-    eventFrame(lesson,'vector<int> count','值域 0..5，建立 Count','輸入 a=[4,2,2,5,3,2,1]，count 一開始全 0。',{input:['4','2','2','5','3','2','1'],count:['0','0','0','0','0','0'],operation:'initialize buckets'},{values:[4,2,2,5,3,2,1]}),
+    eventFrame(lesson,'vector<int> count(K+1','值域 0..5，建立 Count','輸入 a=[4,2,2,5,3,2,1]，count 一開始全 0。',{input:['4','2','2','5','3','2','1'],count:['0','0','0','0','0','0'],operation:'initialize buckets'},{values:[4,2,2,5,3,2,1]}),
     eventFrame(lesson,'++count[x]','讀 4、2、2','依值直接累加桶：count[4]=1、count[2]=2。',{processed:['4','2','2'],count:['0','0','2','0','1','0'],operation:'count values'},{values:[4,2,2,5,3,2,1],active:['0','1','2']}),
     eventFrame(lesson,'++count[x]','完成頻率統計','最終 count=[0,1,3,1,1,1]。',{count:['0','1','3','1','1','1'],operation:'finish histogram'},{values:[4,2,2,5,3,2,1],accepted:['0','1','2','3','4','5','6']}),
-    eventFrame(lesson,'while(count[value]--)','輸出 Value=1','count[1]=1，因此先寫一個 1 到 a[0]。',{value:1,copies:1,output:['1'],operation:'emit bucket'},{values:[1,2,2,5,3,2,1],active:['0']}),
-    eventFrame(lesson,'while(count[value]--)','輸出三個 2','count[2]=3，依序寫到 a[1..3]。',{value:2,copies:3,output:['1','2','2','2'],operation:'emit bucket'},{values:[1,2,2,2,3,2,1],active:['1','2','3']}),
-    eventFrame(lesson,'while(count[value]--)','依序輸出 3、4、5','掃值域由小到大，所以輸出天然有序。',{remaining:['3','4','5'],result:['1','2','2','2','3','4','5'],operation:'finish emission'},{values:[1,2,2,2,3,4,5],accepted:['0','1','2','3','4','5','6']}),
-  ],
+    eventFrame(lesson,'a[p++]=value','輸出 Value=1','count[1]=1，因此先寫一個 1 到 a[0]。',{value:1,copies:1,output:['1'],operation:'emit bucket'},{values:[1,2,2,5,3,2,1],active:['0']}),
+    eventFrame(lesson,'a[p++]=value','輸出三個 2','count[2]=3，依序寫到 a[1..3]。',{value:2,copies:3,output:['1','2','2','2'],operation:'emit bucket'},{values:[1,2,2,2,3,2,1],active:['1','2','3']}),
+    eventFrame(lesson,'a[p++]=value','依序輸出 3、4、5','掃值域由小到大，所以輸出天然有序。',{remaining:['3','4','5'],result:['1','2','2','2','3','4','5'],operation:'finish emission'},{values:[1,2,2,2,3,4,5],accepted:['0','1','2','3','4','5','6']}),
+  ].map((frame,step)=>({...frame,executionView:countingSortView(step)})),
 
   'inversion-counting': (lesson) => [
     eventFrame(lesson,'int m=(l+r)/2','輸入 [2,4,1,3,5] Split','先遞迴排序左右半；逆序分成左內、右內、跨半三類。',{input:['2','4','1','3','5'],split:'[2,4] | [1,3,5]',operation:'divide'},{values:[2,4,1,3,5]}),
@@ -216,10 +261,14 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'double answer=0','答案從 0 開始','remaining capacity=50。',{answer:0,capacity:50,operation:'initialize'}),
     eventFrame(lesson,'double take=min','第一件全拿 10','take=min(50,10)=10。',{item:'w10 v60',take:10,capacity:50,operation:'choose amount'}),
     eventFrame(lesson,'answer+=take*item.value','得到 60，容量剩 40','answer=60。',{gain:60,answer:60,capacity:'50→40',operation:'take first item'}),
-    eventFrame(lesson,'double take=min','第二件全拿 20','take=20，增加 100，capacity=20。',{item:'w20 v100',take:20,gain:100,answer:160,capacity:20,operation:'take second item'}),
+    eventFrame(lesson,'answer+=take*item.value','第二件全拿 20','本輪 take=20，執行價值與容量更新後，answer=160、capacity=20。',{item:'w20 v100',take:20,gain:100,answer:160,capacity:20,operation:'take second item'}),
     eventFrame(lesson,'double take=min','第三件只能拿 20/30','容量只剩 20，因此取第三件的 2/3。',{item:'w30 v120',take:20,fraction:'2/3',operation:'take fraction'}),
     eventFrame(lesson,'answer+=take*item.value','部分價值 80，總答案 240','20×120/30=80，answer=240，capacity=0。',{gain:80,answer:240,capacity:0,operation:'finish knapsack'}),
-  ],
+  ].map((frame,step)=>({...frame,
+    codeLines:[...frame.codeLines,...([3,4,6].includes(step)?[lineNumber(lesson,'capacity-=take;')]:[])],
+    state:{...frame.state,...([3,4,6].includes(step)?{highlightCodeLines:'all'}:{})},
+    executionView:fractionalKnapsackView(step),
+  })),
 
   'largest-rectangle-histogram': (lesson) => [
     eventFrame(lesson,'stack<int> st','高度 [2,1,5,6,2,3]','Stack 保存高度非遞減的索引。',{heights:['2','1','5','6','2','3'],stack:[],answer:0,operation:'initialize monotone stack'},{values:[2,1,5,6,2,3]}),
@@ -255,6 +304,8 @@ const overrides: Record<string, TraceBuilder> = {
 }
 
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
+  if(lesson.id==='counting-sort') lesson={...lesson,code:countingSortCode}
+  if(lesson.id==='fractional-knapsack') lesson={...lesson,code:fractionalKnapsackCode}
   if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
   if(lesson.id==='job-scheduling') lesson={...lesson,description:'依截止時間保留最多件可完成的工作。',code:jobSchedulingCode}
   if(lesson.id==='interval-covering') lesson={...lesson,code:intervalCoveringCode}

@@ -3,6 +3,17 @@ import { eventFrame } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
+const middleView=(step:number):NonNullable<Frame['executionView']> => {
+  const sums=[[0,3,5,8],[0,6,7,13]]
+  const active=step===3?['0,3','1,3','2,3','3,3']:step===4?['0,1']:step===5?['1,1']:step>=6?['2,1','2,3']:[]
+  return {kind:'table',title:'MEET IN THE MIDDLE · 2² subset sums per half',
+    columns:['left mask','left sum','right mask','right sum'],
+    rows:[0,1,2,3].map((mask)=>[mask.toString(2).padStart(2,'0'),step>=1?String(sums[0][mask]):'—',mask.toString(2).padStart(2,'0'),step>=2?String(sums[1][mask]):'—']),
+    activeCells:active,
+    badges:['left=[3,5] · right=[6,7]','target=12',...(step===3?['right sums sorted']:step===4?['x=0 · need=12 · miss']:step===5?['x=3 · need=9 · miss']:step>=6?['x=5 · need=7 · match']:[])],
+  }
+}
+
 const codeOverrides:Record<string,string[]>={
   'meet-in-the-middle':[
     'bool hasSubsetSumTarget(const vector<long long>& a,long long target){',
@@ -94,7 +105,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'binary_search','x=3：Need 9，也不存在','Right Sums 中找不到 9，因此這個 left sum 無法組成 target，繼續檢查下一個候選。',{x:3,need:9,found:'false',operation:'probe complement'}),
     eventFrame(lesson,'binary_search','x=5：Need 7，命中','Left subset {5} + Right subset {7}=12。',{x:5,need:7,found:'true',subset:['5','7'],operation:'find matching halves'}),
     eventFrame(lesson,'return true','回傳 True','把 O(2^n) 枚舉拆成兩個 O(2^(n/2)) 集合。',{result:'true',complexity:'O(2^(n/2) log 2^(n/2))',operation:'finish MITM'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:middleView(step)})),
 
   'treap':lesson=>[
     eventFrame(lesson,'split(Node* t','Treap：key 2(p30), 5(p10), 8(p20)','BST key 順序是 2<5<8，min-priority heap 讓 5(p10) 當 Root，左 2、右 8。',{tree:['root 5(p10)','left 2(p30)','right 8(p20)'],key:6,operation:'initialize treap split'}),

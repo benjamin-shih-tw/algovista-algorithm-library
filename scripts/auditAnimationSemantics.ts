@@ -195,10 +195,41 @@ if (mergingRows.some((rows) => !rows || rows.length !== 5 || rows.some((row) => 
     !merging.code.some((line) => line.includes('return out;'))) {
   errors.push('interval-merging: union components or return code differ from the narrated trace')
 }
+const counting = lesson('counting-sort')
+const countRows = counting.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (countRows.some((rows) => !rows || rows.length !== 6 || rows.some((row) => row.length !== 3)) ||
+    countRows[0]?.[2].join(',') !== '2,0,0' || countRows[1]?.[2].join(',') !== '2,2,0' ||
+    countRows[2]?.[2].join(',') !== '2,3,0' || countRows[3]?.[1].join(',') !== '1,1,1' ||
+    countRows[4]?.[2].join(',') !== '2,3,3' || countRows[5]?.[5].join(',') !== '5,1,1' ||
+    !counting.frames[0].codeLine.includes('vector<int> count(K+1') ||
+    !counting.code.some((line) => line.includes('vector<int> countingSort(')) ||
+    !counting.code.some((line) => line.includes('return a;'))) {
+  errors.push('counting-sort: bucket counts, emitted values, or complete code do not match the six-step example')
+}
+const middle = lesson('meet-in-the-middle')
+const middleRows = middle.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (middleRows.some((rows) => !rows || rows.length !== 4 || rows.some((row) => row.length !== 4)) ||
+    middleRows[1]?.[3][1] !== '8' || middleRows[2]?.[3][3] !== '13' ||
+    middleRows[6]?.[2].join(',') !== '10,5,10,7' ||
+    !middle.frames[6].codeLine.includes('binary_search')) {
+  errors.push('meet-in-the-middle: four subset sums per half or binary-search match are not shown')
+}
+const fractional = lesson('fractional-knapsack')
+const fractionalRows = fractional.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (fractionalRows.some((rows) => !rows || rows.length !== 3 || rows.some((row) => row.length !== 4)) ||
+    fractionalRows[0]?.map((row) => row[2]).join(',') !== '6,5,4' ||
+    fractionalRows[2]?.[0][3] !== '預計 10' || fractionalRows[3]?.[0][3] !== '10' ||
+    fractionalRows[4]?.[1][3] !== '20' || fractionalRows[5]?.[2][3] !== '預計 20/30' ||
+    fractionalRows[6]?.[2][3] !== '20/30' ||
+    !fractional.code.some((line) => line.includes('double fractionalKnapsack(')) ||
+    !fractional.frames[4].codeLine.includes('answer+=take*item.value') ||
+    [3,4,6].some((step) => fractional.frames[step].state?.highlightCodeLines !== 'all' || !fractional.frames[step].codeLines.some((line) => fractional.code[line - 1]?.includes('capacity-=take;')))) {
+  errors.push('fractional-knapsack: density, take/commit phases, or code highlights differ from the example')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack OK')
 }
