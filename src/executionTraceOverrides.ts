@@ -557,7 +557,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'seen[u] = true;','D→E：進入 E 並標記','D 先呼叫 dfs(E)，進入後 seen[E]=true；E 沒有其他未訪鄰居，隨即 return。',{edge:'D-E',u:'E',seen:['A','B','C','D','E'],operation:'visit E'},{active:['D','E'],accepted:['A','B','C','D','E']}),
     eventFrame(lesson,'seen[u] = true;','D→F：進入 F 並標記','回到 D 後掃下一個鄰居 F，dfs(F) 執行 seen[F]=true。',{edge:'D-F',u:'F',seen:['A','B','C','D','E','F'],operation:'visit F'},{active:['D','F'],accepted:['A','B','C','D','E','F']}),
     eventFrame(lesson,'if (seen[u]) continue;','Outer Loop 結束：總共 2 個 Components','E、F 已 seen 會被 skip；最終分量是 {A,B,C} 與 {D,E,F}。',{components:2,component1:['A','B','C'],component2:['D','E','F'],operation:'finish components'},{accepted:['A','B','C','D','E','F']}),
-  ]
+  ],
 
   'bipartite-coloring': (lesson) => [
     eventFrame(lesson,'color[s] = 0;','Seed A：Color 0','新 component 的起點可任選一色；這一行只把 A 設成 0。',{colors:'A=0',queue:[],operation:'color source'},{active:['A']}),
@@ -577,7 +577,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'q.push(v);','Push F：Queue=[E,F]','F 已確定顏色後才入隊。',{queue:['E','F'],operation:'enqueue F'},{active:['E','F'],queue:['E','F']}),
     eventFrame(lesson,'else if (color[v] == color[u]) {','展開 E：檢查已染色 F','E=0、F=1，兩端不同色，因此 conflict condition 為 false；不 return false。',{edge:'E-F',colors:'E=0,F=1',conflict:'false',operation:'check colored edge'},{active:['E','F'],accepted:['A','B','C','D','E','F']}),
     eventFrame(lesson,'return true;','Queue 清空：合法二分圖','所有已染色邊都通過檢查，兩側為 {A,D,E} 與 {B,C,F}。',{partition0:['A','D','E'],partition1:['B','C','F'],result:'true',operation:'return bipartite'},{accepted:['A','B','C','D','E','F']}),
-  ]
+  ],
 
   'cycle-detection': (lesson) => [
     eventFrame(lesson,'color[u] = 1;','進入 A：White → Gray','執行 dfsCycle(A) 的第一個 mutation。Gray 表示 A 正在 recursion stack。',{u:'A',colors:'A=gray,B=white,C=white',stack:['A'],operation:'mark A gray'},{active:['A']}),
@@ -608,7 +608,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'parent[x] = root;','回到 C：Parent[C] 保持 A','find(A)=A 返回後，C 的 compression assignment 寫回 A，結構不變。',{x:'C',root:'A',parent:'C→A',operation:'compress C'},{active:['C','A']}),
     eventFrame(lesson,'parent[x] = root;','回到 D：Parent[D] C→A','這一步才看到真正的 path compression：D 跳過 C，直接指向 root A。',{x:'D',before:'D→C→A',after:'D→A',operation:'compress D'},{active:['D','A'],accepted:['A']}),
     eventFrame(lesson,'return find(a) == find(b);','Same(B,D) = True','find(B)=A、find(D)=A，因此兩點在同一集合。',{query:'same(B,D)',roots:['A','A'],result:'true',operation:'connectivity query'},{active:['B','D'],accepted:['A','B','C','D']}),
-  ]
+  ],
 
   'fenwick-tree': (lesson) => [
     eventFrame(lesson,'vector<long long> bit;','建立 n=8 的空 BIT','bit[1..8] 全是 0；索引採 1-based。',{n:8,bit:['0','0','0','0','0','0','0','0'],operation:'initialize BIT'},{values:[0,0,0,0,0,0,0,0]}),
@@ -624,7 +624,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'s += bit[i];','讀 bit[4]=5：Sum 0→5','bit[4] 代表 [1,4]；與前一步 [5,6] 無重疊，兩塊正好覆蓋 [1,6]。',{i:4,covered:'[1,4]',sum:'0→5',operation:'read bit4'},{values:[0,0,5,5,0,0,0,5],active:['3'],accepted:['2']}),
     eventFrame(lesson,'i -= i & -i;','Index 4→0：查詢結束','0 代表沒有更多 prefix block。',{i:'4→0',operation:'finish query path'},{values:[0,0,5,5,0,0,0,5]}),
     eventFrame(lesson,'return s;','Prefix(6)=5','唯一的 +5 更新確實包含在查詢 [1,6] 中。',{result:5,operation:'return prefix'},{values:[0,0,5,5,0,0,0,5],accepted:['2']}),
-  ]
+  ],
 
   'sparse-table': (lesson) => [
     eventFrame(lesson,'st[0] = a;','Level 0：複製所有長度 1 區間','st[0][i] 就是 a[i]；這一行真的把第一層資料寫進 Sparse Table。',{level:0,intervalLength:1,row:['2','5','1','4','9','3','7','6'],operation:'copy base level'},{values:[2,5,1,4,9,3,7,6]}),
@@ -697,7 +697,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'swap(a[p], a[r]);','把 Pivot 4 放到 p=2','交換 a[2]=5 與 a[4]=4，得到 [2,1,4,7,5]；pivot 的最終排名就是 2。',{p:2,swap:'4↔5',operation:'place pivot'},{values:[2,1,4,7,5],active:['2','4'],accepted:['0','1','2']}),
     eventFrame(lesson,'return p;','Partition 回傳 p=2','左側都 <4，右側都 ≥4，所以 4 已在整體排序的正確第 3 小位置。',{p:2,pivot:4,operation:'return partition index'},{values:[2,1,4,7,5],active:['2'],accepted:['2']}),
     eventFrame(lesson,'if (p == k) return a[p];','p==k：直接回傳 4','Quickselect 不需要排序左右兩側；只要 pivot index 命中 k 就完成。',{k:2,p:2,result:4,operation:'return kth value'},{values:[2,1,4,7,5],active:['2'],accepted:['2']}),
-  ]
+  ],
 
   'binary-heap': (lesson) => [
     eventFrame(lesson,'vector<int> heap','初始 Min-Heap','目前陣列 [2,5,3,9,8,7] 對應完全二元樹；每個父節點都不大於孩子。',{heap:['2','5','3','9','8','7'],minimum:2,operation:'initial heap'},{values:[2,5,3,9,8,7],accepted:['0']}),
@@ -762,7 +762,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'remove(L);','Remove 1：Current 29→24','Q1 左端是 2，所以移除 a[1]=5。',{index:1,current:'29→24',operation:'remove 1'},{values:[2,5,1,4,9,3,7,6],active:['1']}),
     eventFrame(lesson,'++L;','L：1→2','現在區間正好 [2,6]。',{L:'1→2',operation:'move L to 2'},{values:[2,5,1,4,9,3,7,6],low:2,high:6}),
     eventFrame(lesson,'answer[id] = current;','寫 Answer[Q1]=24','依原 query id 保存，最後輸出順序仍是 Q0=12、Q1=24、Q2=19。',{answers:['Q0=12','Q1=24','Q2=19'],operation:'store final answers'},{values:[2,5,1,4,9,3,7,6],accepted:['0','1','2','3','4','5','6']}),
-  ]
+  ],
 
   'persistent-segment-tree': (lesson) => [
     eventFrame(lesson,'int update(int prev','從 Version 0 更新 pos=4','假設 root0 已表示 [2,5,1,4,9,3,7,6]。建立 root1，只複製包含索引 4 的根到葉路徑。',{version:'root0',update:'pos4:9→10',path:['[0,7]','[4,7]','[4,5]','[4,4]'],operation:'start persistent update'},{values:[2,5,1,4,9,3,7,6],active:['4']}),
