@@ -466,6 +466,41 @@ if (
   errors.push('tree-dp: DFS call order, child returns, per-child merges, or final subtree sizes disagree')
 }
 
+
+const xorBasis = lesson('xor-linear-basis')
+if (
+  xorBasis.frames.length !== 13 ||
+  xorBasis.frames[1].state?.rank !== 1 ||
+  xorBasis.frames[3].state?.rank !== 2 ||
+  xorBasis.frames[7].state?.after !== '000' ||
+  xorBasis.frames[8].state?.result !== 'false' ||
+  xorBasis.frames.at(-1)?.state?.result !== 6 ||
+  !xorBasis.frames[1].codeLines.some((line)=>xorBasis.code[line-1]?.trim()==='basis[b]=x;') ||
+  !xorBasis.frames[5].codeLines.some((line)=>xorBasis.code[line-1]?.trim()==='x^=basis[b];') ||
+  !xorBasis.frames[10].codeLines.some((line)=>xorBasis.code[line-1]?.includes('ans^=basis[b]'))
+) {
+  errors.push('xor-linear-basis: pivot insertion, elimination, dependence detection, or max-XOR code sync disagrees')
+}
+
+const closestPair = lesson('closest-pair')
+const closestFinal = closestPair.frames.at(-1)?.executionView
+if (
+  closestPair.frames.length !== 19 ||
+  closestPair.frames[2].state?.best !== '√17' ||
+  closestPair.frames[4].state?.best !== '√5' ||
+  closestPair.frames[7].state?.removed !== 'A' ||
+  closestPair.frames[9].state?.removed !== 'B' ||
+  closestPair.frames[13].state?.removed !== 'C' ||
+  closestPair.frames[15].state?.removed !== 'D' ||
+  closestPair.frames.at(-1)?.state?.distance2 !== 5 ||
+  closestFinal?.kind !== 'geometry' ||
+  !closestPair.frames[7].codeLines.some((line)=>closestPair.code[line-1]?.includes('active.erase')) ||
+  !closestPair.frames[8].codeLines.some((line)=>closestPair.code[line-1]?.trim()==='++left;') ||
+  !closestPair.frames.at(-1)?.codeLines.some((line)=>closestPair.code[line-1]?.trim()==='return best;')
+) {
+  errors.push('closest-pair: active-set eviction order, left-pointer movement, best distance, or code ownership disagrees')
+}
+
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
