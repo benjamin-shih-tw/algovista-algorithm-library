@@ -13,6 +13,16 @@ const middleView=(step:number):NonNullable<Frame['executionView']> => {
     badges:['left=[3,5] · right=[6,7]','target=12',...(step===3?['right sums sorted']:step===4?['x=0 · need=12 · miss']:step===5?['x=3 · need=9 · miss']:step>=6?['x=5 · need=7 · match']:[])],
   }
 }
+const shuntingView=(step:number):NonNullable<Frame['executionView']> => {
+  const output=[[],['3'],['3'],['3','4'],['3','4'],['3','4','2'],['3','4','2','*','+'],['3','4','2','*','+']][step]
+  const ops=[[],[],['+'],['+'],['+','*'],['+','*'],[],[]][step]
+  return {kind:'table',title:'SHUNTING YARD · 3 + 4 * 2 → postfix',
+    columns:['token index','token','read'],
+    rows:['3','+','4','*','2'].map((token,index)=>[String(index),token,index<=Math.min(step-1,4)?'已讀':'待讀']),
+    activeCells:step>=1&&step<=5?[`${step-1},1`]:[],
+    badges:[`output = [${output.join(',')}]`,`ops = [${ops.join(',')}]`],
+  }
+}
 
 const codeOverrides:Record<string,string[]>={
   'meet-in-the-middle':[
@@ -60,14 +70,29 @@ const codeOverrides:Record<string,string[]>={
     '}',
   ],
   'shunting-yard':[
-    'for(Token t:tokens){',
-    '  if(t.isNumber()) output.push_back(t);',
-    '  else if(t.isOperator()){',
-    '    while(!ops.empty() && precedence(ops.back())>=precedence(t)) output.push_back(pop(ops));',
-    '    ops.push_back(t);',
+    'vector<string> toPostfix(const vector<string>& tokens) {',
+    '  vector<string> output;',
+    '  vector<string> ops;',
+    '  auto precedence=[](const string& t){return t=="+"||t=="-"?1:2;};',
+    '  for(const string& t:tokens){',
+    '    if(isdigit((unsigned char)t[0])) output.push_back(t);',
+    '    else if(t=="(") ops.push_back(t);',
+    '    else if(t==")"){',
+    '      while(ops.back()!="("){output.push_back(ops.back());ops.pop_back();}',
+    '      ops.pop_back();',
+    '    } else {',
+    '      while(!ops.empty() && ops.back()!="(" && precedence(ops.back())>=precedence(t)){',
+    '        output.push_back(ops.back()); ops.pop_back();',
+    '      }',
+    '      ops.push_back(t);',
+    '    }',
     '  }',
+    '  while(!ops.empty()) {',
+    '    output.push_back(ops.back());',
+    '    ops.pop_back();',
+    '  }',
+    '  return output;',
     '}',
-    'while(!ops.empty()) output.push_back(pop(ops));',
   ],
   'fft':[
     'void fft(vector<complex<double>>& a){',
@@ -118,15 +143,15 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'shunting-yard':lesson=>[
-    eventFrame(lesson,'for(Token t:tokens)','Expression = 3 + 4 * 2','Output=[]，Ops=[]。',{tokens:['3','+','4','*','2'],output:[],ops:[],operation:'initialize'}),
+    eventFrame(lesson,'vector<string> output','Expression = 3 + 4 * 2','Output=[]，Ops=[]。',{tokens:['3','+','4','*','2'],output:[],ops:[],operation:'initialize'}),
     eventFrame(lesson,'output.push_back(t)','讀 3：直接輸出','數字不需要等待運算子。',{token:'3',output:['3'],ops:[],operation:'emit operand'}),
-    eventFrame(lesson,'ops.push_back(t)','讀 +：Push Ops','Ops 空，所以 + 直接入 stack。',{token:'+',output:['3'],ops:['+'],operation:'push plus'}),
+    eventFrame(lesson,'      ops.push_back(t);','讀 +：Push Ops','Ops 空，所以 + 直接入 stack。',{token:'+',output:['3'],ops:['+'],operation:'push plus'}),
     eventFrame(lesson,'output.push_back(t)','讀 4：輸出','Output=[3,4]。',{token:'4',output:['3','4'],ops:['+'],operation:'emit operand'}),
     eventFrame(lesson,'precedence(ops.back())>=precedence(t)','讀 *：+ 的優先序較低','不 pop +，直接把 * push；Ops=[+,*]。',{conversionState:'postfix output=3 4 before *',token:'*',output:['3','4'],ops:['+','*'],operation:'respect precedence'}),
     eventFrame(lesson,'output.push_back(t)','讀 2：輸出','Output=[3,4,2]。',{token:'2',output:['3','4','2'],ops:['+','*'],operation:'emit operand'}),
-    eventFrame(lesson,'while(!ops.empty()) output.push_back','輸入結束：先 Pop * 再 Pop +','得到 postfix [3,4,2,*,+]。',{output:['3','4','2','*','+'],ops:[],operation:'flush operators'}),
-    eventFrame(lesson,'while(!ops.empty()) output.push_back','Postfix 完成','其結構等價於 3 + (4*2)，不再需要括號或 precedence。',{result:'3 4 2 * +',operation:'finish shunting yard'}),
-  ],
+    eventFrame(lesson,'while(!ops.empty())','輸入結束：先 Pop * 再 Pop +','得到 postfix [3,4,2,*,+]。',{output:['3','4','2','*','+'],ops:[],operation:'flush operators'}),
+    eventFrame(lesson,'return output','Postfix 完成','其結構等價於 3 + (4*2)，不再需要括號或 precedence。',{result:'3 4 2 * +',operation:'finish shunting yard'}),
+  ].map((frame,step)=>({...frame,executionView:shuntingView(step)})),
 
   'fft':lesson=>[
     eventFrame(lesson,'fft(vector','輸入係數 [1,2,3,4]','n=4，將偶數 index 與奇數 index 拆成兩個 n/2 子問題。',{input:['1','2','3','4'],n:4,operation:'initialize FFT'}),

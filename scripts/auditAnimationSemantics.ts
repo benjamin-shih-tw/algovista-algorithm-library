@@ -246,10 +246,26 @@ if (windowRows.some((rows) => !rows || rows.length !== 8 || rows.map((row) => ro
     windowMax.code.some((line) => line.includes('競賽環境'))) {
   errors.push('sliding-window-maximum: actual array, deque checkpoints, outputs, or complete code differ from the narrated example')
 }
+const evaluation = lesson('expression-evaluation')
+const evaluationRows = evaluation.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (evaluationRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
+    evaluation.frames[5].executionView?.kind !== 'table' || !evaluation.frames[5].executionView.badges?.includes('values = [3,4,2]') ||
+    evaluation.frames[7].executionView?.kind !== 'table' || !evaluation.frames[7].executionView.badges?.includes('values = [11]') ||
+    !evaluation.code.some((line) => line.includes('long long evaluateExpression(')) || evaluation.code.some((line) => line.includes('競賽環境'))) {
+  errors.push('expression-evaluation: tokens, value/operator stacks, result, or complete code differ from the example')
+}
+const shunting = lesson('shunting-yard')
+const shuntingRows = shunting.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
+    shunting.frames[5].executionView?.kind !== 'table' || !shunting.frames[5].executionView.badges?.includes('output = [3,4,2]') ||
+    shunting.frames[6].executionView?.kind !== 'table' || !shunting.frames[6].executionView.badges?.includes('output = [3,4,2,*,+]') ||
+    !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) || shunting.code.some((line) => line.includes('競賽環境'))) {
+  errors.push('shunting-yard: tokens, operator stack, postfix output, or complete code differ from the example')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard OK')
 }

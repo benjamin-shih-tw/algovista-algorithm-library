@@ -106,6 +106,40 @@ const windowMaximumView = (step:number):NonNullable<Frame['executionView']> => {
     badges:[`deque = [${deque.map((index)=>`${index}(${[1,3,-1,-3,5,3,6,7][index]})`).join(', ')}]`,...(window?[`window = ${window}`]:[]),`output = ${output}`],
   }
 }
+const expressionEvaluationCode = [
+  'long long evaluateExpression(const vector<string>& tokens) {',
+  '  vector<long long> values;',
+  '  vector<string> ops;',
+  '  auto precedence=[](const string& op){return op=="+"||op=="-"?1:2;};',
+  '  auto applyTop=[&](){',
+  '    string op=ops.back(); ops.pop_back();',
+  '    long long b=values.back(); values.pop_back();',
+  '    long long a=values.back(); values.pop_back();',
+  '    values.push_back(op=="+"?a+b:op=="-"?a-b:op=="*"?a*b:a/b);',
+  '  };',
+  '  for(const string& t:tokens){',
+  '    if(isdigit((unsigned char)t[0])) values.push_back(stoll(t));',
+  '    else if(t=="(") ops.push_back(t);',
+  '    else if(t==")"){ while(ops.back()!="(") applyTop(); ops.pop_back(); }',
+  '    else {',
+  '      while(!ops.empty() && ops.back()!="(" && precedence(ops.back())>=precedence(t)) applyTop();',
+  '      ops.push_back(t);',
+  '    }',
+  '  }',
+  '  while(!ops.empty()) applyTop();',
+  '  return values.back();',
+  '}',
+]
+const expressionEvaluationView = (step:number):NonNullable<Frame['executionView']> => {
+  const values=[[],['3'],['3'],['3','4'],['3','4'],['3','4','2'],['3','8'],['11']][step]
+  const ops=[[],[],['+'],['+'],['+','*'],['+','*'],['+'],[]][step]
+  return {kind:'table',title:'EXPRESSION EVALUATION · 3 + 4 * 2',
+    columns:['token index','token','read'],
+    rows:['3','+','4','*','2'].map((token,index)=>[String(index),token,index<=Math.min(step-1,4)?'已讀':'待讀']),
+    activeCells:step>=1&&step<=5?[`${step-1},1`]:[],
+    badges:[`values = [${values.join(',')}]`,`ops = [${ops.join(',')}]`,...(step===6?['4 * 2 = 8']:step===7?['3 + 8 = 11']:[])],
+  }
+}
 
 const intervalSchedulingCode = [
   'int maxNonOverlapping(vector<pair<int,int>> intervals) {',
@@ -344,15 +378,15 @@ const overrides: Record<string, TraceBuilder> = {
   ].map((frame,step)=>({...frame,executionView:windowMaximumView(step)})),
 
   'expression-evaluation': (lesson) => [
-    eventFrame(lesson,'for(Token t:tokens)','求值 3 + 4 * 2','tokens=[3,+,4,*,2]。values 與 ops 一開始都空。',{expression:'3 + 4 * 2',values:[],ops:[],operation:'initialize stacks'}),
-    eventFrame(lesson,'values.push(t.value)','讀 3：Push Values','values=[3]。',{token:'3',values:['3'],ops:[],operation:'push operand'}),
-    eventFrame(lesson,'shouldReduce(ops.top(),t)','讀 +：Ops 為空，不 Reduce','直接把 + 放到 ops。',{token:'+',values:['3'],ops:['+'],operation:'push operator'}),
-    eventFrame(lesson,'values.push(t.value)','讀 4','values=[3,4]。',{token:'4',values:['3','4'],ops:['+'],operation:'push operand'}),
-    eventFrame(lesson,'shouldReduce(ops.top(),t)','讀 *：優先序高於 +','stack top + 不應先於 * 結算，所以 push *；ops=[+,*]。',{token:'*',values:['3','4'],ops:['+','*'],operation:'respect precedence'}),
-    eventFrame(lesson,'values.push(t.value)','讀 2','values=[3,4,2]。',{token:'2',values:['3','4','2'],ops:['+','*'],operation:'push operand'}),
+    eventFrame(lesson,'vector<long long> values','求值 3 + 4 * 2','tokens=[3,+,4,*,2]。values 與 ops 一開始都空。',{expression:'3 + 4 * 2',values:[],ops:[],operation:'initialize stacks'}),
+    eventFrame(lesson,'values.push_back(stoll(t))','讀 3：Push Values','values=[3]。',{token:'3',values:['3'],ops:[],operation:'push operand'}),
+    eventFrame(lesson,'      ops.push_back(t);','讀 +：Ops 為空，不 Reduce','直接把 + 放到 ops。',{token:'+',values:['3'],ops:['+'],operation:'push operator'}),
+    eventFrame(lesson,'values.push_back(stoll(t))','讀 4','values=[3,4]。',{token:'4',values:['3','4'],ops:['+'],operation:'push operand'}),
+    eventFrame(lesson,'precedence(ops.back())>=precedence(t)','讀 *：優先序高於 +','stack top + 不應先於 * 結算，所以 push *；ops=[+,*]。',{token:'*',values:['3','4'],ops:['+','*'],operation:'respect precedence'}),
+    eventFrame(lesson,'values.push_back(stoll(t))','讀 2','values=[3,4,2]。',{token:'2',values:['3','4','2'],ops:['+','*'],operation:'push operand'}),
     eventFrame(lesson,'while(!ops.empty()) applyTop','輸入結束：先算 4*2','pop * 與 4、2，push 結果 8。values=[3,8]，ops=[+]。',{reduce:'4*2=8',values:['3','8'],ops:['+'],operation:'apply multiplication'}),
     eventFrame(lesson,'while(!ops.empty()) applyTop','再算 3+8','pop +，得到 values=[11]。',{reduce:'3+8=11',values:['11'],ops:[],result:11,operation:'apply addition'}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:expressionEvaluationView(step)})),
 }
 
 export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLesson => {
@@ -360,6 +394,7 @@ export const applyS2ExecutionOverride = (lesson: AlgorithmLesson): AlgorithmLess
   if(lesson.id==='fractional-knapsack') lesson={...lesson,code:fractionalKnapsackCode}
   if(lesson.id==='largest-rectangle-histogram') lesson={...lesson,code:histogramCode}
   if(lesson.id==='sliding-window-maximum') lesson={...lesson,code:slidingWindowMaximumCode}
+  if(lesson.id==='expression-evaluation') lesson={...lesson,code:expressionEvaluationCode}
   if(lesson.id==='interval-scheduling') lesson={...lesson,code:intervalSchedulingCode}
   if(lesson.id==='job-scheduling') lesson={...lesson,description:'依截止時間保留最多件可完成的工作。',code:jobSchedulingCode}
   if(lesson.id==='interval-covering') lesson={...lesson,code:intervalCoveringCode}
