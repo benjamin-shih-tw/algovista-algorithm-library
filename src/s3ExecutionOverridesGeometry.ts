@@ -173,7 +173,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'++left;','Left 移到 E 自己','left 由 3 變 4；eviction 結束，E 沒有任何 active 候選需要比較。',{left:'3→4',operation:'advance left to E'},{executionView:closestPairView(16)}),
     eventFrame(lesson,'active.insert({points[i].y,i});','插入最後的 E','active={E}，所有點都掃描完成。',{active:['E'],best:'√5',operation:'insert E'},{executionView:closestPairView(17)}),
     eventFrame(lesson,'return best;','回傳最近距離 √5','全程最小 pair 是 A(1,1)-C(3,2)，distance²=5。',{pair:'A-C',distance2:5,result:'√5',operation:'return closest distance'},{executionView:closestPairView(18)}),
-  ]
+  ],
 
   'half-plane-intersection':lesson=>[
     eventFrame(lesson,'sort(lines.begin()','四個 Half-planes：x≥0, x≤4, y≥0, y≤3','依 directed boundary angle 排序。交集應是 4×3 rectangle。',{halfplanes:['x≥0','x≤4','y≥0','y≤3'],operation:'angle sort'},{executionView:table('HALF-PLANE ANGLE ORDER',['boundary','kept side'],[['y=0 →','y≥0'],['x=4 ↑','x≤4'],['y=3 ←','y≤3'],['x=0 ↓','x≥0']],undefined,['CCW boundaries'])}),
