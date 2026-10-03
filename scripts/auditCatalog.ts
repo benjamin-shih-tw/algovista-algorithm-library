@@ -7,7 +7,7 @@ const traceSignatures = new Set<string>()
 const semanticTraces = new Map<string, string>()
 const categoryById = new Map(categories.map((category) => [category.id, category]))
 const allowedSourceHosts = new Set(['pingchungchang.github.io', 'app.notion.com', 'usaco.guide'])
-const allowedPracticeHosts = new Set(['cses.fi', 'atcoder.jp', 'codeforces.com'])
+const allowedPracticeHosts = new Set(['cses.fi', 'atcoder.jp', 'codeforces.com', 'leetcode.com'])
 const assignedVisualIds = Object.values(visualModelGroups).flat()
 const visualAssignmentCounts = new Map<string, number>()
 for (const id of assignedVisualIds) visualAssignmentCounts.set(id, (visualAssignmentCounts.get(id) ?? 0) + 1)
@@ -42,7 +42,7 @@ for (const lesson of lessons) {
   for (const problem of lesson.practice ?? []) {
     let host = ''
     try { host = new URL(problem.url).hostname } catch { errors.push(`${lesson.id}: invalid practice URL`) }
-    if (host && !allowedPracticeHosts.has(host)) errors.push(`${lesson.id}: practice problem is not from CSES, AtCoder, or Codeforces`)
+    if (host && !allowedPracticeHosts.has(host)) errors.push(`${lesson.id}: practice problem is not from an approved judge`)
     if (!problem.title || !problem.note) errors.push(`${lesson.id}: incomplete practice problem metadata`)
   }
   if (lesson.animationVersion === 2 && lesson.fidelity !== 'concrete') errors.push(`${lesson.id}: guided simulator is not concrete`)

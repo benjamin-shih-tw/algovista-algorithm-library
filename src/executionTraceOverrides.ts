@@ -1,7 +1,37 @@
 import type { AlgorithmLesson, Frame } from './algorithms'
-import { eventFrame } from './traceAuthoring'
+import { eventFrame, lineNumber } from './traceAuthoring'
 
 type TraceBuilder = (lesson: AlgorithmLesson) => Frame[]
+
+const monotonicStackView = (frame: Frame): NonNullable<Frame['executionView']> => {
+  const stack = Array.isArray(frame.state?.stack) ? frame.state.stack : []
+  return {kind:'table',title:'MONOTONIC STACK · bottom → top',
+    columns:['index','a[i]','in stack'],
+    rows:(frame.values??[]).map((value,index)=>[String(index),String(value),stack.includes(String(value))?'候選':'—']),
+    activeCells:frame.active?.map((index)=>`${index},1`),
+    badges:[`stack = [${stack.join(',')}]`,...(frame.state?.incoming!==undefined?[`incoming = ${frame.state.incoming}`]:[]),...(frame.state?.removed!==undefined?[`removed = ${frame.state.removed}`]:[])],
+  }
+}
+const nextGreaterView = (frame: Frame, step: number): NonNullable<Frame['executionView']> => {
+  const answers=[['-1','-1','-1','-1','-1'],['-1','-1','-1','-1','-1'],['-1','5','-1','-1','-1'],['-1','5','-1','-1','-1'],['5','5','-1','-1','-1'],['5','5','-1','-1','-1'],['5','5','-1','-1','-1'],['5','5','-1','4','-1'],['5','5','-1','4','-1']][step]
+  const stack=Array.isArray(frame.state?.stack)?frame.state.stack:[]
+  return {kind:'table',title:'NEXT GREATER · first larger value to the right',
+    columns:['index','a[i]','NGE[i]'],
+    rows:(frame.values??[]).map((value,index)=>[String(index),String(value),answers[index]]),
+    activeCells:frame.active?.map((index)=>`${index},1`),
+    badges:['-1 = 尚未找到',`pending stack = [${stack.join(',')}]`,...(frame.state?.resolved?[String(frame.state.resolved)]:[])],
+  }
+}
+const monotonicQueueView = (frame: Frame, step: number): NonNullable<Frame['executionView']> => {
+  const deque=Array.isArray(frame.state?.deque)?frame.state.deque:Array.isArray(frame.state?.finalDeque)?frame.state.finalDeque:[]
+  const output=['[]','[]','[]','[]','[3]','[3]','[3,3]','[3,3]','[3,3]','[3,3,5]','[3,3,5,5]','[3,3,5,5]','[3,3,5,5,6]','[3,3,5,5,6]','[3,3,5,5,6,7]'][step]
+  return {kind:'table',title:'MONOTONIC DEQUE · front is window maximum',
+    columns:['index','a[i]','in deque'],
+    rows:(frame.values??[]).map((value,index)=>[String(index),String(value),deque.some((entry)=>entry.startsWith(`${index}(`))?'候選':'—']),
+    activeCells:frame.active?.map((index)=>`${index},1`),
+    badges:['k = 3',`deque = [${deque.join(',')}]`,...(frame.state?.window?[`window = ${frame.state.window}`]:[]),`output = ${output}`],
+  }
+}
 
 const floydMatrix = (aToC: string, aToD: string, bToD: string, activeCells: string[] = []): NonNullable<Frame['executionView']> => ({
   kind: 'matrix', title: 'FLOYD–WARSHALL · dist[i][j]',
@@ -56,6 +86,46 @@ const tspView = (step: number): NonNullable<Frame['executionView']> => {
 }
 
 const codeOverrides: Record<string, string[]> = {
+  'monotonic-stack': [
+    'stack<int> decreasingCandidates(const vector<int>& a) {',
+    '  stack<int> st;',
+    '  for (int x : a) {',
+    '    while (!st.empty() && st.top() <= x) st.pop();',
+    '    st.push(x);',
+    '  }',
+    '  return st;',
+    '}',
+  ],
+  'next-greater-element': [
+    'vector<int> nextGreaterToRight(const vector<int>& a) {',
+    '  int n=(int)a.size();',
+    '  vector<int> answer(n,-1);',
+    '  stack<int> st;',
+    '  for(int i=0;i<n;++i){',
+    '    while(!st.empty() && a[st.top()]<a[i]){',
+    '      answer[st.top()]=a[i];',
+    '      st.pop();',
+    '    }',
+    '    st.push(i);',
+    '  }',
+    '  return answer;',
+    '}',
+  ],
+  'monotonic-queue': [
+    'vector<int> monotonicWindowMaximum(const vector<int>& a,int k) {',
+    '  int n=(int)a.size();',
+    '  if(k<=0 || k>n) return {};',
+    '  deque<int> dq;',
+    '  vector<int> answer;',
+    '  for (int i=0;i<n;++i) {',
+    '    while (!dq.empty() && dq.front() <= i-k) dq.pop_front();',
+    '    while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();',
+    '    dq.push_back(i);',
+    '    if (i >= k-1) answer.push_back(a[dq.front()]);',
+    '  }',
+    '  return answer;',
+    '}',
+  ],
   'bitmask-dp': [
     'long long minMaskCost(int n, const vector<vector<long long>>& costByMask) {',
     '  const long long INF = numeric_limits<long long>::max() / 4;',
@@ -162,6 +232,9 @@ const codeOverrides: Record<string, string[]> = {
 }
 
 const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
+  'monotonic-stack': {
+    description: '以遞減 Stack 示範候選的 push/pop；這堂只維護候選，不計算題目答案。',
+  },
   'zero-one-bfs': {
     edges: [
       {from:'A',to:'B',weight:1},{from:'A',to:'C',weight:0},
@@ -295,7 +368,7 @@ const overrides: Record<string, TraceBuilder> = {
   ],
 
   'monotonic-stack': (lesson) => [
-    eventFrame(lesson,'for (int x : a)','讀入 2','Stack 為空，2 直接成為第一個候選。',{incoming:2,stack:['2'],operation:'push 2'},{values:[2,1,5,3,4,7],active:['0']}),
+    eventFrame(lesson,'st.push(x)','讀入 2','Stack 為空，2 直接成為第一個候選。',{incoming:2,stack:['2'],operation:'push 2'},{values:[2,1,5,3,4,7],active:['0']}),
     eventFrame(lesson,'st.push(x)','讀入 1：保持遞減','1<2，不需要 pop；push 後 Stack=[2,1]。',{incoming:1,stack:['2','1'],operation:'push 1'},{values:[2,1,5,3,4,7],active:['0','1']}),
     eventFrame(lesson,'st.pop()','讀入 5：先 Pop 1','1≤5，1 被更晚且更大的 5 支配，永遠不會再成為更好的候選。',{incoming:5,stack:['2'],removed:1,operation:'pop dominated'},{values:[2,1,5,3,4,7],active:['1','2'],muted:['1']}),
     eventFrame(lesson,'st.pop()','5 繼續 Pop 2','2≤5，同理移除 2。每個元素最多只會被 pop 一次。',{incoming:5,stack:[],removed:2,operation:'pop dominated'},{values:[2,1,5,3,4,7],active:['0','2'],muted:['0','1']}),
@@ -304,20 +377,20 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'st.pop()','讀入 4：Pop 3','3≤4，3 被 4 支配，因此移除 3。',{incoming:4,stack:['5'],removed:3,operation:'pop dominated'},{values:[2,1,5,3,4,7],active:['3','4'],muted:['3']}),
     eventFrame(lesson,'st.push(x)','Push 4','5>4，停止 pop 並 push 4，恢復嚴格遞減 Stack=[5,4]。',{incoming:4,stack:['5','4'],operation:'push 4'},{values:[2,1,5,3,4,7],active:['2','4']}),
     eventFrame(lesson,'st.pop()','讀入 7：清掉 4 與 5','7 比目前所有候選都大，因此依序 pop 4、5。',{incoming:7,stack:[],removed:'4,5',operation:'pop dominated values'},{values:[2,1,5,3,4,7],active:['2','4','5'],muted:['2','4']}),
-    eventFrame(lesson,'st.push(x)','Push 7，掃描完成','最後 Stack=[7]。總操作數是 O(n)，因為每個元素最多 push/pop 各一次。',{incoming:7,stack:['7'],operation:'push 7',result:'O(n)'},{values:[2,1,5,3,4,7],active:['5'],accepted:['5']}),
-  ],
+    eventFrame(lesson,'st.push(x)','Push 7，掃描完成','最後 Stack=[7]；這是候選維護示範，不是題目答案。每個元素最多 push/pop 各一次，總成本 O(n)。',{incoming:7,stack:['7'],operation:'push 7',result:'O(n)'},{values:[2,1,5,3,4,7],active:['5'],accepted:['5']}),
+  ].map((frame)=>({...frame,executionView:monotonicStackView(frame)})),
 
   'next-greater-element': (lesson) => [
-    eventFrame(lesson,'st.push(i)','i=0，2 尚未有答案','把索引 0 放入 Stack，等待右側第一個更大的值。',{i:0,value:2,stack:['0(2)'],answers:['?','?','?','?','?'],operation:'push index'},{values:[2,1,5,3,4],active:['0']}),
-    eventFrame(lesson,'st.push(i)','i=1，1 也等待答案','1<2，不會解決索引 0；索引 1 也入 Stack。',{i:1,value:1,stack:['0(2)','1(1)'],answers:['?','?','?','?','?'],operation:'push index'},{values:[2,1,5,3,4],active:['0','1']}),
+    eventFrame(lesson,'st.push(i)','i=0，2 尚未有答案','把索引 0 放入 Stack，等待右側第一個更大的值。',{i:0,value:2,stack:['0(2)'],answers:['-1','-1','-1','-1','-1'],operation:'push index'},{values:[2,1,5,3,4],active:['0']}),
+    eventFrame(lesson,'st.push(i)','i=1，1 也等待答案','1<2，不會解決索引 0；索引 1 也入 Stack。',{i:1,value:1,stack:['0(2)','1(1)'],answers:['-1','-1','-1','-1','-1'],operation:'push index'},{values:[2,1,5,3,4],active:['0','1']}),
     eventFrame(lesson,'answer[st.top()]','i=2，5 解決索引 1','5>1，所以 NGE[1]=5；先寫答案再 pop 索引 1。',{i:2,value:5,resolved:'NGE[1]=5',stack:['0(2)','1(1)'],operation:'resolve top'},{values:[2,1,5,3,4],active:['1','2'],accepted:['1']}),
     eventFrame(lesson,'st.pop()','Pop 索引 1','索引 1 已經得到第一個右側更大值，不再需要留在 Stack。',{i:2,stack:['0(2)'],removed:'1(1)',operation:'pop resolved index'},{values:[2,1,5,3,4],active:['0','2']}),
     eventFrame(lesson,'answer[st.top()]','5 繼續解決索引 0','5>2，而且 1 並沒有比 2 大，所以 5 也是 2 的第一個右側更大值。',{i:2,value:5,resolved:'NGE[0]=5',stack:['0(2)'],operation:'resolve top'},{values:[2,1,5,3,4],active:['0','2'],accepted:['0','1']}),
-    eventFrame(lesson,'st.push(i)','把索引 2 放入 Stack','前面較小元素都已解決，現在 5 自己等待右側更大值。',{i:2,value:5,stack:['2(5)'],answers:['5','5','?','?','?'],operation:'push index'},{values:[2,1,5,3,4],active:['2']}),
+    eventFrame(lesson,'st.push(i)','把索引 2 放入 Stack','前面較小元素都已解決，現在 5 自己等待右側更大值。',{i:2,value:5,stack:['2(5)'],answers:['5','5','-1','-1','-1'],operation:'push index'},{values:[2,1,5,3,4],active:['2']}),
     eventFrame(lesson,'st.push(i)','i=3，3 入 Stack','3<5，不能解決 5，因此索引 3 入 Stack。',{i:3,value:3,stack:['2(5)','3(3)'],operation:'push index'},{values:[2,1,5,3,4],active:['2','3']}),
     eventFrame(lesson,'answer[st.top()]','i=4，4 解決索引 3','4>3，因此 NGE[3]=4。',{i:4,value:4,resolved:'NGE[3]=4',stack:['2(5)','3(3)'],operation:'resolve top'},{values:[2,1,5,3,4],active:['3','4'],accepted:['3']}),
     eventFrame(lesson,'st.push(i)','掃描結束','索引 2(5) 與 4(4) 右側沒有更大值，因此答案維持 -1。',{stack:['2(5)','4(4)'],answers:['5','5','-1','4','-1'],operation:'finish unresolved'},{values:[2,1,5,3,4],accepted:['0','1','2','3','4']}),
-  ],
+  ].map((frame,step)=>({...frame,executionView:nextGreaterView(frame,step)})),
 
   'dfs': (lesson) => [
     eventFrame(lesson,'visited[u] = true','進入 A：立即標記','DFS 一進入節點就標記 visited，避免沿環回到 A。',{current:'A',callStack:['A'],visited:['A'],operation:'mark A'},{active:['A'],accepted:['A']}),
@@ -500,11 +573,20 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'dq.push_back(i)','i=2，-1 直接進尾端','-1<3，不需 pop；Deque=[1(3),2(-1)]。',{i:2,deque:['1(3)','2(-1)'],operation:'push -1'},{values:[1,3,-1,-3,5,3,6,7],active:['1','2']}),
     eventFrame(lesson,'answer.push_back','第一個視窗 [0,2] 最大值是 3','i=2 已形成長度 k=3 的視窗，front=1 對應值 3。',{window:'[0,2]',deque:['1(3)','2(-1)'],maximum:3,operation:'emit max'},{values:[1,3,-1,-3,5,3,6,7],low:0,high:2,accepted:['1']}),
     eventFrame(lesson,'dq.push_back(i)','i=3，Push -3','索引 1 仍在視窗 [1,3]，而 -3 不會支配 -1。',{i:3,deque:['1(3)','2(-1)','3(-3)'],operation:'push -3'},{values:[1,3,-1,-3,5,3,6,7],low:1,high:3}),
+    eventFrame(lesson,'answer.push_back','第二個視窗 [1,3] 最大值仍是 3','front=1(3) 仍在視窗內，所以輸出第二個 3；接著 i=4 才會移除過期索引 1。',{window:'[1,3]',deque:['1(3)','2(-1)','3(-3)'],maximum:3,operation:'emit second max'},{values:[1,3,-1,-3,5,3,6,7],low:1,high:3,accepted:['1']}),
     eventFrame(lesson,'dq.front() <= i-k','i=4：索引 1 過期','新視窗是 [2,4]，front=1≤i-k=1，所以先 pop_front。',{i:4,expired:'1(3)',deque:['2(-1)','3(-3)'],operation:'remove expired'},{values:[1,3,-1,-3,5,3,6,7],low:2,high:4,muted:['1']}),
     eventFrame(lesson,'a[dq.back()] <= a[i]','新值 5 清掉尾端候選','5 依序支配 -3 與 -1；Deque 被清空。',{i:4,incoming:5,popped:['3(-3)','2(-1)'],deque:[],operation:'remove dominated'},{values:[1,3,-1,-3,5,3,6,7],active:['2','3','4'],muted:['2','3']}),
     eventFrame(lesson,'dq.push_back(i)','Push 4(5)，輸出 5','5 成為 front，因此視窗 [2,4] 最大值是 5。',{i:4,deque:['4(5)'],maximum:5,operation:'push and emit'},{values:[1,3,-1,-3,5,3,6,7],low:2,high:4,accepted:['4']}),
-    eventFrame(lesson,'a[dq.back()] <= a[i]','後續 6、7 持續支配舊候選','i=6 的 6 清掉 3、5；i=7 的 7 再清掉 6。每個索引最多進出一次。',{finalDeque:['7(7)'],answers:['3','3','5','5','6','7'],operation:'finish windows'},{values:[1,3,-1,-3,5,3,6,7],active:['7'],accepted:['7']}),
-  ],
+    eventFrame(lesson,'dq.push_back(i)','i=5：Push 3，輸出 5','3<5，兩個候選保留為 [4(5),5(3)]；視窗 [3,5] 的最大值仍是 5。',{i:5,deque:['4(5)','5(3)'],maximum:5,operation:'push and emit'},{values:[1,3,-1,-3,5,3,6,7],low:3,high:5,accepted:['4']}),
+    eventFrame(lesson,'a[dq.back()] <= a[i]','i=6：6 淘汰 3、5','新值 6 比尾端 3 與 5 都大，依序 pop_back，Deque 暫時為空。',{i:6,incoming:6,popped:['5(3)','4(5)'],deque:[],operation:'remove dominated'},{values:[1,3,-1,-3,5,3,6,7],active:['4','5','6'],muted:['4','5']}),
+    eventFrame(lesson,'answer.push_back','Push 6，輸出 6','把索引 6 加入 Deque；視窗 [4,6] 的最大值是 6。',{i:6,deque:['6(6)'],maximum:6,operation:'push and emit'},{values:[1,3,-1,-3,5,3,6,7],low:4,high:6,accepted:['6']}),
+    eventFrame(lesson,'a[dq.back()] <= a[i]','i=7：7 淘汰 6','7>6，索引 6 被較大且較晚過期的 7 支配。',{i:7,incoming:7,popped:['6(6)'],deque:[],operation:'remove dominated'},{values:[1,3,-1,-3,5,3,6,7],active:['6','7'],muted:['6']}),
+    eventFrame(lesson,'answer.push_back','Push 7，輸出 7','最後視窗 [5,7] 的最大值是 7；完整答案為 [3,3,5,5,6,7]。',{i:7,deque:['7(7)'],answers:['3','3','5','5','6','7'],operation:'finish windows'},{values:[1,3,-1,-3,5,3,6,7],low:5,high:7,active:['7'],accepted:['7']}),
+  ].map((frame,step)=>({...frame,
+    codeLines:[...frame.codeLines,...([9,10,12,14].includes(step)?[lineNumber(lesson,'dq.push_back(i)'),lineNumber(lesson,'answer.push_back')]:[])],
+    state:{...frame.state,...([9,10,12,14].includes(step)?{highlightCodeLines:'all'}:{})},
+    executionView:monotonicQueueView(frame,step),
+  })),
 
   'sqrt-decomposition': (lesson) => [
     eventFrame(lesson,'int blockSize = sqrt(n) + 1','n=8，Block Size=3','陣列切成 [0,2]、[3,5]、[6,7] 三塊。',{n:8,blockSize:3,blocks:['[0,2]','[3,5]','[6,7]'],operation:'choose block size'},{values:[2,5,1,4,9,3,7,6]}),

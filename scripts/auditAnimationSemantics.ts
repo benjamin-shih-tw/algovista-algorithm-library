@@ -262,10 +262,46 @@ if (shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !==
     !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) || shunting.code.some((line) => line.includes('競賽環境'))) {
   errors.push('shunting-yard: tokens, operator stack, postfix output, or complete code differ from the example')
 }
+const monotonicStack = lesson('monotonic-stack')
+const monotonicStackRows = monotonicStack.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (monotonicStackRows.some((rows) => !rows || rows.length !== 6 || rows.map((row) => row[1]).join(',') !== '2,1,5,3,4,7') ||
+    monotonicStack.frames[3].executionView?.kind !== 'table' || !monotonicStack.frames[3].executionView.badges?.includes('stack = []') ||
+    monotonicStack.frames[4].executionView?.kind !== 'table' || !monotonicStack.frames[4].executionView.badges?.includes('stack = [5]') ||
+    monotonicStack.frames[9].executionView?.kind !== 'table' || !monotonicStack.frames[9].executionView.badges?.includes('stack = [7]') ||
+    !monotonicStack.code.some((line) => line.includes('stack<int> decreasingCandidates(')) || monotonicStack.code.some((line) => line.includes('競賽環境')) ||
+    !monotonicStack.description.includes('不計算題目答案') || !monotonicStack.frames[9].explanation.includes('不是題目答案') ||
+    monotonicStack.practice?.[0]?.url !== 'https://leetcode.com/problems/next-greater-element-i/') {
+  errors.push('monotonic-stack: displayed input or pop/push stack snapshots differ from the six-value example')
+}
+const nextGreater = lesson('next-greater-element')
+const nextGreaterRows = nextGreater.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (nextGreaterRows.some((rows) => !rows || rows.length !== 5 || rows.map((row) => row[1]).join(',') !== '2,1,5,3,4') ||
+    nextGreaterRows[0]?.map((row) => row[2]).join(',') !== '-1,-1,-1,-1,-1' ||
+    nextGreaterRows[2]?.[1][2] !== '5' || nextGreaterRows[4]?.[0][2] !== '5' ||
+    nextGreaterRows[7]?.[3][2] !== '4' || nextGreaterRows[8]?.map((row) => row[2]).join(',') !== '5,5,-1,4,-1' ||
+    !nextGreater.code.some((line) => line.includes('vector<int> answer(n,-1)')) || nextGreater.code.some((line) => line.includes('競賽環境')) ||
+    nextGreater.practice?.[0]?.url !== 'https://leetcode.com/problems/next-greater-element-i/') {
+  errors.push('next-greater-element: input, resolved answers, or final NGE array differ from the narrated trace')
+}
+const monotonicQueue = lesson('monotonic-queue')
+const monotonicQueueRows = monotonicQueue.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+if (monotonicQueueRows.some((rows) => !rows || rows.length !== 8 || rows.map((row) => row[1]).join(',') !== '1,3,-1,-3,5,3,6,7') ||
+    monotonicQueue.frames.length !== 15 ||
+    monotonicQueue.frames[6].executionView?.kind !== 'table' || !monotonicQueue.frames[6].executionView.badges?.includes('output = [3,3]') ||
+    monotonicQueue.frames[9].executionView?.kind !== 'table' || !monotonicQueue.frames[9].executionView.badges?.includes('output = [3,3,5]') ||
+    monotonicQueue.frames[10].executionView?.kind !== 'table' || !monotonicQueue.frames[10].executionView.badges?.includes('output = [3,3,5,5]') ||
+    monotonicQueue.frames[12].executionView?.kind !== 'table' || !monotonicQueue.frames[12].executionView.badges?.includes('output = [3,3,5,5,6]') ||
+    monotonicQueue.frames[14].executionView?.kind !== 'table' || !monotonicQueue.frames[14].executionView.badges?.includes('output = [3,3,5,5,6,7]') ||
+    [9,10,12,14].some((step) => monotonicQueue.frames[step].state?.highlightCodeLines !== 'all' || !monotonicQueue.frames[step].codeLines.some((line) => monotonicQueue.code[line - 1]?.includes('answer.push_back'))) ||
+    !monotonicQueue.code.some((line) => line.includes('vector<int> monotonicWindowMaximum(')) || monotonicQueue.code.some((line) => line.includes('競賽環境')) ||
+    monotonicQueue.practice?.[0]?.url !== 'https://leetcode.com/problems/sliding-window-maximum/' ||
+    windowMax.practice?.[0]?.url !== 'https://leetcode.com/problems/sliding-window-maximum/') {
+  errors.push('monotonic-queue: input, missing second window, deque, or emitted maxima differ from the example')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element OK')
 }

@@ -17,7 +17,7 @@ export type VisualModel =
   | 'line-geometry' | 'polar-sort' | 'polygon' | 'convex-hull' | 'sweep-line' | 'circle-geometry' | 'closest-pair' | 'spatial-partition' | 'minkowski-sum'
   | 'fourier-transform' | 'polynomial' | 'linear-recurrence'
 
-export interface PracticeProblem { judge: 'CSES' | 'AtCoder' | 'Codeforces'; title: string; url: string; note: string }
+export interface PracticeProblem { judge: 'CSES' | 'AtCoder' | 'Codeforces' | 'LeetCode'; title: string; url: string; note: string }
 
 export const visualModelGroups: Record<VisualModel, string[]> = {
   'array-search': ['binary-search','linear-search'],
@@ -142,6 +142,7 @@ const cses = (title: string, task: string, note: string): PracticeProblem => ({ 
 const atcoder = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'AtCoder', title, url: `https://atcoder.jp/contests/${task.split('/')[0]}/tasks/${task.split('/')[1]}`, note })
 const codeforces = (title: string, task: string, note: string): PracticeProblem => ({ judge: 'Codeforces', title, url: `https://codeforces.com/problemset/problem/${task.replace('-', '/')}`, note })
 const codeforcesGym = (title: string, gym: string, problem: string, note: string): PracticeProblem => ({ judge: 'Codeforces', title, url: `https://codeforces.com/problemset/gymProblem/${gym}/${problem}`, note })
+const leetcode = (title: string, slug: string, note: string): PracticeProblem => ({ judge: 'LeetCode', title, url: `https://leetcode.com/problems/${slug}/`, note })
 
 const practiceById: Record<string, PracticeProblem> = {
   'linear-search': atcoder('Buildings','abc353/abc353_a','從左到右找第一個符合條件的位置；不需要排序，也不能跳格。'),
@@ -153,6 +154,7 @@ const practiceById: Record<string, PracticeProblem> = {
   'duval-lyndon': cses('Minimal Rotation','1110','用 Duval 演算法線性找出字典序最小旋轉。'),
   'minimum-string-rotation': cses('Minimal Rotation','1110','同上，重點在線性時間比較循環同構。'),
   'counting-sort': atcoder("Ringo's Favorite Numbers 2",'abc200/abc200_c','把值映射到固定 200 個桶並累計頻率；核心操作與 counting sort 的 count array 相同。'),
+  'next-greater-element': leetcode('Next Greater Element I','next-greater-element-i','先如本課求出 nums2 中每個值右側第一個更大值；題目另需將結果映射回 nums1。'),
   'expression-evaluation': codeforces('Vanya and Brackets','552-E','實際處理由 +、* 與括號構成的算式，必須正確理解運算優先序與子運算式求值。'),
   'shunting-yard': codeforces('Defining Macros','7-E','核心在括號與四則運算優先序；練習判斷 substitution 是否改變 expression evaluation order。'),
 }
@@ -208,8 +210,8 @@ const practiceByModel: Partial<Record<VisualModel, PracticeProblem>> = {
   queue: cses('Message Route','1667','BFS queue 逐層找最短路。'),
   deque: cses('Josephus Problem I','2162','練習從兩端或循環順序維護元素。'),
   heap: cses('Concert Tickets','1091','維護可快速取出極值的候選集合。'),
-  'monotonic-stack': cses('Nearest Smaller Values','1645','彈出不可能成為答案的棧頂。'),
-  'monotonic-queue': cses('Maximum Subarray Sum II','1644','用 deque 維護滑動區間的前綴極值。'),
+  'monotonic-stack': leetcode('Next Greater Element I','next-greater-element-i','本課先維護遞減候選；解題時還要在 pop 時記錄右側第一個更大值，並回答 nums1 的查詢。'),
+  'monotonic-queue': leetcode('Sliding Window Maximum','sliding-window-maximum','與動畫相同的長度 k 視窗：Deque 前端過期、後端淘汰，逐窗輸出最大值。'),
   'histogram-stack': cses('Advertisement','1142','以最近較小邊界計算每根柱子的最大矩形。'),
   'expression-stack': codeforces('Ciel and Duel','321-B','練習把運算順序轉成可依序處理的狀態。'),
   'graph-traversal': cses('Counting Rooms','1192','用 DFS/BFS 完整走訪每個連通區。'),
