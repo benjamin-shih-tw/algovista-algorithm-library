@@ -257,7 +257,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'pq.push(e);','從 E Push EF3','EC、ED 已 used；只有 EF3 新增到 heap，且比既有 DF6 更小。',{from:'E',pushed:['EF3'],heap:['EF3','DF6','CD8','CE10'],used:['A','B','C','D','E'],cost:10,operation:'expand frontier'},{active:['E','F'],accepted:['A','B','C','D','E']}),
     eventFrame(lesson,'pq.pop();','Extract EF3','EF3 是最後需要的最小 crossing edge。',{pop:'EF3',heap:['DF6','CD8','CE10'],used:['A','B','C','D','E'],cost:10,operation:'extract minimum'},{active:['E','F'],accepted:['A','B','C','D','E']}),
     eventFrame(lesson,'used[u]=true; cost+=w','接受 EF3：MST 完成','F 加入後 6 個頂點全部 used；cost=13，已選邊 AC2、BC1、BD5、DE2、EF3 構成 MST。',{edge:'E-F(3)',used:['A','B','C','D','E','F'],cost:13,mst:['AC2','BC1','BD5','DE2','EF3'],operation:'finish MST'},{accepted:['A','B','C','D','E','F']}),
-  ]
+  ],
 
   'boruvka':lesson=>[
     eventFrame(lesson,'while(dsu.components()>1)','初始 6 個 Components','每個頂點都是獨立 DSU component。',{components:['A','B','C','D','E','F'],cost:0,operation:'start round'}),
@@ -285,7 +285,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'if(state[u]==s+1)','F 被本輪重訪：找到 Self-Cycle','沿 E→F→F 後 u=F，且 state[F]=5=s+1，因此確認新 cycle。',{repeat:'F',cycle:['F'],operation:'detect self cycle'},{active:['F'],accepted:['B','C','F']}),
     eventFrame(lesson,'cycles.push_back(cycle);','收集並保存 Cycle [F]','do-while 的 cycle.push_back(v) 只執行一次就回到 F，接著將 [F] 加進 cycles。',{cycles:[['B','C'],['F']],operation:'save self cycle'},{active:['F'],accepted:['B','C','F']}),
     eventFrame(lesson,'state[u]=-1;','Cleanup E、F，演算法完成','最後把 E、F 設成 -1；所有節點都完成，答案為 cycles=[[B,C],[F]]。',{cleared:['E','F'],cycles:[['B','C'],['F']],operation:'finish all walks'},{accepted:['A','B','C','D','E','F']}),
-  ].map((frame,step)=>({...frame,executionView:functionalGraphView(step)}))
+  ].map((frame,step)=>({...frame,executionView:functionalGraphView(step)})),
 
   'dag-shortest-path':lesson=>[
     eventFrame(lesson,'topologicalSort','Topo Order = A,B,C,D,E','圖無環；處理一個節點前，它所有前驅都已完成。',{order:['A','B','C','D','E'],operation:'topological order'}),
