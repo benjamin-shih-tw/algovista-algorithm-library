@@ -277,7 +277,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'dfs(v,u);','A 接著呼叫 Child C','A 的 B branch 完整 return 後才輪到 C；執行 dfs(C,A)，此時 dp[A]=5。',{call:'A→C',dpA:5,operation:'descend to C'},{active:['A','C'],accepted:['B','D','E','F']}),
     eventFrame(lesson,'dp[u]=1;','C 是 Leaf：dp[C]=1 後 Return','C 沒有非 parent child，因此完整 subtree size 就是 1。',{u:'C',dpC:1,leaf:true,operation:'leaf C return'},{active:['C'],accepted:['B','C','D','E','F']}),
     eventFrame(lesson,'dp[u]+=dp[v];','C Return：A 得到最終 dp[A]=6','最後一次 merge 執行 dp[A]+=dp[C]：5+1=6。此時所有 child 都完成，Root A 的 subtree size 等於整棵樹 6 個節點。',{u:'A',v:'C',formula:'5+1',dpA:6,result:'A6 B4 C1 D2 E1 F1',operation:'finish root DP'},{active:['A','C'],accepted:['A','B','C','D','E','F']}),
-  ].map((frame,step)=>({...frame,executionView:treeDpView(step)}))
+  ].map((frame,step)=>({...frame,executionView:treeDpView(step)})),
 
   'rerooting-dp':lesson=>[
     eventFrame(lesson,'dfs1(root,-1)','第一遍以 A 為 Root','同一棵 6 點樹，先求 subtree size 與 depth：A0,B1,C1,D2,E2,F3。',{root:'A',depth:'A0 B1 C1 D2 E2 F3',subtree:'A6 B4 C1 D2 E1 F1',operation:'first DFS'},{active:['A','B','C','D','E','F']}),
