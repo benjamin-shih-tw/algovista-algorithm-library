@@ -250,7 +250,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'output.push_back(ops.back());','輸入結束：先 Flush *','stack top 是 *，先輸出得到 [3,4,2,1,-,*]。',{moved:'*',output:['3','4','2','1','-','*'],ops:['+'],operation:'flush multiply'}),
     eventFrame(lesson,'output.push_back(ops.back());','再 Flush +','最後把 + 輸出，得到完整 postfix [3,4,2,1,-,*,+]。',{moved:'+',output:['3','4','2','1','-','*','+'],ops:[],operation:'flush plus'}),
     eventFrame(lesson,'return output;','Postfix 完成','結果 3 4 2 1 - * + 對應 3 + 4 * (2 - 1)。括號消失，但原優先序與 grouping 已寫入 token 順序。',{result:'3 4 2 1 - * +',operation:'return postfix'}),
-  ].map((frame,step)=>({...frame,executionView:shuntingView(step)}))
+  ].map((frame,step)=>({...frame,executionView:shuntingView(step)})),
 
   'fft':lesson=>[
     eventFrame(lesson,'fft(vector','輸入係數 [1,2,3,4]','n=4，將偶數 index 與奇數 index 拆成兩個 n/2 子問題。',{input:['1','2','3','4'],n:4,operation:'initialize FFT'}),
