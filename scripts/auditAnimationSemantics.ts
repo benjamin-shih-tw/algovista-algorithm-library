@@ -41,11 +41,17 @@ if (!bfs.code.some((line) => line.includes('vector<int> dist(n, -1)')) || !bfs.c
 }
 const fenwick = lesson('fenwick-tree')
 const expectedBitValues = [0, 0, 5, 5, 0, 0, 0, 5]
-for (const frame of fenwick.frames.slice(3)) {
-  if (JSON.stringify(frame.values) !== JSON.stringify(expectedBitValues)) errors.push(`fenwick-tree ${frame.title}: BIT snapshot is not preserved through the query`)
-}
-for (const [index, expected] of [[1, 3], [2, 4], [3, 8], [5, 6], [6, 4]] as const) {
-  if (fenwick.frames[index].state?.i !== expected) errors.push(`fenwick-tree frame ${index + 1}: highlighted index differs from the narrated operation`)
+if (
+  fenwick.frames.length !== 13 ||
+  fenwick.frames.at(-1)?.state?.result !== 5 ||
+  JSON.stringify(fenwick.frames.at(-1)?.values) !== JSON.stringify(expectedBitValues) ||
+  !fenwick.frames[1].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='bit[i] += delta;') ||
+  !fenwick.frames[2].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='i += i & -i;') ||
+  !fenwick.frames[8].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='s += bit[i];') ||
+  !fenwick.frames[9].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='i -= i & -i;') ||
+  !fenwick.code.some((line)=>line.includes('struct Fenwick'))
+) {
+  errors.push('fenwick-tree: update/query mutations, index moves, snapshots, or return value disagree')
 }
 const prefix2d = lesson('prefix-sum-2d')
 const prefixViews = prefix2d.frames.map((frame) => frame.executionView)
@@ -248,19 +254,29 @@ if (windowRows.some((rows) => !rows || rows.length !== 8 || rows.map((row) => ro
 }
 const evaluation = lesson('expression-evaluation')
 const evaluationRows = evaluation.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
-if (evaluationRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
-    evaluation.frames[5].executionView?.kind !== 'table' || !evaluation.frames[5].executionView.badges?.includes('values = [3,4,2]') ||
-    evaluation.frames[7].executionView?.kind !== 'table' || !evaluation.frames[7].executionView.badges?.includes('values = [11]') ||
-    !evaluation.code.some((line) => line.includes('long long evaluateExpression(')) || evaluation.code.some((line) => line.includes('競賽環境'))) {
-  errors.push('expression-evaluation: tokens, value/operator stacks, result, or complete code differ from the example')
+if (
+  evaluation.frames.length !== 15 ||
+  evaluationRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,(,2,-,1,)') ||
+  evaluation.frames[9].executionView?.kind !== 'table' || !evaluation.frames[9].executionView.badges?.includes('values = [3,4,1]') ||
+  evaluation.frames[13].executionView?.kind !== 'table' || !evaluation.frames[13].executionView.badges?.includes('values = [7]') ||
+  evaluation.frames.at(-1)?.state?.result !== 7 ||
+  !evaluation.code.some((line) => line.includes('long long evaluateExpression(')) ||
+  !evaluation.frames[9].codeLines.some((line)=>evaluation.code[line-1]?.trim()==='values.push_back(r);')
+) {
+  errors.push('expression-evaluation: parenthesis barrier, operator/value stacks, reductions, or result differ from the 3+4*(2-1) execution')
 }
 const shunting = lesson('shunting-yard')
 const shuntingRows = shunting.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
-if (shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
-    shunting.frames[5].executionView?.kind !== 'table' || !shunting.frames[5].executionView.badges?.includes('output = [3,4,2]') ||
-    shunting.frames[6].executionView?.kind !== 'table' || !shunting.frames[6].executionView.badges?.includes('output = [3,4,2,*,+]') ||
-    !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) || shunting.code.some((line) => line.includes('競賽環境'))) {
-  errors.push('shunting-yard: tokens, operator stack, postfix output, or complete code differ from the example')
+if (
+  shunting.frames.length !== 14 ||
+  shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,(,2,-,1,)') ||
+  shunting.frames[9].executionView?.kind !== 'table' || !shunting.frames[9].executionView.badges?.includes('output = [3,4,2,1,-]') ||
+  shunting.frames[12].executionView?.kind !== 'table' || !shunting.frames[12].executionView.badges?.includes('output = [3,4,2,1,-,*,+]') ||
+  shunting.frames.at(-1)?.state?.result !== '3 4 2 1 - * +' ||
+  !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) ||
+  !shunting.frames[9].codeLines.some((line)=>shunting.code[line-1]?.trim()==='output.push_back(ops.back());')
+) {
+  errors.push('shunting-yard: parentheses, operator stack, postfix output, or code ownership disagree')
 }
 const monotonicStack = lesson('monotonic-stack')
 const monotonicStackRows = monotonicStack.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
@@ -499,6 +515,19 @@ if (
   !closestPair.frames.at(-1)?.codeLines.some((line)=>closestPair.code[line-1]?.trim()==='return best;')
 ) {
   errors.push('closest-pair: active-set eviction order, left-pointer movement, best distance, or code ownership disagrees')
+}
+
+
+const mutationOperation = /(write|push|pop|merge|relax|add |add$|remove|color|mark|emit|append|store|attach|grow|insert|delete|swap|pull|apply|update (?:left|right|root|cell|state)|compress|relink|redirect|reduce|discard)/i
+for (const item of lessons) {
+  for (const [step, frame] of item.frames.entries()) {
+    const operation = typeof frame.state?.operation === 'string' ? frame.state.operation : ''
+    if (!mutationOperation.test(operation)) continue
+    const primary = item.code[frame.codeLineNumber ? frame.codeLineNumber - 1 : frame.codeLines[0] - 1]?.trim() ?? frame.codeLine?.trim() ?? ''
+    if (/^(if|for|while)\b/.test(primary)) {
+      errors.push(`${item.id} frame ${step + 1}: mutation "${operation}" is still owned by control-flow code "${primary}"`)
+    }
+  }
 }
 
 if (errors.length) {
