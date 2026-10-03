@@ -58,7 +58,7 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'z-algorithm':(lesson)=>[
-    eventFrame(lesson,'for (int i=1','s = ababa','z[i] 是 suffix i 與整串 prefix 的 LCP 長度；初始 [l,r) 為空。',{s:'ababa',z:['0','?','?','?','?'],box:'empty',operation:'initialize Z'}),
+    eventFrame(lesson,'for(int i=1;i<n;++i){','s = ababa','z[i] 是 suffix i 與整串 prefix 的 LCP 長度；初始 [l,r) 為空。',{s:'ababa',z:['0','?','?','?','?'],box:'empty',operation:'initialize Z'}),
     eventFrame(lesson,'while (i+z[i]<n','i=1：b ≠ a，z[1]=0','無法延伸，Z-box 不變。',{i:1,compare:'b vs a',z:['0','0','?','?','?'],operation:'failed extension'}),
     eventFrame(lesson,'while (i+z[i]<n','i=2：逐字匹配 aba','s[2..]=aba 與 prefix aba 相同三字，因此 z[2]=3。',{i:2,matches:['a=a','b=b','a=a'],z2:3,operation:'extend beyond box'}),
     eventFrame(lesson,'l=i;','i=2：更新 Z-box 左端 l=2','z[2]=3 已延伸到舊右界之外，所以進入更新 branch；先令 l=i=2。',{i:2,l:2,r:0,z:['0','0','3','?','?'],operation:'update Z-box left'}),
