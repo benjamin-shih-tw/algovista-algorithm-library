@@ -523,7 +523,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','i=4：dp4=1+6=7','front=3，得到最終 dp4=7。',{i:4,dp:7,front:'3(6)',operation:'compute dp4'}),
     eventFrame(lesson,'dq.pop_back();','7 支配 6：Pop 3','維持 deque 的 dp 值嚴格遞減。',{popped:'3(6)',deque:[],operation:'remove dominated 3'}),
     eventFrame(lesson,'dq.push_back(i);','Push 4，完成','deque=[4(7)]；每個 index 最多進出一次，所以總時間 O(n)。',{deque:['4(7)'],answer:7,complexity:'O(n)',operation:'finish optimized DP'}),
-  ]
+  ],
 
   'aliens-optimization':lesson=>[
     eventFrame(lesson,'solve(long long lambda','原問題要求恰好 K=2 段','對每段額外收 lambda，solve(lambda) 同時回傳最優成本與使用段數。',{K:2,lambda:'search',operation:'Lagrangian relaxation'}),
