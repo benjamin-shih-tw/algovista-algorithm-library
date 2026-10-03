@@ -203,7 +203,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'auto* child=dfs(v,u);','A 再收到 C 的 {1}','C 是 leaf，child={1}。',{node:'A',cur:['1','2','3'],child:['1'],operation:'receive C set'},{active:['A','C']}),
     eventFrame(lesson,'cur->insert(child->begin(),child->end());','合併 C 後仍是 {1,2,3}','1 已存在，因此 root distinct count 不變。',{node:'A',after:['1','2','3'],operation:'merge C into A'},{active:['A','C']}),
     eventFrame(lesson,'answer[u]=cur->size();','Root A 的答案 = 3','A 子樹包含三種顏色。因每次只把小集合搬入大集合，每個元素最多被搬 O(log n) 次。',{node:'A',answer:3,complexity:'O(n log n) set moves',operation:'store distinct count'},{accepted:['A','B','C','D','E','F']}),
-  ]
+  ],
 
   'dsu-on-tree':lesson=>[
     eventFrame(lesson,'dfsSize(u,p)','先找 Heavy Child','subtree sizes：A6,B4,C1,D2,E1,F1；heavy[A]=B、heavy[B]=D、heavy[D]=F。',{subtree:'A6 B4 C1 D2 E1 F1',heavy:['A→B','B→D','D→F'],operation:'precompute heavy children'}),
