@@ -3,6 +3,39 @@ import { eventFrame } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
+const codeOverrides:Record<string,string[]>={
+  'z-algorithm':[
+    'vector<int> zFunction(const string& s){',
+    '  int n=s.size();',
+    '  vector<int> z(n);',
+    '  int l=0,r=0;',
+    '  for(int i=1;i<n;++i){',
+    '    if(i<r) z[i]=min(r-i,z[i-l]);',
+    '    while(i+z[i]<n && s[z[i]]==s[i+z[i]]) ++z[i];',
+    '    if(i+z[i]>r){',
+    '      l=i;',
+    '      r=i+z[i];',
+    '    }',
+    '  }',
+    '  return z;',
+    '}',
+  ],
+  'euler-totient':[
+    'long long phi(long long n){',
+    '  long long result=n;',
+    '  for(long long p=2;p*p<=n;++p){',
+    '    if(n%p!=0) continue;',
+    '    while(n%p==0){',
+    '      n/=p;',
+    '    }',
+    '    result-=result/p;',
+    '  }',
+    '  if(n>1) result-=result/n;',
+    '  return result;',
+    '}',
+  ],
+}
+
 const overrides:Record<string,TraceBuilder>={
   'rolling-hash':(lesson)=>[
     eventFrame(lesson,'hash[i+1]','字串 abca：建立 h[1]','令 a=1,b=2,c=3、base=31、mod=101。h[1]=(0·31+1)%101=1。',{s:'abca',base:31,mod:101,i:0,hash:['0','1'],operation:'extend prefix hash'}),
@@ -28,7 +61,8 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'for (int i=1','s = ababa','z[i] 是 suffix i 與整串 prefix 的 LCP 長度；初始 [l,r) 為空。',{s:'ababa',z:['0','?','?','?','?'],box:'empty',operation:'initialize Z'}),
     eventFrame(lesson,'while (i+z[i]<n','i=1：b ≠ a，z[1]=0','無法延伸，Z-box 不變。',{i:1,compare:'b vs a',z:['0','0','?','?','?'],operation:'failed extension'}),
     eventFrame(lesson,'while (i+z[i]<n','i=2：逐字匹配 aba','s[2..]=aba 與 prefix aba 相同三字，因此 z[2]=3。',{i:2,matches:['a=a','b=b','a=a'],z2:3,operation:'extend beyond box'}),
-    eventFrame(lesson,'if (i+z[i]>r)','更新 Z-box 為 [2,5)','這是目前最右匹配區間。',{l:2,r:5,box:'[2,5)',z:['0','0','3','?','?'],operation:'update box'}),
+    eventFrame(lesson,'l=i;','i=2：更新 Z-box 左端 l=2','z[2]=3 已延伸到舊右界之外，所以進入更新 branch；先令 l=i=2。',{i:2,l:2,r:0,z:['0','0','3','?','?'],operation:'update Z-box left'}),
+    eventFrame(lesson,'r=i+z[i];','再更新右端 r=5','接著 r=i+z[i]=2+3=5，最右匹配區間正式成為 [2,5)。',{i:2,l:2,r:5,box:'[2,5)',z:['0','0','3','?','?'],operation:'update Z-box right'}),
     eventFrame(lesson,'if (i<r) z[i]=min','i=3 在 Box 內，重用 z[1]','z[3]=min(r-i=2,z[1]=0)=0，不需重比 box 內已知部分。',{i:3,mirror:1,reused:0,z:['0','0','3','0','?'],operation:'reuse mirror'}),
     eventFrame(lesson,'if (i<r) z[i]=min','i=4 重用 z[2] 但被邊界截斷','min(r-i=1,z[2]=3)=1，因此 z[4] 先得到 1；已到字串末端，不能再延伸。',{i:4,mirror:2,reused:'min(1,3)=1',z:['0','0','3','0','1'],operation:'reuse clipped value'}),
   ],
@@ -123,9 +157,9 @@ const overrides:Record<string,TraceBuilder>={
 
   'euler-totient':(lesson)=>[
     eventFrame(lesson,'long long phi','計算 φ(36)','result=36，工作變數 n=36。',{originalN:36,n:36,result:36,operation:'initialize totient'}),
-    eventFrame(lesson,'if(n%p==0)','p=2 是質因數','先把 n 中所有 2 除盡：36→18→9。',{p:2,n:'36→18→9',operation:'remove prime powers'}),
+    eventFrame(lesson,'n/=p;','p=2 是質因數','先把 n 中所有 2 除盡：36→18→9。',{p:2,n:'36→18→9',operation:'remove prime powers'}),
     eventFrame(lesson,'result-=result/p','排除 2 的倍數','result=36-18=18，相當於乘 (1-1/2)。',{p:2,result:'36→18',operation:'apply totient factor'}),
-    eventFrame(lesson,'if(n%p==0)','p=3 是另一質因數','n=9→3→1。',{p:3,n:'9→3→1',operation:'remove prime powers'}),
+    eventFrame(lesson,'n/=p;','p=3 是另一質因數','n=9→3→1。',{p:3,n:'9→3→1',operation:'remove prime powers'}),
     eventFrame(lesson,'result-=result/p','排除 3 的倍數','result=18-6=12，相當於再乘 (1-1/3)。',{p:3,result:'18→12',operation:'apply totient factor'}),
     eventFrame(lesson,'if(n>1)','剩餘 n=1，不需額外處理','所有不同質因數都已處理完。',{remainingN:1,operation:'check remaining prime'}),
     eventFrame(lesson,'return result','φ(36)=12','1..36 中恰有 12 個數與 36 互質。',{result:12,operation:'return totient'}),
@@ -133,9 +167,10 @@ const overrides:Record<string,TraceBuilder>={
 }
 
 export const applyS2StringsMathOverride=(lesson:AlgorithmLesson):AlgorithmLesson=>{
+  const coded=codeOverrides[lesson.id] ? {...lesson,code:codeOverrides[lesson.id]} : lesson
   const build=overrides[lesson.id]
-  if(!build) return lesson
-  return {...lesson,frames:build(lesson),traceMode:'execution',animationVersion:2}
+  if(!build) return coded
+  return {...coded,frames:build(coded),traceMode:'execution',animationVersion:2}
 }
 
 export const s2StringsMathOverrideIds=Object.freeze(Object.keys(overrides))
