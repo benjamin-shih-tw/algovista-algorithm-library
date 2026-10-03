@@ -447,7 +447,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'potential[rb]=d+wa-wb;','推得 Potential[C]=7','d+wa-wb = 4+3-0=7，所以 C-A=7，同時仍滿足 C-B=4。',{formula:'4+3-0',potentialC:7,operation:'derive potential'}),
     eventFrame(lesson,'if(ra==rb) return wb-wa==d;','驗證 C-A=7：一致','再 unite(A,C,7) 時兩者已同 root；wc-wa=7-0=7，條件成立，回傳 true 且不改結構。',{constraint:'C-A=7',computed:7,result:'true',operation:'consistency check'}),
     eventFrame(lesson,'if(ra==rb) return wb-wa==d;','驗證 C-A=8：矛盾','同一結構下實際差仍是 7，不等於 8，因此回傳 false；Weighted DSU 成功偵測衝突。',{constraint:'C-A=8',computed:7,result:'false',operation:'detect contradiction'}),
-  ].map((frame,step)=>({...frame,executionView:weightedDsuView(step)}))
+  ].map((frame,step)=>({...frame,executionView:weightedDsuView(step)})),
 
   'rollback-dsu':lesson=>[
     eventFrame(lesson,'iota(parent.begin(),parent.end(),0);','初始化 Parent / Size','A、B、C 各自成一個 component，size 都是 1，history 為空。',{parent:'A→A B→B C→C',sizes:'1,1,1',history:'empty',operation:'initialize rollback dsu'}),
@@ -469,7 +469,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'sz[a]=oldSizeA;','恢復 Size[A]：3→2','先把 A 的 size 還原成 union B-C 前的 2。',{sizeA:2,operation:'restore root size'}),
     eventFrame(lesson,'parent[b]=b;','恢復 Parent[C] = C','最後讓 C 再次成為自己的 root；component 回到 {A,B} 與 {C}。',{parent:'C→C',components:['AB','C'],operation:'restore detached root'}),
     eventFrame(lesson,'while((int)history.size()>snap)','History Size 已等於 Snapshot，停止','history.size()=1，不再大於 snap=1；rollback 完成，而且 A-B 的舊狀態完整保留。',{historySize:1,snapshot:1,result:'AB | C',operation:'rollback complete'}),
-  ].map((frame,step)=>({...frame,executionView:rollbackDsuView(step)}))
+  ].map((frame,step)=>({...frame,executionView:rollbackDsuView(step)})),
 
   'tree-center':lesson=>[
     eventFrame(lesson,'getDiameterPath','重建 Diameter F-D-B-A-C','這棵樹最長路徑有 5 個節點、4 條邊。',{diameter:['F','D','B','A','C'],edges:4,operation:'get diameter'},{active:['F','D','B','A','C']}),
