@@ -1,4 +1,4 @@
-import type { AlgorithmLesson, Frame, Point } from './algorithms'
+import type { AlgorithmLesson, Edge, Frame, Point } from './algorithms'
 import { eventFrame, lineNumber } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
@@ -26,6 +26,90 @@ const bridgeEdges=[
   {from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'},
   {from:'B',to:'D'},{from:'D',to:'E'},{from:'E',to:'F'},{from:'F',to:'D'},
 ]
+
+const xy=(id:string)=>{const p=points.find(item=>item.id===id)!;return {x:p.x*10,y:p.y*4.3}}
+const undirected=(title:string,edges:Edge[],selected:string[],focus:string[],badges:string[],removed:string[]=[],sequence?:string[]):NonNullable<Frame['executionView']>=>({
+  kind:'structure',title,
+  nodes:points.map(p=>({id:p.id,label:p.id,...xy(p.id),active:focus.includes(p.id),muted:removed.includes(p.id)})),
+  edges:edges.filter(e=>!removed.includes(e.from)&&!removed.includes(e.to)).map(e=>({from:e.from,to:e.to,label:e.weight===undefined?undefined:String(e.weight),active:selected.includes(`${e.from}${e.to}`)||selected.includes(`${e.to}${e.from}`)})),
+  badges,sequence,
+})
+const directed=(title:string,edges:Edge[],groups:Record<string,string>,values:Record<string,string>,active:string[],badges:string[],path?:string[]):NonNullable<Frame['executionView']>=>({
+  kind:'network',title,
+  nodes:points.filter(p=>edges.some(e=>e.from===p.id||e.to===p.id)).map(p=>({id:p.id,label:p.id,...xy(p.id),group:groups[p.id],value:values[p.id]})),
+  edges:edges.map(e=>({from:e.from,to:e.to,label:e.weight===undefined?undefined:String(e.weight),active:active.includes(`${e.from}${e.to}`)})),
+  badges,path,
+})
+const mstSelected:Record<string,string[][]>={
+  kruskal:[[],['BC'],['BC','AC'],['BC','AC','DE','EF'],['BC','AC','DE','EF'],['BC','AC','DE','EF','BD']],
+  prim:[[],[],[],['AC'],['AC'],['AC','BC'],['AC','BC'],['AC','BC','BD','DE','EF']],
+  boruvka:[[],[],[],['BC','AC','DE','EF'],['BC','AC','DE','EF'],['BC','AC','DE','EF','BD']],
+}
+const mstCosts:Record<string,string[]>={kruskal:['0','1','3','8','8','13'],prim:['0','0','0','2','2','3','3','13'],boruvka:['0','0','0','8','8','13']}
+
+const graphTreeView=(lesson:AlgorithmLesson,frame:Frame,step:number):Frame['executionView']=>{
+  const id=lesson.id
+  if(mstSelected[id]){
+    const focus=frame.active??[]
+    return undirected(`${lesson.zhTitle} · 已選邊為亮線`,mstEdges,mstSelected[id][step],focus,
+      [`cost = ${mstCosts[id][step]}`,`selected = ${mstSelected[id][step].length} / 5`,
+        ...(id==='kruskal'&&step===4?['AB4 rejected: cycle']:[]),
+        ...(id==='prim'&&step===6?['AB4 skipped: stale']:[])])
+  }
+  if(id==='dag-shortest-path'){
+    const distances=frame.distances??(step===0?{A:'∞',B:'∞',C:'∞',D:'∞',E:'∞'}:{})
+    const active=[[],[],['AB','AC'],['BC','BD'],['CD','CE'],['DE']][step]
+    return directed('DAG · 拓樸序 A → B → C → D → E',lesson.edges??[],{},
+      Object.fromEntries(Object.entries(distances).map(([key,value])=>[key,`dist ${value}`])),active,
+      step===5?['E = 4']:['負邊可用：圖中沒有有向環'],step>=2?[['A'],['A','B'],['A','B','C'],['A','B','C','D']][step-2]:undefined)
+  }
+  if(id==='negative-cycle-reconstruction'){
+    const active=[[],['BC','CB','CD'],['BC','CB'],['BC','CB'],['BC','CB']][step]
+    return directed('Bellman–Ford · 回退 parent 找環',lesson.edges??[],{}, {},active,
+      [
+        ['B→C(1) + C→B(-3) = -2'],['最後更新：x = D（環外）'],
+        ['D ← C ← B ← C ← B','回退 4 次：x = B'],['parent chain：B ← C ← B'],
+        ['B → C → B','weight = -2'],
+      ][step],step===1?['D']:step>=2?['B','C']:undefined)
+  }
+  if(id==='kosaraju-scc'){
+    const groups=step>=3?{A:'0',B:'0',C:'0',...(step>=4?{D:'1',E:'1'}:{}),...(step>=5?{F:'2'}:{})}:{}
+    const focus=[[],[],[],['A','B','C'],['D','E'],['F']][step]
+    return directed('Kosaraju · 原圖與已辨識 SCC',sccEdges,groups,
+      Object.fromEntries(Object.entries(groups).map(([node,group])=>[node,`SCC ${group}`])),[],
+      step===5?['ABC · DE · F','3 SCC']:[step<3?'第一趟完成順序，再走反向圖':`目前辨識 ${step-2} 個 SCC`],focus)
+  }
+  if(id==='condensation-graph'){
+    if(step<2) return directed('原圖 · SCC 0={ABC}, 1={DE}, 2={F}',sccEdges,
+      {A:'0',B:'0',C:'0',D:'1',E:'1',F:'2'},
+      {A:'SCC 0',B:'SCC 0',C:'SCC 0',D:'SCC 1',E:'SCC 1',F:'SCC 2'},[],['同一 SCC 內邊不進縮點圖'])
+    return {kind:'network',title:'SCC 縮點後的 DAG',nodes:[
+      {id:'0',label:'0',x:180,y:210,value:'A,B,C',group:'0'},
+      {id:'1',label:'1',x:500,y:210,value:'D,E',group:'1'},
+      {id:'2',label:'2',x:820,y:210,value:'F',group:'2'},
+    ],edges:[{from:'0',to:'1',label:'C→D',active:true},...(step>=3?[{from:'1',to:'2',label:'E→F',active:true}]:[])],
+    badges:step===4?['0 → 1 → 2']:['只保留跨 SCC 的有向邊']}
+  }
+  if(id==='bridge-tree'){
+    if(step<4) return undirected('原圖 · B—D 是唯一橋',bridgeEdges,
+      step===0?['BD']:['AB','BC','CA',...(step>=2?['DE','EF','FD']:[])],frame.active??[],
+      step===0?['移除 B—D，圖分成兩塊']:step>=2?['component 0 = ABC','component 1 = DEF']:['component 0 = ABC'])
+    return {kind:'structure',title:'Bridge Tree · 每塊縮成一點',nodes:[
+      {id:'0',label:'ABC',x:280,y:210},{id:'1',label:'DEF',x:720,y:210},
+    ],edges:[{from:'0',to:'1',label:'B—D',active:true}],badges:['ABC — DEF']}
+  }
+  if(id==='tree-center') return undirected('樹的直徑 F—D—B—A—C',treeEdges,
+    ['FD','DB','BA','AC'],step===2?['B']:step===0?['F','D','B','A','C']:[],
+    step===2?['center = B','radius = 2']:['直徑長度 = 4 條邊'])
+  if(id==='prufer-code'){
+    const removed=[[],['C'],['C','A'],['C','A','E'],['C','A','E','B'],['C','A','E','B']][step]
+    const code=[[],['1'],['1','2'],['1','2','2'],['1','2','2','4'],['1','2','2','4']][step]
+    const focus=[['C','E','F'],['C','A'],['A','B'],['E','B'],['B','D'],['D','F']][step]
+    return undirected('Prüfer · 每次移除編號最小的葉',treeEdges,[],focus,
+      step===5?['[1,2,2,4]','degree(v) = 出現次數 + 1']:[`A=1, B=2, C=3, D=4, E=5, F=6`,`code = [${code.join(',')}]`],removed,code)
+  }
+  return undefined
+}
 
 const functionalGraphView=(step:number):NonNullable<Frame['executionView']>=>{
   const nodes=['A','B','C','D','E','F']
@@ -94,7 +178,7 @@ const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
 
 const overrides:Record<string,TraceBuilder>={
   'kruskal':lesson=>[
-    eventFrame(lesson,'sort(edges.begin()','依 Weight 排序所有 Edge','順序：BC1, AC2, DE2, EF3, AB4, BD5, DF6, CD8, CE10。',{order:['BC1','AC2','DE2','EF3','AB4','BD5','DF6','CD8','CE10'],operation:'sort edges'}),
+    eventFrame(lesson,'sort(edges.begin()','依 Weight 排序所有 Edge','一種同分順序：BC1, AC2, DE2, EF3, AB4, BD5, DF6, CD8, CE10；AC2 與 DE2 可互換。',{order:['BC1','AC2','DE2','EF3','AB4','BD5','DF6','CD8','CE10'],operation:'sort edges'}),
     eventFrame(lesson,'dsu.unite','BC(1)：兩端不同集合，接受','DSU 合併 B、C；cost=1。',{edge:'B-C(1)',components:['A','BC','D','E','F'],cost:1,operation:'accept safe edge'},{active:['B','C'],accepted:['B','C']}),
     eventFrame(lesson,'cost+=w','AC(2)：合併 A 與 BC','A、C 不同集合，選入 AC；cost=3，component=ABC。',{edge:'A-C(2)',components:['ABC','D','E','F'],cost:3,operation:'accept edge'},{active:['A','C'],accepted:['A','B','C']}),
     eventFrame(lesson,'cost+=w','DE(2)、EF(3) 建立 DEF','依序合併 D-E、E-F；右側 component 成為 DEF，cost=8。',{edges:['D-E(2)','E-F(3)'],components:['ABC','DEF'],cost:8,operation:'build second component'},{active:['D','E','F'],accepted:['A','B','C','D','E','F']}),
@@ -146,9 +230,9 @@ const overrides:Record<string,TraceBuilder>={
 
   'negative-cycle-reconstruction':lesson=>[
     eventFrame(lesson,'int x=-1','Bellman–Ford on A→B→C，且 C→B=-3','Cycle B→C→B 權重 1-3=-2，因此每繞一次距離都會下降。',{edges:['A-B1','B-C1','C-B-3','C-D2'],x:-1,operation:'initialize reconstruction'}),
-    eventFrame(lesson,'parent[v]=u,x=v','第 4 輪仍可 Relax','例如 B、C 在第 V 輪仍被更新；最後 x 記住某個被更新點 C。',{pass:'V',updated:['B','C','D'],x:'C',parents:['B←C','C←B','D←C'],operation:'remember updated vertex'}),
-    eventFrame(lesson,'if(x!=-1){ for(int i=0;i<n','沿 Parent 回退 V 次','從 C 開始：C←B←C←B←C；回退 4 次後保證落在 cycle 內。',{start:'C',walk:['C','B','C','B','C'],x:'C',operation:'enter cycle'}),
-    eventFrame(lesson,'for(int v=x;;v=parent[v])','從 C 收集 Parent Chain','push C，再 parent[C]=B，再 parent[B]=C 回到起點。',{cycleRaw:['C','B','C'],operation:'collect cycle'}),
+    eventFrame(lesson,'parent[v]=u,x=v','第 4 輪仍可 Relax','按 A→B、B→C、C→B、C→D 的掃描順序，D 最後被更新，因此 x=D；D 不在負環內。',{pass:'V',updated:['B','C','D'],x:'D',parents:['B←C','C←B','D←C'],operation:'remember updated vertex'}),
+    eventFrame(lesson,'if(x!=-1){ for(int i=0;i<n','從 D 沿 Parent 回退 V 次','D←C←B←C←B；回退 4 次後 x=B，保證落在 cycle 內。',{start:'D',walk:['D','C','B','C','B'],x:'B',operation:'enter cycle'}),
+    eventFrame(lesson,'for(int v=x;;v=parent[v])','從 B 收集 Parent Chain','push B，再 parent[B]=C，再 parent[C]=B 回到起點。',{cycleRaw:['B','C','B'],operation:'collect cycle'}),
     eventFrame(lesson,'cycle.push_back','得到負環 B→C→B','反轉/調整方向後輸出 B,C,B，總權重 -2。',{cycle:['B','C','B'],weight:-2,operation:'output negative cycle'},{active:['B','C'],accepted:['B','C']}),
   ],
 
@@ -231,7 +315,9 @@ export const applyS2GraphTreeOverride=(lesson:AlgorithmLesson):AlgorithmLesson=>
   const dataset=lessonOverrides[lesson.id] ? {...lesson,...lessonOverrides[lesson.id]} : lesson
   const build=overrides[lesson.id]
   if(!build) return dataset
-  return {...dataset,frames:build(dataset),traceMode:'execution',animationVersion:2}
+  return {...dataset,frames:build(dataset).map((frame,step)=>({
+    ...frame,executionView:frame.executionView??graphTreeView(dataset,frame,step),
+  })),traceMode:'execution',animationVersion:2}
 }
 
 export const s2GraphTreeOverrideIds=Object.freeze(Object.keys(overrides))

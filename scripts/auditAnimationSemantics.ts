@@ -348,9 +348,75 @@ if (functional.frames.length !== 6 || functionalViewMismatch ||
   errors.push('functional-graph: displayed successors, visit marks, discovered cycles, code, or scope disagree')
 }
 
+const graphTreeCases = [
+  ['kruskal', 6, 'structure', 'cost = 13'],
+  ['prim', 8, 'structure', 'cost = 13'],
+  ['boruvka', 6, 'structure', 'cost = 13'],
+  ['dag-shortest-path', 6, 'network', 'E = 4'],
+  ['negative-cycle-reconstruction', 5, 'network', 'weight = -2'],
+  ['kosaraju-scc', 6, 'network', '3 SCC'],
+  ['condensation-graph', 5, 'network', '0 → 1 → 2'],
+  ['bridge-tree', 5, 'structure', 'ABC — DEF'],
+  ['tree-center', 3, 'structure', 'center = B'],
+  ['prufer-code', 6, 'structure', '[1,2,2,4]'],
+] as const
+for (const [id, count, kind, result] of graphTreeCases) {
+  const item = lesson(id)
+  if (item.frames.length !== count || item.frames.some((frame) => frame.executionView?.kind !== kind ||
+      !frame.codeLines.some((line) => line > 0 && Boolean(item.code[line - 1])))) {
+    errors.push(`${id}: every narrated step must show its actual graph/tree state and valid code line`)
+  }
+  if (!item.frames.at(-1)?.executionView?.badges?.includes(result)) {
+    errors.push(`${id}: final visual result must agree with the narration (${result})`)
+  }
+}
+for (const id of ['kruskal','prim','boruvka']) {
+  const final = lesson(id).frames.at(-1)?.executionView
+  if (final?.kind !== 'structure' || final.edges.filter((edge) => edge.active).length !== 5 ||
+      final.edges.filter((edge) => edge.active).reduce((sum,edge) => sum + Number(edge.label),0) !== 13) {
+    errors.push(`${id}: five visible MST edges must weigh 13`)
+  }
+}
+const dagFinal = lesson('dag-shortest-path').frames.at(-1)?.executionView
+if (dagFinal?.kind !== 'network' || dagFinal.nodes.map((node) => node.value).join(',') !== 'dist 0,dist 2,dist 1,dist 3,dist 4') {
+  errors.push('dag-shortest-path: displayed distances must follow all seven relaxations')
+}
+const negative = lesson('negative-cycle-reconstruction')
+if (negative.frames[1].state?.x !== 'D' || negative.frames[2].state?.x !== 'B' ||
+    negative.frames.at(-1)?.executionView?.kind !== 'network' ||
+    !negative.code.some((line) => line.includes('dist[u]!=INF')) ||
+    !negative.code.some((line) => line.trim() === 'x=-1;')) {
+  errors.push('negative-cycle-reconstruction: last updated node, parent walk, and unreachable guard disagree')
+}
+const sccFinal = lesson('kosaraju-scc').frames.at(-1)?.executionView
+if (sccFinal?.kind !== 'network' || sccFinal.nodes.map((node) => node.value).join(',') !== 'SCC 0,SCC 0,SCC 0,SCC 1,SCC 1,SCC 2') {
+  errors.push('kosaraju-scc: visible component labels differ from the two DFS passes')
+}
+const condensationFinal = lesson('condensation-graph').frames.at(-1)?.executionView
+if (condensationFinal?.kind !== 'network' || condensationFinal.edges.map((edge) => `${edge.from}${edge.to}`).join(',') !== '01,12') {
+  errors.push('condensation-graph: DAG must contain only the two cross-component edges')
+}
+const bridgeFinal = lesson('bridge-tree').frames.at(-1)?.executionView
+if (bridgeFinal?.kind !== 'structure' || bridgeFinal.edges.map((edge) => edge.label).join(',') !== 'B—D') {
+  errors.push('bridge-tree: the contracted tree must preserve the unique bridge B—D')
+}
+const centerFinal = lesson('tree-center').frames.at(-1)?.executionView
+if (centerFinal?.kind !== 'structure' || centerFinal.nodes.filter((node) => node.active).map((node) => node.id).join(',') !== 'B') {
+  errors.push('tree-center: the visual center must be B')
+}
+const pruferFinal = lesson('prufer-code').frames.at(-1)?.executionView
+if (pruferFinal?.kind !== 'structure' || pruferFinal.sequence?.join(',') !== '1,2,2,4' ||
+    pruferFinal.edges.map((edge) => `${edge.from}${edge.to}`).join(',') !== 'DF') {
+  errors.push('prufer-code: four removals must leave edge D—F and output [1,2,2,4]')
+}
+if (!lesson('kruskal').code.some((line) => line.includes('auto [u,v,w]:edges')) ||
+    !lesson('kruskal').code.some((line) => line.includes('get<2>(a)<get<2>(b)'))) {
+  errors.push('kruskal: sorting and tuple unpacking must use the declared {u,v,w} edge layout')
+}
+
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, inversion counting, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost, functional graph OK')
+  console.log('Animation semantics: prior covered lessons plus 10 graph/tree execution views and code links OK')
 }

@@ -283,6 +283,46 @@ const localPrerequisiteByCategory: Record<CategoryId, KnowledgeTerm[]> = {
 }
 
 const localPrerequisiteById: Record<string, KnowledgeTerm[]> = {
+  kruskal: [
+    { term: '邊的格式', meaning: '本例每條邊是 (u,v,w)，例如 BC1 代表 B—C 權重 1；程式排序用 w，比較兩端用 u、v。' },
+    { term: 'DSU 分量', meaning: '兩端已在同一分量的邊會成環，必須拒絕；合併不同分量時才增加 cost。' },
+  ],
+  prim: [
+    { term: '跨割候選邊', meaning: '一端已在 used、另一端尚未加入的邊；Heap 每次取最便宜候選。' },
+    { term: '過期候選', meaning: '邊曾被放入 Heap，但取出時終點已 used；直接跳過，不再增加 cost。' },
+  ],
+  boruvka: [
+    { term: '每塊的最便宜出邊', meaning: '對每個目前 DSU 分量，找從這塊通往其他塊的最小權重邊。' },
+    { term: '去重合併', meaning: '不同分量可能選到同一條邊；只有 DSU unite 真正成功時才把權重計入 cost。' },
+  ],
+  'dag-shortest-path': [
+    { term: '拓樸序', meaning: '每條有向邊 u→v 都讓 u 排在 v 前，處理 u 時它的前驅距離已定。' },
+    { term: '鬆弛', meaning: '若 dist[u]+w 小於 dist[v]，就用較短的候選覆蓋 dist[v]；DAG 即使有負邊也不會回頭成環。' },
+  ],
+  'negative-cycle-reconstruction': [
+    { term: '第 V 輪更新點', meaning: 'Bellman–Ford 仍能鬆弛時記下最後更新的 x；它可能在環外，本例是 D。' },
+    { term: 'Parent 回退', meaning: '沿 parent 走 V 次先進環；本例從 D 走到 B，再沿 B←C←B 收集環。' },
+  ],
+  'kosaraju-scc': [
+    { term: '強連通分量', meaning: '同一組內任兩點都有有向路徑互達；本例是 {A,B,C}、{D,E}、{F}。' },
+    { term: '完成時間與反向圖', meaning: '第一趟 DFS 記完成順序；倒序在反向圖 DFS，每次剛好取出一整個 SCC。' },
+  ],
+  'condensation-graph': [
+    { term: '縮點', meaning: '把同一 SCC 的所有原點當成一個新點，內部邊消失。' },
+    { term: '跨塊有向邊', meaning: '只保留不同 SCC 間的方向；本例 C→D 變 0→1、E→F 變 1→2。' },
+  ],
+  'bridge-tree': [
+    { term: '橋', meaning: '刪掉會讓原連通塊斷開的邊；本例兩個三角形間只有 B—D 是橋。' },
+    { term: '二邊連通塊', meaning: '先不走橋而塗色，本例得到 ABC 與 DEF；再把各塊縮成樹節點。' },
+  ],
+  'tree-center': [
+    { term: '直徑', meaning: '樹中最長的簡單路徑；本例 F—D—B—A—C 長 4 條邊。' },
+    { term: '半徑與中心', meaning: '選一點使它到最遠節點的距離最小；直徑中點 B 的最大距離是 2。' },
+  ],
+  'prufer-code': [
+    { term: '標號與葉子', meaning: 'A..F 對應 1..6；葉子是目前只剩一條邊的點，每輪移除最小標號葉。' },
+    { term: 'Prüfer 記錄', meaning: '移除葉子時寫下它的唯一鄰居；六點樹會寫四個數，本例 [1,2,2,4]。' },
+  ],
   'functional-graph': [
     { term: '唯一出邊', meaning: '每個節點恰有一個 next[u]；持續跟隨後繼，最終一定重訪某個節點。' },
     { term: '走訪標記', meaning: '0 是未見、正數是目前這輪的編號、-1 是已完成；只有重訪同一輪標記才代表發現新環。' },

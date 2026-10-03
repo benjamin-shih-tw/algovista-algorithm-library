@@ -43,7 +43,7 @@
 
 
 /* Stage 7: rich execution views for algorithms that need more than a generic scene. */
-.rich-execution-scene{position:relative;min-height:430px;padding:18px 20px 14px;overflow:hidden}
+.rich-execution-scene{--text-strong:var(--code-text);--text-muted:var(--muted);--surface-2:var(--panel2);--border:var(--line);position:relative;min-height:430px;padding:18px 20px 14px;overflow:hidden}
 .rich-scene-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
 .rich-scene-head>span{font-weight:800;color:var(--text-strong)}
 .rich-scene-head>div{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
@@ -55,6 +55,7 @@
 .rich-edge-label,.rich-node-value,.rich-geo-label{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--text-muted)}
 .rich-node{fill:color-mix(in srgb,var(--surface-2) 88%,transparent);stroke:color-mix(in srgb,var(--lesson-accent) 40%,var(--border));stroke-width:2}
 .rich-node.active{stroke:var(--lesson-accent);stroke-width:4;fill:color-mix(in srgb,var(--lesson-accent) 15%,var(--surface-2))}
+.rich-node.group-0{stroke:#a995ff}.rich-node.group-1{stroke:#72e6b7}.rich-node.group-2{stroke:#ffca78}
 .rich-node-label{font:800 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--text-strong);text-anchor:middle}
 .rich-node-value{text-anchor:middle}
 .rich-sequence{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px}
