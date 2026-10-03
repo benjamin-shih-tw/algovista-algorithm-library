@@ -52,6 +52,35 @@ const treeEdges=[
   {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
   {from:'B',to:'E'},{from:'D',to:'F'},
 ]
+const treeDpView=(step:number):NonNullable<Frame['executionView']>=>{
+  const value:Record<string,string>={A:step>=0?'dp 1':'—',B:'—',C:'—',D:'—',E:'—',F:'—'}
+  if(step>=2) value.B='dp 1'
+  if(step>=4) value.D='dp 1'
+  if(step>=6) value.F='dp 1'
+  if(step>=7) value.D='dp 2'
+  if(step>=8) value.B='dp 3'
+  if(step>=10) value.E='dp 1'
+  if(step>=11) value.B='dp 4'
+  if(step>=12) value.A='dp 5'
+  if(step>=14) value.C='dp 1'
+  if(step>=15) value.A='dp 6'
+  const stacks=[
+    ['A'],['A','B'],['A','B'],['A','B','D'],['A','B','D'],['A','B','D','F'],
+    ['A','B','D','F'],['A','B','D'],['A','B'],['A','B','E'],['A','B','E'],
+    ['A','B'],['A'],['A','C'],['A','C'],['A'],
+  ]
+  const activeEdges=new Set(stacks[Math.min(step,15)].slice(1).map((node,index)=>{
+    const parent=stacks[Math.min(step,15)][index]
+    return parent+node
+  }))
+  return {
+    kind:'network',title:'TREE DP · subtree size · postorder execution',
+    nodes:treePoints.map(p=>({id:p.id,label:p.id,x:p.x*10,y:p.y*4.3,value:value[p.id]})),
+    edges:treeEdges.map(e=>({from:e.from,to:e.to,active:activeEdges.has(e.from+e.to)})),
+    badges:[`call stack = ${stacks[Math.min(step,15)].join(' → ')}`,step===15?'dp[A] = 6 · all subtree sizes complete':'先算 child，return 後才 merge'],
+    path:stacks[Math.min(step,15)],
+  }
+}
 
 const codeOverrides:Record<string,string[]>={
   'digit-dp':[
@@ -69,7 +98,8 @@ const codeOverrides:Record<string,string[]>={
   'tree-dp':[
     'void dfs(int u,int p) {',
     '  dp[u]=1;',
-    '  for (int v:tree[u]) if (v!=p) {',
+    '  for (int v:tree[u]) {',
+    '    if (v==p) continue;',
     '    dfs(v,u);',
     '    dp[u]+=dp[v];',
     '  }',
@@ -231,13 +261,23 @@ const overrides:Record<string,TraceBuilder>={
   ].map((frame,step)=>({...frame,executionView:fenwick2DView(step)})),
 
   'tree-dp':lesson=>[
-    eventFrame(lesson,'dp[u]=1','Root A：每個 Node 先 Count 自己','這個具體 Tree DP 計算 subtree size；葉節點 base 都是 1。',{goal:'subtree size',root:'A',operation:'base state'},{active:['A']}),
-    eventFrame(lesson,'dfs(v,u)','沿 A→B→D→F 深入','先處理 child 再回父節點合併。',{callStack:['A','B','D','F'],operation:'postorder DFS'},{active:['A','B','D','F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','F 返回 D：dp[D]=1+1=2','F 是葉，dp[F]=1；D 合併 child F。',{child:'F',parent:'D',dpF:1,dpD:'1→2',operation:'merge child state'},{active:['D','F'],accepted:['F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','D、E 合併到 B','B 自己 1 + dp[D]2 + dp[E]1 = 4。',{node:'B',children:['D=2','E=1'],dpB:4,operation:'merge B subtree'},{active:['B','D','E'],accepted:['D','E','F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','C 是 Leaf：dp[C]=1','A 的另一個 child C 完成。',{node:'C',dpC:1,operation:'leaf result'},{active:['C'],accepted:['C']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','Root A 合併 B 與 C','dp[A]=1+4+1=6，等於整棵樹節點數。',{node:'A',children:['B=4','C=1'],dpA:6,operation:'finish root DP'},{active:['A','B','C'],accepted:['A','B','C','D','E','F']}),
-  ],
+    eventFrame(lesson,'dp[u]=1;','進入 A：先設 dp[A]=1','subtree size 的 base contribution 是節點自己，所以 dfs(A,-1) 一進來先執行 dp[A]=1。',{u:'A',dpA:1,operation:'initialize A'},{active:['A']}),
+    eventFrame(lesson,'dfs(v,u);','A 呼叫 Child B','for 看到 B，B 不是 parent，因此真正執行 dfs(B,A)；A 必須等待 B return，不能先加 dp[B]。',{call:'A→B',operation:'descend to B'},{active:['A','B']}),
+    eventFrame(lesson,'dp[u]=1;','進入 B：dp[B]=1','新的 stack frame B 先計入自己。',{u:'B',dpB:1,operation:'initialize B'},{active:['B']}),
+    eventFrame(lesson,'dfs(v,u);','B 呼叫 Child D','B 掃到 D，執行 dfs(D,B)；dp[B] 此時仍是 1。',{call:'B→D',dpB:1,operation:'descend to D'},{active:['B','D']}),
+    eventFrame(lesson,'dp[u]=1;','進入 D：dp[D]=1','D 先計入自己，再繼續找非 parent child。',{u:'D',dpD:1,operation:'initialize D'},{active:['D']}),
+    eventFrame(lesson,'dfs(v,u);','D 呼叫 Child F','F 不是 parent B，所以 D 執行 dfs(F,D)。',{call:'D→F',operation:'descend to F'},{active:['D','F']}),
+    eventFrame(lesson,'dp[u]=1;','F 是 Leaf：dp[F]=1 後 Return','F 的唯一鄰居是 parent D，會被 continue 掉；沒有 child call，也沒有 dp merge，所以直接 return。',{u:'F',dpF:1,leaf:true,operation:'leaf return'},{active:['F'],accepted:['F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','F Return：D 合併 dp[F]','回到 D 的 dfs(F,D) 下一行，才執行 dp[D]+=dp[F]：1+1=2。',{u:'D',v:'F',formula:'1+1',dpD:2,operation:'merge F into D'},{active:['D','F'],accepted:['F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','D Return：B 合併 dp[D]','D 已完成整個 subtree 並 return；回到 B 後執行一次 dp[B]+=dp[D]：1+2=3。',{u:'B',v:'D',formula:'1+2',dpB:3,operation:'merge D into B'},{active:['B','D'],accepted:['D','F']}),
+    eventFrame(lesson,'dfs(v,u);','B 再呼叫 Child E','B 的下一個非 parent child 是 E。此時 dp[B]=3，先遞迴求 E，再決定要加多少。',{call:'B→E',dpB:3,operation:'descend to E'},{active:['B','E'],accepted:['D','F']}),
+    eventFrame(lesson,'dp[u]=1;','E 是 Leaf：dp[E]=1 後 Return','E 除了 parent B 沒有其他 child，因此 dp[E]=1 就是完整答案。',{u:'E',dpE:1,leaf:true,operation:'leaf E return'},{active:['E'],accepted:['D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','E Return：B 再合併一次','現在才執行第二次 dp[B]+=dp[v]：3+1=4。這和上一個 D merge 是兩次不同的 Code execution。',{u:'B',v:'E',formula:'3+1',dpB:4,operation:'merge E into B'},{active:['B','E'],accepted:['D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','B Return：A 合併 dp[B]','B 的 children 全處理完，dp[B]=4 後 return；A 接著執行 dp[A]+=4，所以 1→5。',{u:'A',v:'B',formula:'1+4',dpA:5,operation:'merge B into A'},{active:['A','B'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'dfs(v,u);','A 接著呼叫 Child C','A 的 B branch 完整 return 後才輪到 C；執行 dfs(C,A)，此時 dp[A]=5。',{call:'A→C',dpA:5,operation:'descend to C'},{active:['A','C'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'dp[u]=1;','C 是 Leaf：dp[C]=1 後 Return','C 沒有非 parent child，因此完整 subtree size 就是 1。',{u:'C',dpC:1,leaf:true,operation:'leaf C return'},{active:['C'],accepted:['B','C','D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','C Return：A 得到最終 dp[A]=6','最後一次 merge 執行 dp[A]+=dp[C]：5+1=6。此時所有 child 都完成，Root A 的 subtree size 等於整棵樹 6 個節點。',{u:'A',v:'C',formula:'5+1',dpA:6,result:'A6 B4 C1 D2 E1 F1',operation:'finish root DP'},{active:['A','C'],accepted:['A','B','C','D','E','F']}),
+  ].map((frame,step)=>({...frame,executionView:treeDpView(step)}))
 
   'rerooting-dp':lesson=>[
     eventFrame(lesson,'dfs1(root,-1)','第一遍以 A 為 Root','同一棵 6 點樹，先求 subtree size 與 depth：A0,B1,C1,D2,E2,F3。',{root:'A',depth:'A0 B1 C1 D2 E2 F3',subtree:'A6 B4 C1 D2 E1 F1',operation:'first DFS'},{active:['A','B','C','D','E','F']}),
