@@ -21,6 +21,10 @@ const readWorkspaceWidth=()=>{try{const saved=Number(localStorage.getItem(WORKSP
 const segmentValues=[2,5,1,4,9,3,7,6]
 const segmentNodes=buildTree(segmentValues)
 
+function FrameCorners() {
+  return <span className="frame-corners" aria-hidden="true"><i/><i/><i/><i/></span>
+}
+
 function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = GraphAdaptiveScene({ lesson, frame })
   if (adaptive) return adaptive
@@ -457,10 +461,10 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
   const resetLayout=()=>setVisualWidth(58)
   return <main className="player-page" style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
     <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(totalLessons).padStart(3,'0')}</span></header>
-    <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p></div></section>
+    <section className="lesson-heading ui-frame lesson-frame relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="frame-dot-pattern opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><FrameCorners/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p><div className="lesson-meta-strip"><b>{lesson.complexity}</b><span>{lesson.frames.length} execution steps</span><span>{lesson.subcategory}</span></div></div></section>
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate} catalogById={catalogById}/>
 
-    <section className="lesson-stage" ref={stageRef}>
+    <section className="lesson-stage ui-stage-frame" ref={stageRef}><FrameCorners/>
       <div className="stage-top"><span>過程</span><button className="reset-layout" onClick={resetLayout} title="重設動畫與程式碼寬度"><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? '播放中' : '已暫停'}</span></div>
       <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
         <div className="visual-column">
@@ -469,11 +473,11 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
         <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p></motion.div></AnimatePresence></div>
+      <div className="explanation-card detailed resizable-y ui-frame relative overflow-hidden"><DotPattern width={15} height={15} cr={0.5} className="frame-dot-pattern opacity-[0.08] [mask-image:linear-gradient(to_right,black,transparent_75%)]"/><FrameCorners/><span className="step-number relative z-10">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p></motion.div></AnimatePresence></div>
     </section>
     <section className="lesson-context">
-      <article><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
-      <article><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
+      <article className="ui-frame"><FrameCorners/><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
+      <article className="ui-frame"><FrameCorners/><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
     </section>
     <footer className={`player-controls ${stageVisible?'visible':''}`} aria-hidden={!stageVisible}><div className="progress"><motion.i animate={{width:`${index/(lesson.frames.length-1)*100}%`}} /></div><span>{index+1} / {lesson.frames.length}</span><div><button aria-label="上一步" title="上一步" disabled={index===0} onClick={()=>{setPlaying(false);setIndex(index-1)}}><ChevronLeft/></button><button aria-label={playing?'暫停':'播放'} title={playing?'暫停':'播放'} className="play" onClick={()=>index===lesson.frames.length-1?restart():setPlaying(!playing)}>{playing?<Pause/>:<Play/>}</button><button aria-label="下一步" title="下一步" disabled={index===lesson.frames.length-1} onClick={()=>{setPlaying(false);setIndex(index+1)}}><ChevronRight/></button><button aria-label="重新播放" title="重新播放" onClick={restart}><RotateCcw/></button></div></footer>
   </main>
