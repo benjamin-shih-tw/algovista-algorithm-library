@@ -497,7 +497,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'i=prev[i];','跳到 prev4=2','選 job4 後不能單純 i--，必須跳到與它相容的前驅 2。',{i:'4→2',operation:'jump to predecessor'}),
     eventFrame(lesson,'chosen.push_back(i);','i=2：再選 Job 2','take2=true，加入 chosen=[4,2]。',{i:2,chosen:['4','2'],operation:'choose job2'}),
     eventFrame(lesson,'i=prev[i];','prev2=0：重建完成','i 變 0，離開 loop；反轉 chosen 可得到按時間順序的 [2,4]，總值 12。',{i:'2→0',chosen:['2','4'],answer:12,operation:'finish reconstruction'}),
-  ]
+  ],
 
   'monotone-queue-optimization':lesson=>[
     eventFrame(lesson,'deque<int> dq;','K=2，value=[3,-1,-2,4,1]','dp[i]=value[i]+max dp[j]，j∈[i-K,i-1]；Deque 依 dp 值遞減保存候選索引。',{K:2,value:['3','-1','-2','4','1'],deque:[],operation:'initialize'}),
