@@ -8,6 +8,37 @@ const geo=(title:string,points:any[],segments:any[]=[],badges:string[]=[],polygo
 const table=(title:string,columns:string[],rows:string[][],activeRow?:number,badges:string[]=[]):ExecutionView=>({
   kind:'table',title,columns,rows,activeRow,badges
 })
+const closestPairView=(step:number):ExecutionView=>{
+  const pts=[
+    {id:'A',x:150,y:330,label:'A (1,1)'},
+    {id:'B',x:260,y:100,label:'B (2,5)'},
+    {id:'C',x:370,y:270,label:'C (3,2)'},
+    {id:'D',x:590,y:160,label:'D (5,4)'},
+    {id:'E',x:850,y:330,label:'E (8,1)'},
+  ]
+  const activeByStep=[
+    [],['A'],['A'],['A','B'],['A','B'],['A','B'],['A','B','C'],
+    ['B','C'],['B','C'],['C'],['C'],['C'],['C','D'],
+    ['D'],['D'],[],[],['E'],['E'],
+  ]
+  const currentByStep=['A','A','B','B','C','C','C','D','D','D','D','D','D','E','E','E','E','E','E']
+  const bestByStep=['∞','∞','√17','√17','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5','√5']
+  const pairByStep=['', '', 'A-B','A-B','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C','A-C']
+  const active=activeByStep[Math.min(step,18)]
+  const current=currentByStep[Math.min(step,18)]
+  const pair=pairByStep[Math.min(step,18)]
+  const segments=pair==='A-B'
+    ? [{from:'A',to:'B',label:bestByStep[step],active:true}]
+    : pair==='A-C'
+      ? [{from:'A',to:'C',label:bestByStep[step],active:true}]
+      : []
+  const sweepX=pts.find(p=>p.id===current)?.x
+  return geo('CLOSEST PAIR · SWEEP ACTIVE SET',
+    pts.map(p=>({...p,active:p.id===current || active.includes(p.id)})),
+    segments,
+    [`active = {${active.join(', ') || '∅'}}`,`best = ${bestByStep[Math.min(step,18)]}`],
+    undefined,undefined,sweepX)
+}
 
 const codeOverrides:Record<string,string[]>={
   'sweep-line':[
@@ -22,14 +53,23 @@ const codeOverrides:Record<string,string[]>={
     '}',
   ],
   'closest-pair':[
-    'sort(points.begin(),points.end(),byX);',
-    'set<pair<int,int>> active;',
-    'double best=INF; int left=0;',
-    'for(int i=0;i<n;++i){',
-    '  while(points[i].x-points[left].x>=best) active.erase({points[left].y,left++});',
-    '  for(auto it=active.lower_bound({points[i].y-best,-1}); it!=active.end() && it->first<=points[i].y+best; ++it)',
-    '    best=min(best,distance(points[i],points[it->second]));',
-    '  active.insert({points[i].y,i});',
+    'double closestPair(vector<Point> points){',
+    '  sort(points.begin(),points.end(),byX);',
+    '  set<pair<int,int>> active;',
+    '  double best=INF;',
+    '  int left=0;',
+    '  for(int i=0;i<(int)points.size();++i){',
+    '    while(points[i].x-points[left].x>=best){',
+    '      active.erase({points[left].y,left});',
+    '      ++left;',
+    '    }',
+    '    auto it=active.lower_bound({points[i].y-best,-1});',
+    '    for(;it!=active.end() && it->first<=points[i].y+best;++it){',
+    '      best=min(best,distance(points[i],points[it->second]));',
+    '    }',
+    '    active.insert({points[i].y,i});',
+    '  }',
+    '  return best;',
     '}',
   ],
   'half-plane-intersection':[
@@ -114,18 +154,26 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'closest-pair':lesson=>[
-    eventFrame(lesson,'sort(points.begin()','Points 依 x 排序','P={(1,1),(2,5),(3,2),(5,4),(8,1)}。',{points:['(1,1)','(2,5)','(3,2)','(5,4)','(8,1)'],operation:'sort by x'},{executionView:geo('CLOSEST PAIR · X ORDER',[
-      {id:'A',x:150,y:330,label:'1,1'},{id:'B',x:260,y:100,label:'2,5'},{id:'C',x:370,y:270,label:'3,2'},{id:'D',x:590,y:160,label:'5,4'},{id:'E',x:850,y:330,label:'8,1'}
-    ],[],['sorted x'])}),
-    eventFrame(lesson,'best=min','掃到 C=(3,2)，目前 Best 由 A-C 得 sqrt(5)','A=(1,1) 與 C=(3,2) 距離²=5；best≈2.236。',{best:'sqrt(5)',pair:'A-C',operation:'update current best'},{executionView:geo('CURRENT BEST',[
-      {id:'A',x:150,y:330,label:'A',active:true},{id:'B',x:260,y:100,label:'B'},{id:'C',x:370,y:270,label:'C',active:true},{id:'D',x:590,y:160,label:'D'}
-    ],[{from:'A',to:'C',label:'√5',active:true}],['best √5'])}),
-    eventFrame(lesson,'while(points[i].x-points[left].x>=best)','掃到 D=(5,4) 時移除太左的 A、B','只保留 x 距離 < best 的點；這是 active strip。',{current:'D',removed:['A','B'],operation:'evict left points'},{executionView:geo('ACTIVE STRIP NEAR x=5',[
-      {id:'C',x:370,y:270,label:'C',active:true},{id:'D',x:590,y:160,label:'D',active:true}
-    ],[{from:'C',to:'D',label:'candidate'}],['strip width 2·best'],undefined,undefined,590)}),
-    eventFrame(lesson,'active.lower_bound','只查 y∈[D.y-best,D.y+best]','Active set 依 y 排序，候選數受幾何 packing 限制為常數級。',{yRange:'[1.764,6.236]',operation:'restrict y range'},{executionView:table('ACTIVE Y CANDIDATES',['point','y','candidate?'],[['C','2','yes']],0,['balanced BST by y'])}),
-    eventFrame(lesson,'best=min','C-D 距離 sqrt(8) 不更好','最終最近仍是 A-C，距離 sqrt(5)。',{result:'sqrt(5)',pair:'(1,1)-(3,2)',operation:'finish sweep'},{executionView:table('CLOSEST PAIR RESULT',['pair','distance²','distance'],[['A-C','5','√5']],0,['answer'])}),
-  ],
+    eventFrame(lesson,'sort(points.begin(),points.end(),byX);','先依 x 排序所有點','順序固定為 A(1,1), B(2,5), C(3,2), D(5,4), E(8,1)。掃描線只會向右。',{order:['A','B','C','D','E'],operation:'sort by x'},{executionView:closestPairView(0)}),
+    eventFrame(lesson,'active.insert({points[i].y,i});','i=A：Active 原本為空，直接插入 A','第一個點沒有候選可以比較；插入後 active={A}，best 仍是 ∞。',{i:'A',active:['A'],best:'∞',operation:'insert A'},{executionView:closestPairView(1)}),
+    eventFrame(lesson,'best=min(best,distance(points[i],points[it->second]));','i=B：比較 B-A，Best 變 √17','active 只有 A，distance²=(2-1)²+(5-1)²=17，所以 best 從 ∞ 更新為 √17。',{pair:'A-B',distance2:17,best:'√17',operation:'compare B with A'},{executionView:closestPairView(2)}),
+    eventFrame(lesson,'active.insert({points[i].y,i});','把 B 插入 Active','完成 B 的候選檢查後才 insert B；active={A,B}。',{active:['A','B'],operation:'insert B'},{executionView:closestPairView(3)}),
+    eventFrame(lesson,'best=min(best,distance(points[i],points[it->second]));','i=C：先比較 C-A，Best 改成 √5','C-A 的距離²=5，比目前 17 小，所以 best 真正更新為 √5。',{pair:'A-C',distance2:5,best:'√5',operation:'improve best with C-A'},{executionView:closestPairView(4)}),
+    eventFrame(lesson,'best=min(best,distance(points[i],points[it->second]));','C 再比較 B：√10 不改善','B-C 距離²=10，大於目前 best²=5；這行仍執行，但 min 後 best 保持 √5。',{pair:'B-C',distance2:10,best:'√5',operation:'reject worse candidate'},{executionView:closestPairView(5)}),
+    eventFrame(lesson,'active.insert({points[i].y,i});','把 C 插入 Active','完成 C 的 y-window 候選後，active={A,B,C}。',{active:['A','B','C'],operation:'insert C'},{executionView:closestPairView(6)}),
+    eventFrame(lesson,'active.erase({points[left].y,left});','掃到 D：先 Erase 太左的 A','D.x-A.x=4 ≥ best≈2.236，所以 A 不可能再和現在或未來點形成更近 pair。真正刪除發生在 active.erase。',{current:'D',removed:'A',active:['B','C'],operation:'erase A'},{executionView:closestPairView(7)}),
+    eventFrame(lesson,'++left;','Left 指標從 A 移到 B','erase 後才執行 ++left；while 必須重新判斷新的 points[left]=B。',{left:'0→1',operation:'advance left after A'},{executionView:closestPairView(8)}),
+    eventFrame(lesson,'active.erase({points[left].y,left});','D-B 也太遠：Erase B','D.x-B.x=3 ≥ √5，因此 B 也離開 active；現在只剩 C。',{current:'D',removed:'B',active:['C'],operation:'erase B'},{executionView:closestPairView(9)}),
+    eventFrame(lesson,'++left;','Left 再從 B 移到 C','left 變成 C 的索引 2；D.x-C.x=2 < √5，所以 eviction while 停止。',{left:'1→2',operation:'advance left to C'},{executionView:closestPairView(10)}),
+    eventFrame(lesson,'best=min(best,distance(points[i],points[it->second]));','D 只需比較 C：√8 不改善','C 位於 D 的 y-window 中，但距離²=8 > 5，因此 best 仍是 √5。',{pair:'C-D',distance2:8,best:'√5',operation:'check D candidate'},{executionView:closestPairView(11)}),
+    eventFrame(lesson,'active.insert({points[i].y,i});','把 D 插入 Active','完成 D 後 active={C,D}。',{active:['C','D'],operation:'insert D'},{executionView:closestPairView(12)}),
+    eventFrame(lesson,'active.erase({points[left].y,left});','掃到 E：Erase C','E.x-C.x=5 ≥ √5，因此 C 被移出 active。',{current:'E',removed:'C',active:['D'],operation:'erase C'},{executionView:closestPairView(13)}),
+    eventFrame(lesson,'++left;','Left 從 C 移到 D','left 由 2 變 3，接著 while 再檢查 D。',{left:'2→3',operation:'advance left to D'},{executionView:closestPairView(14)}),
+    eventFrame(lesson,'active.erase({points[left].y,left});','E-D 仍太遠：Erase D','E.x-D.x=3 ≥ √5，D 也不可能改善答案，active 變空。',{current:'E',removed:'D',active:[],operation:'erase D'},{executionView:closestPairView(15)}),
+    eventFrame(lesson,'++left;','Left 移到 E 自己','left 由 3 變 4；eviction 結束，E 沒有任何 active 候選需要比較。',{left:'3→4',operation:'advance left to E'},{executionView:closestPairView(16)}),
+    eventFrame(lesson,'active.insert({points[i].y,i});','插入最後的 E','active={E}，所有點都掃描完成。',{active:['E'],best:'√5',operation:'insert E'},{executionView:closestPairView(17)}),
+    eventFrame(lesson,'return best;','回傳最近距離 √5','全程最小 pair 是 A(1,1)-C(3,2)，distance²=5。',{pair:'A-C',distance2:5,result:'√5',operation:'return closest distance'},{executionView:closestPairView(18)}),
+  ]
 
   'half-plane-intersection':lesson=>[
     eventFrame(lesson,'sort(lines.begin()','四個 Half-planes：x≥0, x≤4, y≥0, y≤3','依 directed boundary angle 排序。交集應是 4×3 rectangle。',{halfplanes:['x≥0','x≤4','y≥0','y≤3'],operation:'angle sort'},{executionView:table('HALF-PLANE ANGLE ORDER',['boundary','kept side'],[['y=0 →','y≥0'],['x=4 ↑','x≤4'],['y=3 ←','y≤3'],['x=0 ↓','x≥0']],undefined,['CCW boundaries'])}),
