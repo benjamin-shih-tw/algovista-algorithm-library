@@ -282,6 +282,13 @@ const localPrerequisiteByCategory: Record<CategoryId, KnowledgeTerm[]> = {
   ],
 }
 
+const localPrerequisiteById: Record<string, KnowledgeTerm[]> = {
+  'huffman-coding': [
+    { term: '最小堆', meaning: '每次取出權重最小的兩棵樹；合併後把新樹權重放回，下一輪仍能取到全域最小值。' },
+    { term: '加權路徑長', meaning: '每個葉節點的頻率乘上它到根的深度，再全部相加；每次合併成本的總和正好等於這個值。' },
+  ],
+}
+
 const naiveByCategory: Record<CategoryId, string> = {
   'search-sort': '最直接的方法通常是逐一枚舉所有候選或每次重新掃描整個區間；正確但會重複做大量已知工作。',
   'linear-structures': '若每次都在普通陣列中搬移、重新搜尋候選，單次操作可能退化成 O(n)。',
@@ -597,7 +604,7 @@ const buildKnowledge = (lesson: AlgorithmLesson): KnowledgeUnit => {
     coreIdea: buildCoreIdea(lesson, middle),
     mentalModel: guide.mentalModel,
     prerequisites: dependencies,
-    localPrerequisites: localPrerequisiteByCategory[lesson.categoryId],
+    localPrerequisites: localPrerequisiteById[lesson.id] ?? localPrerequisiteByCategory[lesson.categoryId],
     structure,
     initialization: {
       goal: first.title,

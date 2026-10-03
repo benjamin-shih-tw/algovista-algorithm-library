@@ -1,5 +1,5 @@
 import type { AlgorithmLesson, Frame, Point } from './algorithms'
-import { eventFrame } from './traceAuthoring'
+import { eventFrame, lineNumber } from './traceAuthoring'
 
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
@@ -22,6 +22,16 @@ const parallelSearchView=(step:number):NonNullable<Frame['executionView']>=>{
   }
 }
 
+const huffmanHeapView=(frame:Frame):NonNullable<Frame['executionView']>=>{
+  const heap=Array.isArray(frame.state?.heap)?frame.state.heap:[]
+  const take=Array.isArray(frame.state?.take)?frame.state.take:[]
+  return {kind:'table',title:'HUFFMAN · current min-heap after this step',
+    columns:['rank','tree weight'],
+    rows:heap.map((weight,index)=>[String(index+1),weight]),
+    badges:[`cost = ${frame.state?.cost}`,...(take.length?[`take ${take.join(' + ')} → ${frame.state?.push}`]:[])],
+  }
+}
+
 const treePoints:Point[]=[
   {id:'A',x:12,y:46,label:'A'},{id:'B',x:34,y:22,label:'B'},
   {id:'C',x:34,y:76,label:'C'},{id:'D',x:60,y:16,label:'D'},
@@ -33,6 +43,19 @@ const treeEdges=[
 ]
 
 const codeOverrides:Record<string,string[]>={
+  'huffman-coding':[
+    'long long huffmanMergeCost(const vector<long long>& freq) {',
+    '  priority_queue<long long,vector<long long>,greater<long long>> pq(freq.begin(),freq.end());',
+    '  long long cost=0;',
+    '  while(pq.size()>1){',
+    '    long long a=pq.top(); pq.pop();',
+    '    long long b=pq.top(); pq.pop();',
+    '    cost+=a+b;',
+    '    pq.push(a+b);',
+    '  }',
+    '  return cost;',
+    '}',
+  ],
   'interval-dp':[
     'for(int i=0;i<n;++i) dp[i][i+1]=0;',
     'for(int len=2;len<=n;++len)',
@@ -61,6 +84,7 @@ const codeOverrides:Record<string,string[]>={
 }
 
 const lessonOverrides:Record<string,Partial<AlgorithmLesson>>={
+  'huffman-coding':{description:'反覆合併兩個最低頻率節點。本動畫只計算最優樹的加權路徑長（合併成本），不產生每個符號的編碼字。'},
   'grid-dp':{visual:'dp'},
   'matrix-chain-multiplication':{visual:'dp'},
   'interval-dp':{visual:'dp'},
@@ -197,13 +221,18 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'huffman-coding':lesson=>[
-    eventFrame(lesson,'priority_queue<ll','Frequencies = [5,9,12,13,16,45]','Min-Heap 每次取兩個最小 frequency。',{heap:['5','9','12','13','16','45'],cost:0,operation:'initialize frequencies'}),
-    eventFrame(lesson,'ll a=pq.top','取 5 與 9，Merge=14','cost=14，把虛擬 node 14 放回 Heap。',{take:['5','9'],push:14,cost:14,heap:['12','13','14','16','45'],operation:'merge two minima'}),
-    eventFrame(lesson,'cost+=a+b','取 12 與 13 →25','cost 14+25=39。',{take:['12','13'],push:25,cost:39,operation:'second merge'}),
-    eventFrame(lesson,'cost+=a+b','取 14 與 16 →30','cost=69。',{take:['14','16'],push:30,cost:69,operation:'third merge'}),
-    eventFrame(lesson,'cost+=a+b','取 25 與 30 →55','cost=124。',{take:['25','30'],push:55,cost:124,operation:'fourth merge'}),
-    eventFrame(lesson,'cost+=a+b','最後 45 與 55 →100','總 cost=224；所有合併權重和就是最優加權碼長。',{take:['45','55'],push:100,cost:224,operation:'finish Huffman tree'}),
-  ],
+    eventFrame(lesson,'priority_queue<long long','Frequencies = [5,9,12,13,16,45]','六個符號各自是一棵單節點樹；Min-Heap 依樹的總頻率排列。',{heap:['5','9','12','13','16','45'],cost:0,operation:'initialize frequencies'}),
+    eventFrame(lesson,'cost+=a+b','取 5 與 9，Merge=14','將兩棵最小樹接為同一父節點，5+9=14；累計 cost=14，再把 14 放回 Heap。',{take:['5','9'],push:14,cost:14,heap:['12','13','14','16','45'],operation:'merge two minima'}),
+    eventFrame(lesson,'cost+=a+b','取 12 與 13 →25','12+13=25；累計 cost=14+25=39。',{take:['12','13'],push:25,cost:39,heap:['14','16','25','45'],operation:'second merge'}),
+    eventFrame(lesson,'cost+=a+b','取 14 與 16 →30','14+16=30；累計 cost=39+30=69。',{take:['14','16'],push:30,cost:69,heap:['25','30','45'],operation:'third merge'}),
+    eventFrame(lesson,'cost+=a+b','取 25 與 30 →55','25+30=55；累計 cost=69+55=124。',{take:['25','30'],push:55,cost:124,heap:['45','55'],operation:'fourth merge'}),
+    eventFrame(lesson,'cost+=a+b','最後 45 與 55 →100','45+55=100；累計 cost=124+100=224。只剩一棵樹；224 是最優加權路徑長，本程式不輸出編碼字。',{take:['45','55'],push:100,cost:224,heap:['100'],operation:'finish Huffman tree'}),
+  ].map((frame,step)=>({
+    ...frame,
+    codeLines:step===0?frame.codeLines:[lineNumber(lesson,'long long a=pq.top'),lineNumber(lesson,'long long b=pq.top'),lineNumber(lesson,'cost+=a+b'),lineNumber(lesson,'pq.push(a+b)')],
+    state:step===0?frame.state:{...frame.state,highlightCodeLines:'all'},
+    executionView:huffmanHeapView(frame),
+  })),
 
   'parallel-binary-search':lesson=>[
     eventFrame(lesson,'while(existsUnresolvedQuery','Events 增量=[2,1,3,2,4]，Queries Threshold=[3,6,10]','每個 q 要找最早 prefix total ≥ threshold 的事件時間 t∈[0,4]。',{events:['2','1','3','2','4'],queries:['q0≥3','q1≥6','q2≥10'],intervals:['0..4','0..4','0..4'],operation:'initialize parallel searches'}),

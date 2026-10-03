@@ -298,10 +298,29 @@ if (monotonicQueueRows.some((rows) => !rows || rows.length !== 8 || rows.map((ro
     windowMax.practice?.[0]?.url !== 'https://leetcode.com/problems/sliding-window-maximum/') {
   errors.push('monotonic-queue: input, missing second window, deque, or emitted maxima differ from the example')
 }
+const huffman = lesson('huffman-coding')
+const huffmanHeaps = [
+  '5,9,12,13,16,45', '12,13,14,16,45', '14,16,25,45',
+  '25,30,45', '45,55', '100',
+]
+if (huffman.frames.length !== 6 || huffman.frames.some((frame, step) =>
+    frame.executionView?.kind !== 'table' ||
+    frame.executionView.rows.map((row) => row[1]).join(',') !== huffmanHeaps[step] ||
+    frame.executionView.badges?.includes(`cost = ${[0,14,39,69,124,224][step]}`) !== true) ||
+    !huffman.code.some((line) => line.includes('long long huffmanMergeCost(')) ||
+    !huffman.code.some((line) => line.includes('return cost;')) ||
+    huffman.code.some((line) => line.includes('競賽環境')) ||
+    !huffman.description.includes('本動畫只計算') ||
+    huffman.knowledge?.localPrerequisites.map((item) => item.term).join(',') !== '最小堆,加權路徑長' ||
+    !huffman.usage?.[0]?.includes('合併成本') ||
+    huffman.frames.slice(1).some((frame) => frame.state?.highlightCodeLines !== 'all' ||
+      !frame.codeLines.some((line) => huffman.code[line - 1]?.includes('pq.push(a+b)')))) {
+  errors.push('huffman-coding: visible heap, accumulated merge cost, code, or lesson scope differs from the six-frequency example')
+}
 
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
 } else {
-  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element OK')
+  console.log('Animation semantics: segment tree, Dijkstra, BFS, Fenwick 1D/2D, 2D prefix, Floyd–Warshall, edit distance, grid DP, LCS, matrix chain, interval DP, parallel binary search, bitmask DP, TSP DP, interval scheduling/covering/merging, job scheduling, counting sort, meet-in-the-middle, fractional knapsack, histogram rectangle, window maximum, expression evaluation, shunting yard, monotonic stack/queue, next greater element, Huffman merge cost OK')
 }
