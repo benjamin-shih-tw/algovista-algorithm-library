@@ -238,7 +238,6 @@ const codeOverrides: Record<string, string[]> = {
 
 const lessonOverrides: Record<string, Partial<AlgorithmLesson>> = {
   'merge-sort': {
-    values:[7,2,9,4],
     description:'以完整四元素 execution 示範遞迴拆分、左右子問題回傳與逐步 merge；每個可見資料 mutation 都對應實際 C++ 行。',
   },
   'monotonic-stack': {
