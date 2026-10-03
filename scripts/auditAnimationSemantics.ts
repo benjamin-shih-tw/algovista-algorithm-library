@@ -431,6 +431,41 @@ if (!lesson('kruskal').code.some((line) => line.includes('auto [u,v,w]:edges')) 
   errors.push('kruskal: sorting and tuple unpacking must use the declared {u,v,w} edge layout')
 }
 
+
+const mergeSort = lesson('merge-sort')
+if (
+  mergeSort.frames.length !== 16 ||
+  mergeSort.values?.join(',') !== '7,2,9,4' ||
+  mergeSort.frames[3].state?.tmp?.join(',') !== '2' ||
+  mergeSort.frames[5].values?.join(',') !== '2,7,9,4' ||
+  mergeSort.frames[10].values?.join(',') !== '2,7,4,9' ||
+  mergeSort.frames.at(-1)?.values?.join(',') !== '2,4,7,9' ||
+  !mergeSort.code.some((line)=>line.trim()==='tmp.push_back(a[i]);') ||
+  !mergeSort.code.some((line)=>line.trim()==='tmp.push_back(a[j]);') ||
+  !mergeSort.frames[3].codeLines.some((line)=>mergeSort.code[line-1]?.includes('tmp.push_back(a[j])')) ||
+  !mergeSort.frames[11].codeLines.some((line)=>mergeSort.code[line-1]?.includes('tmp.push_back(a[i])'))
+) {
+  errors.push('merge-sort: recursive calls, merge mutations, or visible array states no longer match the full four-value execution')
+}
+
+const treeDp = lesson('tree-dp')
+const treeDpFinal = treeDp.frames.at(-1)?.executionView
+if (
+  treeDp.frames.length !== 16 ||
+  treeDpFinal?.kind !== 'network' ||
+  treeDpFinal.nodes.map((node)=>node.value).join(',') !== 'dp 6,dp 4,dp 1,dp 2,dp 1,dp 1' ||
+  !treeDp.frames[7].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[8].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[11].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[12].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[15].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  treeDp.frames[1].state?.call !== 'A→B' ||
+  treeDp.frames[5].state?.call !== 'D→F' ||
+  treeDp.frames[13].state?.call !== 'A→C'
+) {
+  errors.push('tree-dp: DFS call order, child returns, per-child merges, or final subtree sizes disagree')
+}
+
 if (errors.length) {
   for (const error of errors) console.error(error)
   process.exitCode = 1
