@@ -386,6 +386,10 @@ const prepareMixedTopLevelCode = (source: string[]) => {
 }
 
 const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
+  if (lesson.studentGuide) {
+    const header = [`// ${lesson.title}｜${lesson.zhTitle}`, `// Purpose: ${lesson.description}`, `// Complexity: ${lesson.complexity}`, '', '#include <bits/stdc++.h>', 'using namespace std;', '']
+    return { ...lesson, code: [...header, ...lesson.code], frames: lesson.frames.map((frame) => ({ ...frame, codeLines: frame.codeLines.map((line) => line + header.length) })) }
+  }
   const envDeclarations = buildEnvDeclarations(lesson.code)
   const wrapInMain = needsMainWrap(lesson.code)
   const code: string[] = [

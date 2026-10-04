@@ -61,7 +61,13 @@ mkdirSync(lessonDir,{recursive:true})
 const lessonPayloadSizes:{id:string;bytes:number}[]=[]
 for(const lesson of lessons){
   assertJsonSafe(lesson,`lesson.${lesson.id}`)
-  const serialized=JSON.stringify(lesson)
+  // Authored student scenes do not read the legacy generated guides or debug state.
+  const runtimeLesson = lesson.studentGuide ? {
+    ...lesson,
+    codeGuide: undefined, beginnerGuide: undefined,
+    frames: lesson.frames.map(({beginner, trace, visualCue, state, ...frame}) => frame),
+  } : lesson
+  const serialized=JSON.stringify(runtimeLesson)
   const restored=JSON.parse(serialized) as {id?:string;frames?:unknown[]}
   if(restored.id!==lesson.id||restored.frames?.length!==lesson.frames.length){
     throw new Error(`lesson serialization mismatch: ${lesson.id}`)

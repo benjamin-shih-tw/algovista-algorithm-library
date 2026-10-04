@@ -82,3 +82,42 @@
   .rich-scene-head{align-items:flex-start;flex-direction:column}
   .rich-matrix-grid,.rich-table-grid{overflow-x:auto;grid-auto-columns:minmax(52px,1fr)}
 }
+.student-guide { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); padding: var(--space-6); margin-bottom: var(--space-6); color: var(--code-text); }
+.student-guide h2 { font-size: 1.1rem; margin: 0 0 16px; }
+.student-guide dl, .step-teaching dl { margin: 0; display: grid; gap: 12px; }
+.student-guide dl > div, .step-teaching dl > div { padding: 12px; border-left: 3px solid var(--lesson-accent); background: var(--panel2); border-radius: 4px; min-width: 0; }
+.student-guide dt, .step-teaching dt { color: var(--lesson-accent); font-size: .85rem; font-weight: 700; margin-bottom: 6px; }
+.student-guide dd, .step-teaching dd { margin: 0; line-height: 1.85; overflow-wrap: anywhere; }
+.student-guide p, .student-guide li, .step-teaching p { line-height: 1.85; overflow-wrap: anywhere; }
+.student-guide li + li { margin-top: 8px; }
+.student-guide summary, .step-teaching summary { cursor: pointer; color: var(--lesson-accent); line-height: 1.6; padding: 12px 0; }
+.student-guide details, .step-teaching details { border-top: 1px solid var(--line); margin-top: 12px; }
+.student-reading-order { color: var(--muted); }
+.step-explanation-content { flex: 1; min-width: 0; }
+.step-why { margin: 16px 0 0; }
+.step-teaching pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--panel2); padding: 12px; border-radius: 8px; }
+.step-teaching details p { font-size: .85rem; color: var(--muted); }
+.step-teaching + * { margin-top: 12px; }
+.student-basics > summary { padding: 0; }
+.step-jump { display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-4); color:var(--muted); font-size:13px; border-bottom:1px solid var(--line); }
+.step-jump select { flex:1; min-width:0; max-width:100%; padding:var(--space-2); background:var(--panel2); color:var(--code-text); border:1px solid var(--line); border-radius:8px; font:inherit; }
+.student-basics[open] > summary { margin-bottom: var(--space-4); }
+.player-page[data-student-guide] .local-terms b { font-size: 14px; color: var(--code-text); }
+.player-page[data-student-guide] .local-terms p { font-size: 14px; line-height: 1.8; }
+.player-page[data-student-guide] .rich-table-grid > span { font-size: 14px; }
+.player-page[data-student-guide] .rich-table-grid > strong { font-size: 12px; }
+.player-page[data-student-guide] .rich-network .rich-node-value { font-size: 18px; }
+.player-page[data-student-guide] .explanation-card { align-items: start; }
+.player-page[data-student-guide] .step-teaching p { font-size: 15px; line-height: 1.8; }
+.student-graph-readout { display: none; }
+@media (max-width: 640px) {
+  .student-graph-readout { display:block; padding:var(--space-4); border-top:1px solid var(--line); }
+  .student-graph-readout h3 { font-size:15px; margin:0 0 var(--space-3); }
+  .student-graph-readout dl { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2); margin:0; }
+  .student-graph-readout dl > div { padding:var(--space-2); border:1px solid var(--line); border-radius:8px; }
+  .student-graph-readout dt { color:var(--lesson-accent); font-weight:700; }
+  .student-graph-readout dd { margin:var(--space-1) 0 0; font-size:14px; overflow-wrap:anywhere; }
+  .student-graph-readout p, .student-graph-readout summary { font-size:14px; line-height:1.8; }
+  .player-page[data-student-guide] .rich-network svg, .player-page[data-student-guide] .rich-structure svg { height:200px; min-height:0; }
+}
+@media (max-width: 640px) { .student-guide { padding: 16px; } .step-teaching dl > div { padding: 10px; } }

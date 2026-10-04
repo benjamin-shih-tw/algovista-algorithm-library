@@ -10,6 +10,7 @@ import { enrichKnowledgeCatalog, type KnowledgeUnit } from './knowledge'
 import { applyExecutionTraceOverride } from './executionTraceOverrides'
 import { applyS2ExecutionOverride } from './s2ExecutionOverrides'
 import { applyS3ExecutionOverride } from './s3ExecutionOverrides'
+import { applyStudentLesson } from './studentLessons'
 
 export type AlgorithmId = string
 export type VisualKind = 'array' | 'linear' | 'graph' | 'tree' | 'segment-tree' | 'range' | 'dp' | 'string' | 'flow' | 'math' | 'geometry' | 'transform'
@@ -82,6 +83,16 @@ export interface BeginnerStep {
   codeMeaning: string
   pitfall?: string
 }
+export interface StudentGuide {
+  input: string
+  goal: string
+  terms: { term: string; meaning: string }[]
+  reasoning: string[]
+  boundaries: string[]
+  cost: string
+  question: string
+  answer: string
+}
 export interface BeginnerGuide {
   mentalModel: string
   prerequisite: string
@@ -128,6 +139,7 @@ export interface Frame {
   visualStep?: number
   visualProgress?: number
   beginner?: BeginnerStep
+  teaching?: { before: string; decision: string; after: string; why: string }
   visualCue?: VisualCue
 }
 
@@ -148,6 +160,7 @@ export interface AlgorithmLesson {
   traceMode?: 'execution' | 'semantic'
   visualModel?: VisualModel
   beginnerGuide?: BeginnerGuide
+  studentGuide?: StudentGuide
   codeGuide?: CodeGuideLine[]
   knowledge?: KnowledgeUnit
   usage?: string[]
@@ -493,6 +506,15 @@ const ensureGuidedLesson = (lesson: AlgorithmLesson): AlgorithmLesson => {
   }
 }
 const buildVisualTrace = (lesson: AlgorithmLesson, frame: Frame, step: number): VisualTrace => {
+  if (frame.teaching) return {
+    signature: `${lesson.id}:${step}:${frame.title}`, step, totalSteps: lesson.frames.length,
+    phase: step === 0 ? 'prepare' : step === lesson.frames.length - 1 ? 'verify' : 'execute',
+    nodes: [
+      { label: '執行前', value: frame.teaching.before, role: 'input' },
+      { label: '本步操作', value: frame.teaching.decision, role: 'operation' },
+      { label: '執行後', value: frame.teaching.after, role: 'result' },
+    ], focus: frame.active ?? [], activeCode: frame.codeLine,
+  }
   const entries = Object.entries(frame.state ?? {})
   const ratio = lesson.frames.length <= 1 ? 1 : step / (lesson.frames.length - 1)
   const phase: VisualTrace['phase'] = ratio < .34 ? 'prepare' : ratio < .78 ? 'execute' : 'verify'
@@ -528,6 +550,7 @@ const pedagogicalLessons: AlgorithmLesson[] = [...coreLessons, ...foundationLess
   .map(applyExecutionTraceOverride)
   .map(applyS2ExecutionOverride)
   .map(applyS3ExecutionOverride)
+  .map(applyStudentLesson)
   .map(enrichLesson)
   .map(enrichPedagogy)
   .map((lesson) => ({ ...lesson, fidelity: lesson.traceMode === 'execution' ? 'concrete' as const : 'semantic' as const }))

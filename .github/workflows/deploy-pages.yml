@@ -71,6 +71,8 @@ jobs:
         run: npm run audit:animation:stage3
       - name: Audit user-visible animation semantics
         run: npm run audit:animation:semantics
+      - name: Audit student traces against independent answers and C++
+        run: npm run audit:students
       - name: Upload Stage 3 code-sync audit
         uses: actions/upload-artifact@v4
         with:

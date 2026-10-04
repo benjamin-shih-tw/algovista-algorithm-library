@@ -652,7 +652,7 @@ const buildKnowledge = (lesson: AlgorithmLesson): KnowledgeUnit => {
     coreIdea: buildCoreIdea(lesson, middle),
     mentalModel: guide.mentalModel,
     prerequisites: dependencies,
-    localPrerequisites: localPrerequisiteById[lesson.id] ?? localPrerequisiteByCategory[lesson.categoryId],
+    localPrerequisites: lesson.studentGuide?.terms ?? localPrerequisiteById[lesson.id] ?? localPrerequisiteByCategory[lesson.categoryId],
     structure,
     initialization: {
       goal: first.title,
@@ -674,8 +674,8 @@ const buildKnowledge = (lesson: AlgorithmLesson): KnowledgeUnit => {
       steps: [firstSentence(first.explanation), firstSentence(middle.explanation), firstSentence(last.explanation)],
       output: cleanState(last) || firstSentence(last.explanation),
     },
-    mistakes: guide.pitfalls,
-    edgeCases: edgeCasesByCategory[lesson.categoryId],
+    mistakes: lesson.studentGuide?.boundaries ?? guide.pitfalls,
+    edgeCases: lesson.studentGuide?.boundaries ?? edgeCasesByCategory[lesson.categoryId],
     extensions: [],
   }
 }

@@ -21,7 +21,7 @@ for (const lesson of lessons) {
   if (lesson.frames.length < 3) errors.push(`${lesson.id}: fewer than 3 frames`)
   if (!lesson.code.length) errors.push(`${lesson.id}: empty code`)
   if (lesson.animationVersion === 2) {
-    if (lesson.frames.length > 20) errors.push(`${lesson.id}: guided execution trace exceeds 20 authored events`)
+    if (lesson.frames.length > (lesson.studentGuide ? 1000 : 20)) errors.push(`${lesson.id}: execution trace exceeds its event budget`)
     if (!lesson.sources?.length) errors.push(`${lesson.id}: guided animation has no content source`)
   }
   for (const source of lesson.sources ?? []) {
@@ -48,7 +48,9 @@ for (const lesson of lessons) {
   if (lesson.animationVersion === 2 && lesson.fidelity !== 'concrete') errors.push(`${lesson.id}: guided simulator is not concrete`)
   if (lesson.animationVersion !== 2 && lesson.fidelity === 'concrete') errors.push(`${lesson.id}: semantic lesson marked concrete`)
   lesson.frames.forEach((frame, frameIndex) => {
-    if (frame.explanation.trim().length < 8) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation is missing or too terse`)
+    if (lesson.studentGuide) {
+      if (!frame.executionView || !frame.teaching || Object.values(frame.teaching).some((text) => !text.trim())) errors.push(`${lesson.id} frame ${frameIndex + 1}: incomplete authored explanation or data scene`)
+    } else if (frame.explanation.trim().length < 8) errors.push(`${lesson.id} frame ${frameIndex + 1}: explanation is missing or too terse`)
     if (!frame.codeLines.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: no active code line`)
     if (!frame.codeLine.trim() || /^[{}]+;?$/.test(frame.codeLine.trim()) || frame.codeLine.trim().startsWith('//')) errors.push(`${lesson.id} frame ${frameIndex + 1}: active code is not an executable teaching line`)
     for (const line of frame.codeLines) if (line < 1 || line > lesson.code.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: code line ${line} out of range`)
@@ -62,7 +64,7 @@ for (const lesson of lessons) {
       if (new Set(frame.trace.nodes.map((node) => node.value)).size !== frame.trace.nodes.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: repeated visual node value`)
       const semanticKey = frame.trace.nodes.map((node) => `${node.label}:${node.value}`).join('|')
       const owner = semanticTraces.get(semanticKey)
-      if (owner && owner !== lesson.id) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual state duplicates ${owner}`)
+      if (owner && owner !== lesson.id && !lesson.studentGuide) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual state duplicates ${owner}`)
       semanticTraces.set(semanticKey, lesson.id)
     }
     if (frame.visualStep !== frameIndex) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual step is not deterministic`)
@@ -103,9 +105,13 @@ for (const lesson of lessons) {
     if (!sortGuide?.purpose.includes('upper_bound')) errors.push(`${lesson.id}: sort step does not explain why binary search becomes valid`)
     if (!sortGuide?.effect.includes('原地')) errors.push(`${lesson.id}: sort step does not explain the visible data mutation`)
   }
-  if (new Set(lesson.frames.map((frame) => frame.title)).size !== lesson.frames.length) errors.push(`${lesson.id}: repeated step title`)
+  if (!lesson.studentGuide && new Set(lesson.frames.map((frame) => frame.title)).size !== lesson.frames.length) errors.push(`${lesson.id}: repeated step title`)
   const teachingStates = lesson.frames.map((frame) => JSON.stringify({ code: frame.codeLine, state: Object.fromEntries(Object.entries(frame.state ?? {}).filter(([key]) => key !== 'timelineStep')), active: frame.active, accepted: frame.accepted }))
-  if (new Set(teachingStates).size !== teachingStates.length) errors.push(`${lesson.id}: repeated teaching state does not create a real new step`)
+  if (!lesson.studentGuide && new Set(teachingStates).size !== teachingStates.length) errors.push(`${lesson.id}: repeated teaching state does not create a real new step`)
+  if (lesson.studentGuide) for (let i=1;i<lesson.frames.length;i++) {
+    const scene = (frame: typeof lesson.frames[number]) => JSON.stringify([frame.codeLine,frame.teaching,frame.executionView])
+    if(scene(lesson.frames[i])===scene(lesson.frames[i-1])) errors.push(`${lesson.id}: duplicate consecutive student scene at ${i+1}`)
+  }
 }
 
 lessons.forEach((lesson, index) => {

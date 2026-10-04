@@ -349,8 +349,20 @@ function RichExecutionScene({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame})
   return <div className="scene rich-execution-scene rich-table"><div className="rich-scene-head"><span>{view.title}</span><div>{badges.map((badge)=><b key={badge}>{badge}</b>)}</div></div><div className="rich-table-grid" style={{gridTemplateColumns:`repeat(${view.columns.length}, minmax(0,1fr))`}}>{view.columns.map((column)=><strong key={column}>{column}</strong>)}{view.rows.flatMap((row,r)=>row.map((cell,col)=>{const active=view.activeRow===r||view.activeCells?.includes(`${r},${col}`);return <motion.span key={`${r}-${col}`} className={active?'active':''} animate={{opacity:view.activeRow!==undefined&&view.activeRow!==r?.5:1}}>{cell}</motion.span>}))}</div></div>
 }
 
+function GraphReadout({frame}:{frame:Frame}) {
+  const view=frame.executionView
+  if(!view||(view.kind!=='network'&&view.kind!=='structure'))return null
+  const directed=view.kind==='network'
+  return <div className="student-graph-readout" aria-label="圖的文字讀法">
+    <h3>把圖上的數字讀清楚</h3>
+    <dl>{view.nodes.map((node)=><div key={node.id}><dt>{node.label??node.id}</dt><dd>{'value' in node?node.value:'meta' in node?node.meta:'—'}</dd></div>)}</dl>
+    {view.edges.some((edge)=>edge.active)&&<p>本步亮起的邊：{view.edges.filter((edge)=>edge.active).map((edge)=>`${edge.from}${directed?'→':'—'}${edge.to}`).join('、')}</p>}
+    <details><summary>查看這張圖的所有連線</summary><p>{view.edges.map((edge)=>`${edge.from}${directed?'→':'—'}${edge.to}${edge.label?`（${edge.label}）`:''}`).join('、')||'目前沒有連線'}</p></details>
+  </div>
+}
+
 function AlgorithmScene({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
-  if(frame.executionView) return <div className="algorithm-scene-wrap resizable-y" data-visual-model={lesson.visualModel}><RichExecutionScene lesson={lesson} frame={frame}/></div>
+  if(frame.executionView) return <div className="algorithm-scene-wrap resizable-y" data-visual-model={lesson.visualModel}><RichExecutionScene lesson={lesson} frame={frame}/>{lesson.studentGuide&&<GraphReadout frame={frame}/>}</div>
   if(lesson.fidelity==='semantic') return <div className="algorithm-scene-wrap resizable-y" data-visual-model={lesson.visualModel}><SemanticScene lesson={lesson} frame={frame}/></div>
   const scene=lesson.visual==='array'?<ArrayScene lesson={lesson} frame={frame}/>:
     lesson.visual==='linear'?<LinearScene lesson={lesson} frame={frame}/>:
@@ -403,10 +415,49 @@ function KnowledgeUnitPanel({lesson,onNavigate,catalogById}:{lesson:AlgorithmLes
     <div className="knowledge-content">
       <div className="knowledge-dependencies">
         <section><header><Link2/><span>先備課程</span></header>{unit.prerequisites.length?<div>{unit.prerequisites.map((item)=><LessonDependencyLink key={item.lessonId} {...item} onNavigate={onNavigate} catalogById={catalogById}/>)}</div>:<p>這是本學習路線的基礎單元，不依賴其他演算法課。</p>}</section>
-        <section><header><BookOpen/><span>進入過程前先懂</span></header><div className="local-terms">{unit.localPrerequisites.map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
+        <section><header><BookOpen/><span>進入過程前先懂</span></header><div className="local-terms">{(lesson.studentGuide?.terms??unit.localPrerequisites).map((item)=><article key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>)}</div></section>
       </div>
     </div>
   </section>
+}
+
+function StudentGuidePanel({lesson}:{lesson:AlgorithmLesson}) {
+  const guide=lesson.studentGuide
+  if(!guide)return null
+  return <section className="student-guide" aria-label="本課學習目標">
+    <h2>先知道要算什麼</h2>
+    <dl><div><dt>這次的輸入</dt><dd>{guide.input}</dd></div><div><dt>最後要會的事</dt><dd>{guide.goal}</dd></div></dl>
+    <p className="student-reading-order">每步先看「原本」，自己想會怎麼做，再看判斷與結果。亮起的圖格、數值和右側程式都屬於同一步；按「上一步」可還原當時狀態。</p>
+    <details><summary>為什麼這樣做一定正確？</summary><ol>{guide.reasoning.map((item)=><li key={item}>{item}</li>)}</ol></details>
+    <details><summary>什麼情況要小心？要花多少時間與空間？</summary><ul>{guide.boundaries.map((item)=><li key={item}>{item}</li>)}</ul><p>{guide.cost}</p></details>
+  </section>
+}
+
+function ProgrammingBasics() {
+  return <details className="student-guide student-basics">
+    <summary>第一次讀程式？先認識這些記號</summary>
+    <dl>
+      <div><dt>變數、=、==</dt><dd>變數是保存資料的名字。x = 3 是把 3 存進 x；x == 3 是問「x 現在是否等於 3」，本身不改值。true 表示成立，false 表示不成立。</dd></div>
+      <div><dt>陣列、位置與 []</dt><dd>陣列是一排依序編號的格子，從 0 開始。a[2] 是第三格；vector 是可設定長度的一排格子。dp[a][b][c] 用三個編號定位同一格，不是把三個值相乘。</dd></div>
+      <div><dt>int、long long、bool、string</dt><dd>int 保存整數；long long 能保存範圍更大的整數，但仍有上限。bool 保存成立或不成立。string 保存依序排列的字元；size() 讀取格數。</dd></div>
+      <div><dt>++、+=、%、min</dt><dd>++x 把 x 加 1；x += y 把原本的 x 加上 y 再存回 x；% 求除法餘數，例如 8%3=2；min(a,b) 取兩者較小值。</dd></div>
+      <div><dt>if、else、&&、||、!</dt><dd>if 檢查條件，成立才做裡面的事；else 是不成立時的另一條路。&& 是「而且」，|| 是「或者」，! 是「不是」。前面已足以決定結果時，&& 或 || 後面的條件不會再讀。</dd></div>
+      <div><dt>for、while、continue、break</dt><dd>for 與 while 讓一段動作重複進行；先看條件是否成立，再執行本輪。continue 略過本輪剩下的動作，進下一輪；break 結束最近的一層迴圈，不是結束整個程式。</dd></div>
+      <div><dt>函式、參數、return、遞迴</dt><dd>函式是一段可被呼叫的程式；括號裡的參數告訴它這次處理什麼。return 結束這一次呼叫並交回答案。遞迴是函式呼叫自己：原來那次會暫停，保留自己的變數，等子呼叫回來再往下做。</dd></div>
+      <div><dt>大括號、分號、const、&</dt><dd>{'大括號 { } 圈出同一段工作，分號 ; 結束一個敘述。const 表示不透過這個名字修改資料；函式參數的 & 表示引用原資料，不複製整份。const string& 因此是借用原字串來讀。'}</dd></div>
+      <div><dt>O(n) 是什麼？</dt><dd>它描述資料變大時，需要做的工作如何增加，不是秒數。O(n) 大致隨格數增加；O(n²) 可能每格都要搭配每格檢查；O(log n) 常見於每次把候選減半。</dd></div>
+    </dl>
+  </details>
+}
+
+function StepTeachingPanel({frame}:{frame:Frame}) {
+  if(!frame.teaching)return <p className="step-summary">{frame.explanation}</p>
+  const {before,decision,after,why}=frame.teaching
+  return <div className="step-teaching">
+    <dl><div><dt>① 原本</dt><dd>{before}</dd></div><div><dt>② 讀取／判斷／執行</dt><dd>{decision}</dd></div><div><dt>③ 現在</dt><dd>{after}</dd></div></dl>
+    <p className="step-why"><b>為什麼：</b>{why}</p>
+    <details><summary>對照這一步的 C++</summary><pre><code><CppCode line={frame.codeLine}/></code></pre><p>圖與數值顯示本步完成後的快照。條件行若沒有賦值，資料不會因為播放而自行改變。</p></details>
+  </div>
 }
 
 function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
@@ -455,13 +506,16 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
   const seekToCodeStep=(step:number)=>{setPlaying(false);setIndex(step)}
   const beginWorkspaceResize=(event:React.PointerEvent<HTMLButtonElement>)=>{event.preventDefault();const move=(pointerEvent:PointerEvent)=>{const bounds=workspaceRef.current?.getBoundingClientRect();if(!bounds)return;setVisualWidth(Math.min(72,Math.max(30,(pointerEvent.clientX-bounds.left)/bounds.width*100)))};const finish=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',finish)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',finish)}
   const resetLayout=()=>setVisualWidth(58)
-  return <main className="player-page" style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
+  return <main className="player-page" data-student-guide={lesson.studentGuide?'true':undefined} style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
     <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(totalLessons).padStart(3,'0')}</span></header>
     <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p></div></section>
+    <StudentGuidePanel lesson={lesson}/>
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate} catalogById={catalogById}/>
+    <ProgrammingBasics/>
 
     <section className="lesson-stage" ref={stageRef}>
       <div className="stage-top"><span>過程</span><button className="reset-layout" onClick={resetLayout} title="重設動畫與程式碼寬度"><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? '播放中' : '已暫停'}</span></div>
+      <label className="step-jump">選擇步驟<select aria-label="選擇步驟" value={index} onChange={(event)=>seekToCodeStep(Number(event.target.value))}>{lesson.frames.map((item,step)=><option key={step} value={step}>{step+1} / {lesson.frames.length} · {item.title}</option>)}</select></label>
       <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
         <div className="visual-column">
           <AlgorithmScene lesson={lesson} frame={frame}/>
@@ -469,8 +523,9 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
         <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><AnimatePresence mode="wait"><motion.div key={`${lesson.id}-${index}`} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}><h2>{frame.title}</h2><p className="step-summary">{frame.explanation}</p></motion.div></AnimatePresence></div>
+      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><div className="step-explanation-content"><h2>{frame.title}</h2><StepTeachingPanel frame={frame}/></div></div>
     </section>
+    {lesson.studentGuide&&<section className="student-guide student-check" aria-label="理解檢查"><h2>先自己說一次</h2><p>{lesson.studentGuide.question}</p><details><summary>展開答案，核對自己的理由</summary><p>{lesson.studentGuide.answer}</p></details></section>}
     <section className="lesson-context">
       <article><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
       <article><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
