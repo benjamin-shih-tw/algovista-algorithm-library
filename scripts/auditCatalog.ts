@@ -62,7 +62,7 @@ for (const lesson of lessons) {
       if (frame.trace.activeCode !== frame.codeLine) errors.push(`${lesson.id} frame ${frameIndex + 1}: trace and code are not synchronized`)
       if (frame.trace.nodes.length !== 3 || frame.trace.nodes.some((node) => !node.label || !node.value)) errors.push(`${lesson.id} frame ${frameIndex + 1}: incomplete visual nodes`)
       if (new Set(frame.trace.nodes.map((node) => node.value)).size !== frame.trace.nodes.length) errors.push(`${lesson.id} frame ${frameIndex + 1}: repeated visual node value`)
-      const semanticKey = frame.trace.nodes.map((node) => `${node.label}:${node.value}`).join('|')
+      const semanticKey = JSON.stringify({ nodes: frame.trace.nodes.map(({label,value})=>[label,value]), state: frame.state, executionView: frame.executionView })
       const owner = semanticTraces.get(semanticKey)
       if (owner && owner !== lesson.id && !lesson.studentGuide) errors.push(`${lesson.id} frame ${frameIndex + 1}: visual state duplicates ${owner}`)
       semanticTraces.set(semanticKey, lesson.id)

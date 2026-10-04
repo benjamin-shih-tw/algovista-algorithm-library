@@ -92,7 +92,7 @@ const markdown=[
   `- Standalone syntax-verified: **${compiled.length} / ${lessons.length}**`,
   `- Teaching snippets requiring lesson/problem context: **${failed.length} / ${lessons.length}**`,
   '',
-  'A snippet result is a classification, not a release failure. The audit does not invent judge I/O, domain helpers, or fake APIs to force standalone compilation.',
+  'Standalone means C++17 syntax checking passed, not a linked executable or a proof of algorithm correctness. Snippet means the displayed source did not pass this check; diagnostics may indicate missing context OR genuine syntax/type defects and need review. This coverage job reports those results without treating every snippet as a release failure. It does not invent judge I/O, domain helpers, or fake APIs to force compilation.',
   '',
   '## Snippet reasons',
   '',

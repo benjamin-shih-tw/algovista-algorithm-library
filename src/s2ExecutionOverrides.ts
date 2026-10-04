@@ -122,32 +122,45 @@ const expressionEvaluationCode = [
   '  vector<string> ops;',
   '  auto precedence=[](const string& op){return op=="+"||op=="-"?1:2;};',
   '  auto applyTop=[&](){',
-  '    string op=ops.back(); ops.pop_back();',
-  '    long long b=values.back(); values.pop_back();',
-  '    long long a=values.back(); values.pop_back();',
-  '    values.push_back(op=="+"?a+b:op=="-"?a-b:op=="*"?a*b:a/b);',
+  '    string op=ops.back();',
+  '    ops.pop_back();',
+  '    long long b=values.back();',
+  '    values.pop_back();',
+  '    long long a=values.back();',
+  '    values.pop_back();',
+  '    long long r=op=="+"?a+b:op=="-"?a-b:op=="*"?a*b:a/b;',
+  '    values.push_back(r);',
   '  };',
   '  for(const string& t:tokens){',
-  '    if(isdigit((unsigned char)t[0])) values.push_back(stoll(t));',
-  '    else if(t=="(") ops.push_back(t);',
-  '    else if(t==")"){ while(ops.back()!="(") applyTop(); ops.pop_back(); }',
-  '    else {',
-  '      while(!ops.empty() && ops.back()!="(" && precedence(ops.back())>=precedence(t)) applyTop();',
-  '      ops.push_back(t);',
+  '    if(isdigit((unsigned char)t[0])) { values.push_back(stoll(t)); continue; }',
+  '    if(t=="(") { ops.push_back(t); continue; }',
+  '    if(t==")"){',
+  '      while(!ops.empty() && ops.back()!="(") applyTop();',
+  '      ops.pop_back();',
+  '      continue;',
   '    }',
+  '    while(!ops.empty() && ops.back()!="(" && precedence(ops.back())>=precedence(t)) applyTop();',
+  '    ops.push_back(t);',
   '  }',
   '  while(!ops.empty()) applyTop();',
   '  return values.back();',
   '}',
 ]
 const expressionEvaluationView = (step:number):NonNullable<Frame['executionView']> => {
-  const values=[[],['3'],['3'],['3','4'],['3','4'],['3','4','2'],['3','8'],['11']][step]
-  const ops=[[],[],['+'],['+'],['+','*'],['+','*'],['+'],[]][step]
-  return {kind:'table',title:'EXPRESSION EVALUATION · 3 + 4 * 2',
-    columns:['token index','token','read'],
-    rows:['3','+','4','*','2'].map((token,index)=>[String(index),token,index<=Math.min(step-1,4)?'已讀':'待讀']),
-    activeCells:step>=1&&step<=5?[`${step-1},1`]:[],
-    badges:[`values = [${values.join(',')}]`,`ops = [${ops.join(',')}]`,...(step===6?['4 * 2 = 8']:step===7?['3 + 8 = 11']:[])],
+  const tokens=['3','+','4','*','(','2','-','1',')']
+  const values=[
+    [],['3'],['3'],['3','4'],['3','4'],['3','4'],['3','4','2'],['3','4','2'],['3','4','2','1'],
+    ['3','4','1'],['3','4','1'],['3','4','1'],['3','4'],['7'],['7'],
+  ][Math.min(step,14)]
+  const ops=[
+    [],[],['+'],['+'],['+','*'],['+','*','('],['+','*','('],['+','*','(','-'],['+','*','(','-'],
+    ['+','*','('],['+','*'],['+','*'],['+'],[],[],
+  ][Math.min(step,14)]
+  return {kind:'table',title:'EXPRESSION EVALUATION · 3 + 4 * (2 - 1)',
+    columns:['token index','token','status'],
+    rows:tokens.map((token,index)=>[String(index),token,index<Math.min(step,9)?'已讀':index===Math.min(step,8)?'目前':'待讀']),
+    activeCells:step>=1&&step<=9?[(Math.min(step-1,8))+',1']:[],
+    badges:['values = ['+values.join(', ')+']','ops = ['+ops.join(', ')+']',...(step>=13?['result = 7']:[])],
   }
 }
 
@@ -388,14 +401,21 @@ const overrides: Record<string, TraceBuilder> = {
   ].map((frame,step)=>({...frame,executionView:windowMaximumView(step)})),
 
   'expression-evaluation': (lesson) => [
-    eventFrame(lesson,'vector<long long> values','求值 3 + 4 * 2','tokens=[3,+,4,*,2]。values 與 ops 一開始都空。',{expression:'3 + 4 * 2',values:[],ops:[],operation:'initialize stacks'}),
-    eventFrame(lesson,'values.push_back(stoll(t))','讀 3：Push Values','values=[3]。',{token:'3',values:['3'],ops:[],operation:'push operand'}),
-    eventFrame(lesson,'      ops.push_back(t);','讀 +：Ops 為空，不 Reduce','直接把 + 放到 ops。',{token:'+',values:['3'],ops:['+'],operation:'push operator'}),
-    eventFrame(lesson,'values.push_back(stoll(t))','讀 4','values=[3,4]。',{token:'4',values:['3','4'],ops:['+'],operation:'push operand'}),
-    eventFrame(lesson,'precedence(ops.back())>=precedence(t)','讀 *：優先序高於 +','stack top + 不應先於 * 結算，所以 push *；ops=[+,*]。',{token:'*',values:['3','4'],ops:['+','*'],operation:'respect precedence'}),
-    eventFrame(lesson,'values.push_back(stoll(t))','讀 2','values=[3,4,2]。',{token:'2',values:['3','4','2'],ops:['+','*'],operation:'push operand'}),
-    eventFrame(lesson,'while(!ops.empty()) applyTop','輸入結束：先算 4*2','pop * 與 4、2，push 結果 8。values=[3,8]，ops=[+]。',{reduce:'4*2=8',values:['3','8'],ops:['+'],operation:'apply multiplication'}),
-    eventFrame(lesson,'while(!ops.empty()) applyTop','再算 3+8','pop +，得到 values=[11]。',{reduce:'3+8=11',values:['11'],ops:[],result:11,operation:'apply addition'}),
+    eventFrame(lesson,'vector<long long> values;','初始化 Values / Ops','Expression=3 + 4 * (2 - 1)。values 與 ops 都從空開始。',{expression:'3 + 4 * (2 - 1)',values:[],ops:[],operation:'initialize parser'}),
+    eventFrame(lesson,'values.push_back(stoll(t));','讀 3：Push Values','數字直接進 values。',{token:'3',values:['3'],ops:[],operation:'push number 3'}),
+    eventFrame(lesson,'ops.push_back(t);','讀 +：Push Ops','目前沒有更高或同優先序 operator 需要先結算。',{token:'+',values:['3'],ops:['+'],operation:'push plus'}),
+    eventFrame(lesson,'values.push_back(stoll(t));','讀 4：Push Values','values=[3,4]。',{token:'4',values:['3','4'],ops:['+'],operation:'push number 4'}),
+    eventFrame(lesson,'ops.push_back(t);','讀 *：直接 Push','* 優先序高於目前 top +，所以不 reduce +。',{token:'*',values:['3','4'],ops:['+','*'],operation:'push multiply'}),
+    eventFrame(lesson,'if(t=="(")','讀 (：Push Barrier','左括號阻止外層 operator 在括號內完成前被 reduce。',{token:'(',values:['3','4'],ops:['+','*','('],operation:'push left paren'},{codeAnchor:'ops.push_back(t);'}),
+    eventFrame(lesson,'values.push_back(stoll(t));','讀 2：Push Values','values=[3,4,2]。',{token:'2',values:['3','4','2'],ops:['+','*','('],operation:'push number 2'}),
+    eventFrame(lesson,'ops.push_back(t);','讀 -：Push Ops','因為 top 是 (，precedence while 不會越過 barrier。',{token:'-',values:['3','4','2'],ops:['+','*','(','-'],operation:'push minus'}),
+    eventFrame(lesson,'values.push_back(stoll(t));','讀 1：Push Values','values=[3,4,2,1]。',{token:'1',values:['3','4','2','1'],ops:['+','*','(','-'],operation:'push number 1'}),
+    eventFrame(lesson,'values.push_back(r);','右括號：Apply 2 - 1 = 1','applyTop 取 b=1、a=2、op=-，將結果 1 push 回 values。',{a:2,b:1,op:'-',result:1,values:['3','4','1'],ops:['+','*','('],operation:'reduce parentheses'}),
+    eventFrame(lesson,'ops.pop_back();','移除左括號','括號內已結算完，這一行只移除 grouping barrier。',{values:['3','4','1'],ops:['+','*'],operation:'discard left paren'},{sourceOccurrence:1}),
+    eventFrame(lesson,'while(!ops.empty()) applyTop();','輸入結束：開始 Flush','ops=[+,*]，LIFO 代表先 * 再 +。這是控制判斷，尚未修改 values。',{values:['3','4','1'],ops:['+','*'],operation:'start final flush'}),
+    eventFrame(lesson,'values.push_back(r);','Apply 4 * 1 = 4','乘法結果 push 回 values，得到 [3,4]；ops 剩 [+]。',{a:4,b:1,op:'*',result:4,values:['3','4'],ops:['+'],operation:'reduce multiply'}),
+    eventFrame(lesson,'values.push_back(r);','Apply 3 + 4 = 7','最後的 + 結算後 values=[7]，ops=[]。',{a:3,b:4,op:'+',result:7,values:['7'],ops:[],operation:'reduce plus'}),
+    eventFrame(lesson,'return values.back();','回傳 7','括號與 precedence 都已依實際 stack 操作處理完畢。',{result:7,operation:'return evaluated value'}),
   ].map((frame,step)=>({...frame,executionView:expressionEvaluationView(step)})),
 }
 

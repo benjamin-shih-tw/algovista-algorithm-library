@@ -92,7 +92,6 @@
 .student-guide li + li { margin-top: 8px; }
 .student-guide summary, .step-teaching summary { cursor: pointer; color: var(--lesson-accent); line-height: 1.6; padding: 12px 0; }
 .student-guide details, .step-teaching details { border-top: 1px solid var(--line); margin-top: 12px; }
-.student-reading-order { color: var(--muted); }
 .step-explanation-content { flex: 1; min-width: 0; }
 .step-why { margin: 16px 0 0; }
 .step-teaching pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--panel2); padding: 12px; border-radius: 8px; }

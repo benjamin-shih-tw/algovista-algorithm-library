@@ -67,10 +67,13 @@ const codeOverrides:Record<string,string[]>={
   'flow-lower-bounds':[
     'for(auto [u,v,low,high]:edges){',
     '  addEdge(u,v,high-low);',
-    '  balance[u]-=low; balance[v]+=low;',
+    '  balance[u]-=low;',
+    '  balance[v]+=low;',
     '}',
-    'for(int v=0;v<n;++v) if(balance[v]>0) addEdge(SS,v,balance[v]);',
-    'else if(balance[v]<0) addEdge(v,TT,-balance[v]);',
+    'for(int v=0;v<n;++v){',
+    '  if(balance[v]>0) addEdge(SS,v,balance[v]);',
+    '  if(balance[v]<0) addEdge(v,TT,-balance[v]);',
+    '}',
     'addEdge(t,s,INF);',
     'return maxflow(SS,TT)==totalDemand;',
   ],
@@ -221,19 +224,13 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'flow-lower-bounds':lesson=>[
-    eventFrame(lesson,'for(auto [u,v,low,high]','Edge A→B 要求 Flow [2,5]','先強制送 lower=2，再把可調整 residual capacity 設為 high-low=3。',{edge:'A→B',lower:2,upper:5,residual:3,operation:'remove lower bound'},{executionView:network('LOWER-BOUND TRANSFORM',[
-      {from:'A',to:'B',label:'[2,5] → cap3',active:true}
-    ],['A','B'],['forced flow 2'])}),
-    eventFrame(lesson,'balance[u]-=low','更新 Balance','A 因送出 lower2 得 balance=-2；B 得 +2。',{balances:['A=-2','B=+2'],operation:'record imbalance'},{executionView:network('NODE BALANCES',[
-      {from:'A',to:'B',label:'forced 2',active:true}
-    ],['A','B'],['A -2','B +2'])}),
-    eventFrame(lesson,'addEdge(SS,v','Positive Balance 由 SS 補入','對 B 加 SS→B cap2；A 負 balance 加 A→TT cap2。',{superEdges:['SS→B 2','A→TT 2'],operation:'add super source sink'},{executionView:{kind:'network',title:'SUPER SOURCE / SINK',nodes:[...netNodes,{id:'SS',x:70,y:60},{id:'TT',x:930,y:370}],edges:[{from:'SS',to:'B',label:'2',active:true},{from:'A',to:'TT',label:'2',active:true}],path:['SS','B','A','TT'],badges:['demand 2']}}),
-    eventFrame(lesson,'addEdge(t,s,INF)','加入 T→S Infinite Edge','把原 s-t Flow 問題轉成 Circulation Feasibility。',{operation:'close circulation'},{executionView:network('CLOSE CIRCULATION',[
-      {from:'T',to:'S',label:'INF',active:true,dashed:true}
-    ],['T','S'])}),
-    eventFrame(lesson,'maxflow(SS,TT)==totalDemand','所有 SS Edge 飽和才可行','若 maxflow(SS,TT)=2=totalDemand，lower bounds 有可行 flow；最後把強制 lower 加回原 edge。',{required:2,sent:2,result:'feasible',operation:'saturation check'},{executionView:network('FEASIBILITY CHECK',[
-      {from:'A',to:'B',label:'final ≥2'},{from:'S',to:'A',label:'flow'},{from:'B',to:'T',label:'flow'}
-    ],[],['SS demand saturated','feasible'])}),
+    eventFrame(lesson,'addEdge(u,v,high-low);','A→B [2,5]：建立 Residual Capacity 3','輸入為 S→A [0,5]、A→B [2,5]、B→T [0,5]。先把 A→B 的下限 2 固定，剩餘可調容量是 5−2=3；兩側邊的可調容量各為 5。',{edge:'A→B',lower:2,upper:5,residual:3,operation:'create residual capacity'},{executionView:network('LOWER-BOUND TRANSFORM',[{from:'A',to:'B',label:'cap 3',active:true}],['A','B'],['original range [2,5]'])}),
+    eventFrame(lesson,'balance[u]-=low;','扣除 A 的強制流出：Balance[A] = -2','lower=2 等於先固定送 2 單位；對起點 A 造成 2 單位缺口。',{node:'A',balance:'0→-2',operation:'decrease source balance'},{executionView:network('LOWER FLOW · SOURCE BALANCE',[{from:'A',to:'B',label:'forced 2',active:true}],['A'],['A balance -2'])}),
+    eventFrame(lesson,'balance[v]+=low;','增加 B 的強制流入：Balance[B] = +2','同一筆 lower flow 在終點 B 形成 +2 需求。',{node:'B',balance:'0→+2',operation:'increase target balance'},{executionView:network('LOWER FLOW · TARGET BALANCE',[{from:'A',to:'B',label:'forced 2',active:true}],['B'],['A -2','B +2'])}),
+    eventFrame(lesson,'addEdge(SS,v,balance[v]);','Positive Balance B：加 SS→B cap2','固定的下限已讓 B 收到 2；為維持流入等於流出，可調整部分必須從 B 再送出 2。SS→B 是輔助邊，用來強制這 2 單位沿剩餘網路送出。',{edge:'SS→B',capacity:2,operation:'add positive-balance edge'},{executionView:{kind:'network',title:'SUPER SOURCE EDGE',nodes:[...netNodes,{id:'SS',x:70,y:60},{id:'TT',x:930,y:370}],edges:[{from:'SS',to:'B',label:'2',active:true}],path:['SS','B'],badges:['B needs +2']}}),
+    eventFrame(lesson,'addEdge(v,TT,-balance[v]);','Negative Balance A：加 A→TT cap2','A 已因下限流出 2，可調整部分必須替 A 補回 2。A→TT 是輔助邊；必須先有路徑把 2 送到 A，才能送入 TT。',{edge:'A→TT',capacity:2,operation:'add negative-balance edge'},{executionView:{kind:'network',title:'SUPER SINK EDGE',nodes:[...netNodes,{id:'SS',x:70,y:60},{id:'TT',x:930,y:370}],edges:[{from:'SS',to:'B',label:'2'},{from:'A',to:'TT',label:'2',active:true}],path:['A','TT'],badges:['A supplies deficit 2']}}),
+    eventFrame(lesson,'addEdge(t,s,INF);','加入 T→S Infinite Edge','原本是有指定 source/sink 的 flow 問題；這條邊把它閉成 circulation，讓可行性統一用 SS→TT max-flow 檢查。',{operation:'close circulation'},{executionView:network('CLOSE CIRCULATION',[{from:'T',to:'S',label:'INF',active:true,dashed:true}],['T','S'])}),
+    eventFrame(lesson,'return maxflow(SS,TT)==totalDemand;','檢查所有 Demand Edge 是否飽和','沿 SS→B→T→S→A→TT 送 2，兩條輔助需求邊都滿，maxflow=totalDemand=2。去掉 SS、TT 與 T→S，再加回 A→B 的下限 2：原圖 S→A→B→T 每邊流量均為 2，符合容量及中間點流量守恆。',{required:2,sent:2,result:'feasible',operation:'check feasibility'},{executionView:{kind:'network',title:'FEASIBILITY CHECK',nodes:[...netNodes,{id:'SS',x:70,y:60},{id:'TT',x:930,y:370}],edges:[{from:'A',to:'B',label:'0/3 + lower 2'},{from:'SS',to:'B',label:'2/2',active:true},{from:'B',to:'T',label:'2/5',active:true},{from:'T',to:'S',label:'2/INF',active:true},{from:'S',to:'A',label:'2/5',active:true},{from:'A',to:'TT',label:'2/2',active:true}],path:['SS','B','T','S','A','TT'],badges:['sent 2 / demand 2','feasible']}}),
   ],
 
   'circulation-demands':lesson=>[

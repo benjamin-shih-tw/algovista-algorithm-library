@@ -21,6 +21,10 @@ const readWorkspaceWidth=()=>{try{const saved=Number(localStorage.getItem(WORKSP
 const segmentValues=[2,5,1,4,9,3,7,6]
 const segmentNodes=buildTree(segmentValues)
 
+function FrameCorners() {
+  return <span className="frame-corners" aria-hidden="true"><i/><i/><i/><i/></span>
+}
+
 function GraphScene({ lesson, frame }: { lesson: AlgorithmLesson; frame: Frame }) {
   const adaptive = GraphAdaptiveScene({ lesson, frame })
   if (adaptive) return adaptive
@@ -427,7 +431,6 @@ function StudentGuidePanel({lesson}:{lesson:AlgorithmLesson}) {
   return <section className="student-guide" aria-label="本課學習目標">
     <h2>先知道要算什麼</h2>
     <dl><div><dt>這次的輸入</dt><dd>{guide.input}</dd></div><div><dt>最後要會的事</dt><dd>{guide.goal}</dd></div></dl>
-    <p className="student-reading-order">每步先看「原本」，自己想會怎麼做，再看判斷與結果。亮起的圖格、數值和右側程式都屬於同一步；按「上一步」可還原當時狀態。</p>
     <details><summary>為什麼這樣做一定正確？</summary><ol>{guide.reasoning.map((item)=><li key={item}>{item}</li>)}</ol></details>
     <details><summary>什麼情況要小心？要花多少時間與空間？</summary><ul>{guide.boundaries.map((item)=><li key={item}>{item}</li>)}</ul><p>{guide.cost}</p></details>
   </section>
@@ -472,14 +475,21 @@ function VisualStepStrip({lesson,frame}:{lesson:AlgorithmLesson;frame:Frame}) {
 
 function SyncedCodePanel({lesson,frame,onSeek}:{lesson:AlgorithmLesson;frame:Frame;step:number;onSeek:(step:number)=>void}) {
   const [actionStatus,setActionStatus]=useState('')
+  const codeScrollRef=useRef<HTMLDivElement|null>(null)
   const templateText=lesson.code.join('\n')
   const primaryLineNumber=frame.codeLines.find((number)=>lesson.code[number-1]?.trim()===frame.codeLine.trim()) ?? frame.codeLines[0] ?? -1
+  useEffect(()=>{
+    const panel=codeScrollRef.current,active=panel?.querySelector<HTMLElement>('[aria-current="step"]')
+    if(!panel||!active)return
+    const row=active.getBoundingClientRect(),bounds=panel.getBoundingClientRect()
+    panel.scrollTo({top:panel.scrollTop+row.top-bounds.top-(panel.clientHeight-row.height)/2,behavior:'instant'})
+  },[lesson.id,primaryLineNumber])
   const copyTemplate=async()=>{try{await navigator.clipboard.writeText(templateText);setActionStatus('已複製');setTimeout(()=>setActionStatus(''),1600)}catch{setActionStatus('複製失敗')}}
   const downloadTemplate=()=>{const blob=new Blob([templateText],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=`${lesson.id}.cpp`;anchor.click();URL.revokeObjectURL(url);setActionStatus('已下載')}
   return <aside className="code-panel">
     <header><div><i/><i/><i/><span>C++17 · 教學片段</span></div><div className="code-actions"><button onClick={copyTemplate} title="複製本課程程式片段"><Copy/><span>複製</span></button><button onClick={downloadTemplate} title="下載教學片段 .cpp"><Download/><span>下載片段</span></button>{actionStatus&&<output>{actionStatus}</output>}</div></header>
-    <div className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} C++17 教學程式碼片段`}>
-      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=lineNumber===primaryLineNumber||(frame.state?.highlightCodeLines==='all'&&frame.codeLines.includes(lineNumber)),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLine.trim()===line.trim() || candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'這是排版行'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></button></div>})}</pre>
+    <div ref={codeScrollRef} className="code-scroll resizable-y" aria-label={`${lesson.zhTitle} C++17 教學程式碼片段`}>
+      <pre>{lesson.code.map((line,lineIndex)=>{const lineNumber=lineIndex+1,active=lineNumber===primaryLineNumber||(frame.state?.highlightCodeLines==='all'&&frame.codeLines.includes(lineNumber)),targetStep=lesson.frames.findIndex((candidate)=>candidate.codeLines.includes(lineNumber));return <div key={lineIndex} className="code-source-row"><button type="button" className={active?'code-line active':'code-line'} aria-current={active?'step':undefined} onClick={()=>targetStep>=0&&onSeek(targetStep)} title={targetStep>=0?`跳到動畫第 ${targetStep+1} 步`:'此行沒有獨立動畫步驟'}><span>{String(lineNumber).padStart(2,'0')}</span><code><CppCode line={line}/></code></button></div>})}</pre>
     </div>
   </aside>
 }
@@ -508,12 +518,12 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
   const resetLayout=()=>setVisualWidth(58)
   return <main className="player-page" data-student-guide={lesson.studentGuide?'true':undefined} style={{ '--lesson-accent': lesson.accent } as React.CSSProperties}>
     <header className="site-header"><button className="back-button" onClick={onBack}><ArrowLeft size={16}/> 所有演算法</button><div className="wordmark"><Sparkles size={14}/> ALGOVISTA</div><span className="header-count">{lesson.index} / {String(totalLessons).padStart(3,'0')}</span></header>
-    <section className="lesson-heading relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p></div></section>
+    <section className="lesson-heading ui-frame lesson-frame relative overflow-hidden"><DotPattern width={18} height={18} cr={0.65} className="frame-dot-pattern opacity-25 [mask-image:linear-gradient(to_right,black,transparent_86%)]"/><FrameCorners/><div className="relative z-10"><span>{lesson.category}</span><h1>{lesson.title}</h1><p>{lesson.zhTitle} · {lesson.description}</p><div className="lesson-meta-strip"><b>{lesson.complexity}</b><span>{lesson.frames.length} execution steps</span><span>{lesson.subcategory}</span></div></div></section>
     <StudentGuidePanel lesson={lesson}/>
     <KnowledgeUnitPanel lesson={lesson} onNavigate={onNavigate} catalogById={catalogById}/>
     <ProgrammingBasics/>
 
-    <section className="lesson-stage" ref={stageRef}>
+    <section className="lesson-stage ui-stage-frame" ref={stageRef}><FrameCorners/>
       <div className="stage-top"><span>過程</span><button className="reset-layout" onClick={resetLayout} title="重設動畫與程式碼寬度"><RotateCcw size={12}/>重設版面</button><span className={playing ? 'playing' : ''}>{playing ? '播放中' : '已暫停'}</span></div>
       <label className="step-jump">選擇步驟<select aria-label="選擇步驟" value={index} onChange={(event)=>seekToCodeStep(Number(event.target.value))}>{lesson.frames.map((item,step)=><option key={step} value={step}>{step+1} / {lesson.frames.length} · {item.title}</option>)}</select></label>
       <div className="learning-workspace resizable-workspace" ref={workspaceRef} style={{'--visual-pane-width':`${visualWidth}%`} as React.CSSProperties}>
@@ -523,12 +533,11 @@ export default function LessonPlayer({ lesson, onBack, onNavigate, catalogById, 
         <WorkspaceResizeHandle onPointerDown={beginWorkspaceResize} onKeyboardResize={(delta)=>setVisualWidth((value)=>Math.min(72,Math.max(30,value+delta)))}/>
         <SyncedCodePanel lesson={lesson} frame={frame} step={index} onSeek={seekToCodeStep}/>
       </div>
-      <div className="explanation-card detailed resizable-y"><span className="step-number">{String(index + 1).padStart(2,'0')}</span><div className="step-explanation-content"><h2>{frame.title}</h2><StepTeachingPanel frame={frame}/></div></div>
+      <div className="explanation-card detailed resizable-y ui-frame relative overflow-hidden"><DotPattern width={15} height={15} cr={0.5} className="frame-dot-pattern opacity-[0.08] [mask-image:linear-gradient(to_right,black,transparent_75%)]"/><FrameCorners/><span className="step-number relative z-10">{String(index + 1).padStart(2,'0')}</span><div className="step-explanation-content relative z-10"><h2>{frame.title}</h2><StepTeachingPanel frame={frame}/></div></div>
     </section>
-    {lesson.studentGuide&&<section className="student-guide student-check" aria-label="理解檢查"><h2>先自己說一次</h2><p>{lesson.studentGuide.question}</p><details><summary>展開答案，核對自己的理由</summary><p>{lesson.studentGuide.answer}</p></details></section>}
     <section className="lesson-context">
-      <article><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
-      <article><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
+      <article className="ui-frame"><FrameCorners/><header><Target size={15}/><span>應用時機</span></header><ul>{lesson.usage?.map((item)=><li key={item}>{item}</li>)}</ul></article>
+      <article className="ui-frame"><FrameCorners/><header><BookOpen size={15}/><span>應用題目</span></header><div>{lesson.practice?.map((problem)=><a key={problem.url} href={problem.url} target="_blank" rel="noreferrer"><b>{problem.judge}</b><span><strong>{problem.title}</strong><small>{problem.note}</small></span><ExternalLink size={14}/></a>)}</div></article>
     </section>
     <footer className={`player-controls ${stageVisible?'visible':''}`} aria-hidden={!stageVisible}><div className="progress"><motion.i animate={{width:`${index/(lesson.frames.length-1)*100}%`}} /></div><span>{index+1} / {lesson.frames.length}</span><div><button aria-label="上一步" title="上一步" disabled={index===0} onClick={()=>{setPlaying(false);setIndex(index-1)}}><ChevronLeft/></button><button aria-label={playing?'暫停':'播放'} title={playing?'暫停':'播放'} className="play" onClick={()=>index===lesson.frames.length-1?restart():setPlaying(!playing)}>{playing?<Pause/>:<Play/>}</button><button aria-label="下一步" title="下一步" disabled={index===lesson.frames.length-1} onClick={()=>{setPlaying(false);setIndex(index+1)}}><ChevronRight/></button><button aria-label="重新播放" title="重新播放" onClick={restart}><RotateCcw/></button></div></footer>
   </main>

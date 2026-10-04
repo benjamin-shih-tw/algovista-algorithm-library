@@ -7,6 +7,19 @@ const lesson = (id: string) => {
   return found
 }
 const segment = lesson('segment-tree')
+for (const id of ['expression-evaluation', 'shunting-yard']) {
+  const parser = lesson(id)
+  const push = parser.frames.find((frame) => frame.state?.operation === 'push left paren')!
+  const pushLine = push.codeLines.find((line) => parser.code[line - 1]?.trim() === push.codeLine)!
+  if (push.codeLine !== 'ops.push_back(t);' || !parser.code.slice(Math.max(0, pushLine - 3), pushLine - 1).some((line) => line.includes('if(t=="(")'))) {
+    errors.push(`${id}: left parenthesis push highlights the operator branch instead of the parenthesis branch`)
+  }
+  const pop = parser.frames.find((frame) => frame.state?.operation === 'discard left paren')!
+  const popLine = pop.codeLines.find((line) => parser.code[line - 1]?.trim() === pop.codeLine)!
+  if (pop.codeLine !== 'ops.pop_back();' || parser.code[popLine]?.trim() !== 'continue;') {
+    errors.push(`${id}: discard-parenthesis highlight does not belong to the closing-parenthesis branch`)
+  }
+}
 const snapshot = (id: string) => segment.frames.find((frame) => frame.segmentStep?.id === id)?.segmentNodeValues
 const expectSum = (step: string, node: string, expected: number | undefined) => {
   const actual = snapshot(step)?.[node]
@@ -41,11 +54,17 @@ if (!bfs.code.some((line) => line.includes('vector<int> dist(n, -1)')) || !bfs.c
 }
 const fenwick = lesson('fenwick-tree')
 const expectedBitValues = [0, 0, 5, 5, 0, 0, 0, 5]
-for (const frame of fenwick.frames.slice(3)) {
-  if (JSON.stringify(frame.values) !== JSON.stringify(expectedBitValues)) errors.push(`fenwick-tree ${frame.title}: BIT snapshot is not preserved through the query`)
-}
-for (const [index, expected] of [[1, 3], [2, 4], [3, 8], [5, 6], [6, 4]] as const) {
-  if (fenwick.frames[index].state?.i !== expected) errors.push(`fenwick-tree frame ${index + 1}: highlighted index differs from the narrated operation`)
+if (
+  fenwick.frames.length !== 13 ||
+  fenwick.frames.at(-1)?.state?.result !== 5 ||
+  JSON.stringify(fenwick.frames.at(-1)?.values) !== JSON.stringify(expectedBitValues) ||
+  !fenwick.frames[1].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='bit[i] += delta;') ||
+  !fenwick.frames[2].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='i += i & -i;') ||
+  !fenwick.frames[8].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='s += bit[i];') ||
+  !fenwick.frames[9].codeLines.some((line)=>fenwick.code[line-1]?.trim()==='i -= i & -i;') ||
+  !fenwick.code.some((line)=>line.includes('struct Fenwick'))
+) {
+  errors.push('fenwick-tree: update/query mutations, index moves, snapshots, or return value disagree')
 }
 const prefix2d = lesson('prefix-sum-2d')
 const prefixViews = prefix2d.frames.map((frame) => frame.executionView)
@@ -247,20 +266,31 @@ if (windowRows.some((rows) => !rows || rows.length !== 8 || rows.map((row) => ro
   errors.push('sliding-window-maximum: actual array, deque checkpoints, outputs, or complete code differ from the narrated example')
 }
 const evaluation = lesson('expression-evaluation')
+const hasBadge = (frame: typeof evaluation.frames[number], expected: string) => frame.executionView?.badges?.some((badge) => badge.replaceAll(' ', '') === expected.replaceAll(' ', ''))
 const evaluationRows = evaluation.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
-if (evaluationRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
-    evaluation.frames[5].executionView?.kind !== 'table' || !evaluation.frames[5].executionView.badges?.includes('values = [3,4,2]') ||
-    evaluation.frames[7].executionView?.kind !== 'table' || !evaluation.frames[7].executionView.badges?.includes('values = [11]') ||
-    !evaluation.code.some((line) => line.includes('long long evaluateExpression(')) || evaluation.code.some((line) => line.includes('競賽環境'))) {
-  errors.push('expression-evaluation: tokens, value/operator stacks, result, or complete code differ from the example')
+if (
+  evaluation.frames.length !== 15 ||
+  evaluationRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,(,2,-,1,)') ||
+  evaluation.frames[9].executionView?.kind !== 'table' || !hasBadge(evaluation.frames[9], 'values = [3,4,1]') ||
+  evaluation.frames[13].executionView?.kind !== 'table' || !hasBadge(evaluation.frames[13], 'values = [7]') ||
+  evaluation.frames.at(-1)?.state?.result !== 7 ||
+  !evaluation.code.some((line) => line.includes('long long evaluateExpression(')) ||
+  !evaluation.frames[9].codeLines.some((line)=>evaluation.code[line-1]?.trim()==='values.push_back(r);')
+) {
+  errors.push('expression-evaluation: parenthesis barrier, operator/value stacks, reductions, or result differ from the 3+4*(2-1) execution')
 }
 const shunting = lesson('shunting-yard')
 const shuntingRows = shunting.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
-if (shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,2') ||
-    shunting.frames[5].executionView?.kind !== 'table' || !shunting.frames[5].executionView.badges?.includes('output = [3,4,2]') ||
-    shunting.frames[6].executionView?.kind !== 'table' || !shunting.frames[6].executionView.badges?.includes('output = [3,4,2,*,+]') ||
-    !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) || shunting.code.some((line) => line.includes('競賽環境'))) {
-  errors.push('shunting-yard: tokens, operator stack, postfix output, or complete code differ from the example')
+if (
+  shunting.frames.length !== 14 ||
+  shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,(,2,-,1,)') ||
+  shunting.frames[9].executionView?.kind !== 'table' || !hasBadge(shunting.frames[9], 'output = [3,4,2,1,-]') ||
+  shunting.frames[12].executionView?.kind !== 'table' || !hasBadge(shunting.frames[12], 'output = [3,4,2,1,-,*,+]') ||
+  shunting.frames.at(-1)?.state?.result !== '3 4 2 1 - * +' ||
+  !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) ||
+  !shunting.frames[9].codeLines.some((line)=>shunting.code[line-1]?.trim()==='output.push_back(ops.back());')
+) {
+  errors.push('shunting-yard: parentheses, operator stack, postfix output, or code ownership disagree')
 }
 const monotonicStack = lesson('monotonic-stack')
 const monotonicStackRows = monotonicStack.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
@@ -330,27 +360,44 @@ if (inversions.frames.length !== 7 || inversions.frames.some((frame, step) =>
 }
 const functional = lesson('functional-graph')
 const functionalStates = [
-  '0,0,0,0,0,0', '1,1,1,0,0,0', '1,1,1,0,0,0',
-  '-1,-1,-1,0,0,0', '-1,-1,-1,-1,0,0', '-1,-1,-1,-1,-1,-1',
+  '0,0,0,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '1,1,1,0,0,0',
+  '-1,-1,-1,0,0,0',
+  '-1,-1,-1,0,0,0',
+  '-1,-1,-1,4,0,0',
+  '-1,-1,-1,-1,0,0',
+  '-1,-1,-1,-1,0,0',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,5,5',
+  '-1,-1,-1,-1,-1,-1',
+  '-1,-1,-1,-1,-1,-1',
 ]
 const functionalViewMismatch = functional.frames.some((frame, step) =>
     frame.executionView?.kind !== 'table' ||
     frame.executionView.rows.map((row) => row[2]).join(',') !== functionalStates[step] ||
-    frame.executionView.rows.map((row) => row[1]).join(',') !== 'B,C,B,C,F,F' ||
-    (step===2 && frame.executionView.badges?.includes('cycle = B→C→B') !== true) ||
-    (step===5 && frame.executionView.badges?.includes('cycles = [B,C], [F]') !== true))
-if (functional.frames.length !== 6 || functionalViewMismatch ||
+    frame.executionView.rows.map((row) => row[1]).join(',') !== 'B,C,B,C,F,F')
+if (functional.frames.length !== 16 || functionalViewMismatch ||
+    functional.frames[3].executionView?.badges?.includes('cycle = B→C→B') !== true ||
+    functional.frames.at(-1)?.executionView?.badges?.includes('cycles = [B,C], [F]') !== true ||
     !functional.code.some((line) => line.includes('findFunctionalCycles(')) ||
+    !functional.code.some((line) => line.trim() === 'state[u]=s+1;') ||
+    !functional.code.some((line) => line.trim() === 'u=next[u];') ||
+    !functional.code.some((line) => line.trim() === 'state[u]=-1;') ||
     functional.code.some((line) => line.includes('recordCycle(') || line.includes('競賽環境')) ||
     !functional.description.includes('不計算跳躍查詢') ||
     !functional.practice?.[0]?.note.includes('進階延伸') ||
     functional.knowledge?.localPrerequisites.map((item) => item.term).join(',') !== '唯一出邊,走訪標記') {
-  errors.push('functional-graph: displayed successors, visit marks, discovered cycles, code, or scope disagree')
+  errors.push('functional-graph: 16-step walk, visit marks, cycles, code, or scope disagree')
 }
 
 const graphTreeCases = [
   ['kruskal', 6, 'structure', 'cost = 13'],
-  ['prim', 8, 'structure', 'cost = 13'],
+  ['prim', 20, 'structure', 'cost = 13'],
   ['boruvka', 6, 'structure', 'cost = 13'],
   ['dag-shortest-path', 6, 'network', 'E = 4'],
   ['negative-cycle-reconstruction', 5, 'network', 'weight = -2'],
@@ -412,6 +459,89 @@ if (pruferFinal?.kind !== 'structure' || pruferFinal.sequence?.join(',') !== '1,
 if (!lesson('kruskal').code.some((line) => line.includes('auto [u,v,w]:edges')) ||
     !lesson('kruskal').code.some((line) => line.includes('get<2>(a)<get<2>(b)'))) {
   errors.push('kruskal: sorting and tuple unpacking must use the declared {u,v,w} edge layout')
+}
+
+
+const mergeSort = lesson('merge-sort')
+if (
+  mergeSort.frames.length !== 16 ||
+  mergeSort.values?.join(',') !== '7,2,9,4' ||
+  mergeSort.frames[3].state?.tmp?.join(',') !== '2' ||
+  mergeSort.frames[5].values?.join(',') !== '2,7,9,4' ||
+  mergeSort.frames[10].values?.join(',') !== '2,7,4,9' ||
+  mergeSort.frames.at(-1)?.values?.join(',') !== '2,4,7,9' ||
+  !mergeSort.code.some((line)=>line.trim()==='tmp.push_back(a[i]);') ||
+  !mergeSort.code.some((line)=>line.trim()==='tmp.push_back(a[j]);') ||
+  !mergeSort.frames[3].codeLines.some((line)=>mergeSort.code[line-1]?.includes('tmp.push_back(a[j])')) ||
+  !mergeSort.frames[11].codeLines.some((line)=>mergeSort.code[line-1]?.includes('tmp.push_back(a[i])'))
+) {
+  errors.push('merge-sort: recursive calls, merge mutations, or visible array states no longer match the full four-value execution')
+}
+
+const treeDp = lesson('tree-dp')
+const treeDpFinal = treeDp.frames.at(-1)?.executionView
+if (
+  treeDp.frames.length !== 16 ||
+  treeDpFinal?.kind !== 'network' ||
+  treeDpFinal.nodes.map((node)=>node.value).join(',') !== 'dp 6,dp 4,dp 1,dp 2,dp 1,dp 1' ||
+  !treeDp.frames[7].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[8].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[11].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[12].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  !treeDp.frames[15].codeLines.some((line)=>treeDp.code[line-1]?.includes('dp[u]+=dp[v]')) ||
+  treeDp.frames[1].state?.call !== 'A→B' ||
+  treeDp.frames[5].state?.call !== 'D→F' ||
+  treeDp.frames[13].state?.call !== 'A→C'
+) {
+  errors.push('tree-dp: DFS call order, child returns, per-child merges, or final subtree sizes disagree')
+}
+
+
+const xorBasis = lesson('xor-linear-basis')
+if (
+  xorBasis.frames.length !== 13 ||
+  xorBasis.frames[1].state?.rank !== 1 ||
+  xorBasis.frames[3].state?.rank !== 2 ||
+  xorBasis.frames[7].state?.after !== '000' ||
+  xorBasis.frames[8].state?.result !== 'false' ||
+  xorBasis.frames.at(-1)?.state?.result !== 6 ||
+  !xorBasis.frames[1].codeLines.some((line)=>xorBasis.code[line-1]?.trim()==='basis[b]=x;') ||
+  !xorBasis.frames[5].codeLines.some((line)=>xorBasis.code[line-1]?.trim()==='x^=basis[b];') ||
+  !xorBasis.frames[10].codeLines.some((line)=>xorBasis.code[line-1]?.includes('ans^=basis[b]'))
+) {
+  errors.push('xor-linear-basis: pivot insertion, elimination, dependence detection, or max-XOR code sync disagrees')
+}
+
+const closestPair = lesson('closest-pair')
+const closestFinal = closestPair.frames.at(-1)?.executionView
+if (
+  closestPair.frames.length !== 19 ||
+  closestPair.frames[2].state?.best !== '√17' ||
+  closestPair.frames[4].state?.best !== '√5' ||
+  closestPair.frames[7].state?.removed !== 'A' ||
+  closestPair.frames[9].state?.removed !== 'B' ||
+  closestPair.frames[13].state?.removed !== 'C' ||
+  closestPair.frames[15].state?.removed !== 'D' ||
+  closestPair.frames.at(-1)?.state?.distance2 !== 5 ||
+  closestFinal?.kind !== 'geometry' ||
+  !closestPair.frames[7].codeLines.some((line)=>closestPair.code[line-1]?.includes('active.erase')) ||
+  !closestPair.frames[8].codeLines.some((line)=>closestPair.code[line-1]?.trim()==='++left;') ||
+  !closestPair.frames.at(-1)?.codeLines.some((line)=>closestPair.code[line-1]?.trim()==='return best;')
+) {
+  errors.push('closest-pair: active-set eviction order, left-pointer movement, best distance, or code ownership disagrees')
+}
+
+
+const mutationOperation = /(write|push|pop|merge|relax|add |add$|remove|color|mark|emit|append|store|attach|grow|insert|delete|swap|pull|apply|update (?:left|right|root|cell|state)|compress|relink|redirect|reduce|discard)/i
+for (const item of lessons) {
+  for (const [step, frame] of item.frames.entries()) {
+    const operation = typeof frame.state?.operation === 'string' ? frame.state.operation : ''
+    if (!mutationOperation.test(operation)) continue
+    const primary = frame.codeLine.trim()
+    if (/^(if|for|while)\b.*(?:\)\s*\{?|&&)\s*$/.test(primary)) {
+      errors.push(`${item.id} frame ${step + 1}: mutation "${operation}" is still owned by control-flow code "${primary}"`)
+    }
+  }
 }
 
 if (errors.length) {

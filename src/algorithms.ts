@@ -90,8 +90,6 @@ export interface StudentGuide {
   reasoning: string[]
   boundaries: string[]
   cost: string
-  question: string
-  answer: string
 }
 export interface BeginnerGuide {
   mentalModel: string
@@ -119,6 +117,7 @@ export interface Frame {
   title: string
   explanation: string
   codeLine: string
+  codeAnchor?: string
   active?: string[]
   accepted?: string[]
   muted?: string[]

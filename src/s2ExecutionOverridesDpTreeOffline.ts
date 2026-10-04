@@ -43,6 +43,22 @@ const treeEdges=[
 ]
 
 const codeOverrides:Record<string,string[]>={
+  'small-to-large':[
+    'set<int>* dfs(int u,int p){',
+    '  auto* cur=new set<int>{color[u]};',
+    '  for(int v:tree[u]){',
+    '    if(v==p) continue;',
+    '    auto* child=dfs(v,u);',
+    '    if(cur->size()<child->size()){',
+    '      swap(cur,child);',
+    '    }',
+    '    cur->insert(child->begin(),child->end());',
+    '    delete child;',
+    '  }',
+    '  answer[u]=cur->size();',
+    '  return cur;',
+    '}',
+  ],
   'huffman-coding':[
     'long long huffmanMergeCost(const vector<long long>& freq) {',
     '  priority_queue<long long,vector<long long>,greater<long long>> pq(freq.begin(),freq.end());',
@@ -174,12 +190,19 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'small-to-large':lesson=>[
-    eventFrame(lesson,'new set<int>{color[u]}','Tree Colors：A1,B2,C1,D3,E2,F3','每個 Leaf 的集合先只含自己的 color。',{colors:['A1','B2','C1','D3','E2','F3'],operation:'initialize subtree sets'},{active:['A','B','C','D','E','F']}),
-    eventFrame(lesson,'auto* child=dfs','D 合併 Leaf F','D 自己 {3}、F {3}，插入後仍是 {3}。',{node:'D',cur:['3'],child:['3'],result:['3'],operation:'merge child set'},{active:['D','F']}),
-    eventFrame(lesson,'if(cur->size()<child->size()) swap','B 收到 D 的 {3}','B cur={2}、child={3} 大小相同不 swap；合併後 {2,3}。',{node:'B',cur:['2'],child:['3'],result:['2','3'],operation:'merge equal sets'},{active:['B','D']}),
-    eventFrame(lesson,'cur->insert','再合併 E {2}','2 已存在，B 子樹 distinct colors 仍 {2,3}。',{node:'B',child:['2'],result:['2','3'],operation:'merge E'}),
-    eventFrame(lesson,'if(cur->size()<child->size()) swap','A 的 cur {1} 比 B-set {2,3} 小','先 swap，讓大集合 {2,3} 成為 cur，再插入 1；元素永遠從小集合搬到大集合。',{node:'A',before:['cur{1}','child{2,3}'],afterSwap:['cur{2,3}','child{1}'],operation:'small-to-large swap'},{active:['A','B']}),
-    eventFrame(lesson,'cur->insert','A 最終 {1,2,3}','再合併 C{1} 不新增顏色；root distinct count=3。',{result:['1','2','3'],distinct:3,operation:'finish root set'},{accepted:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'auto* cur=new set<int>{color[u]};','每個 DFS Frame 先放自己的 Color','Tree colors：A1,B2,C1,D3,E2,F3。以 D 為例，進入時 cur={3}。',{colors:['A1','B2','C1','D3','E2','F3'],node:'D',cur:['3'],operation:'initialize node set'},{active:['D']}),
+    eventFrame(lesson,'auto* child=dfs(v,u);','D 呼叫 Child F','先遞迴得到 F 的集合；F 是 leaf，所以回傳 {3}。D 此刻仍保持 cur={3}。',{call:'D→F',childResult:['3'],cur:['3'],operation:'get child set'},{active:['D','F']}),
+    eventFrame(lesson,'cur->insert(child->begin(),child->end());','D 合併 F 的 {3}','大小相同不 swap；真正合併發生在 insert range。3 已存在，所以 D 最後仍是 {3}。',{node:'D',before:['3'],child:['3'],after:['3'],operation:'merge F into D'},{active:['D','F']}),
+    eventFrame(lesson,'auto* child=dfs(v,u);','B 收到 D 的集合 {3}','B 自己先有 {2}；遞迴 D 完成後 child={3}。',{node:'B',cur:['2'],child:['3'],operation:'receive D set'},{active:['B','D']}),
+    eventFrame(lesson,'cur->insert(child->begin(),child->end());','B 合併 D：{2}→{2,3}','兩邊 size 都是 1，不需要 swap；insert 後 distinct colors 變 2。',{node:'B',before:['2'],child:['3'],after:['2','3'],operation:'merge D into B'},{active:['B','D']}),
+    eventFrame(lesson,'auto* child=dfs(v,u);','B 再收到 E 的 {2}','E 是 leaf，child={2}。',{node:'B',cur:['2','3'],child:['2'],operation:'receive E set'},{active:['B','E']}),
+    eventFrame(lesson,'cur->insert(child->begin(),child->end());','B 合併 E：沒有新 Color','2 已經存在，所以 B 的集合仍是 {2,3}。',{node:'B',child:['2'],after:['2','3'],operation:'merge E into B'},{active:['B','E']}),
+    eventFrame(lesson,'auto* child=dfs(v,u);','A 收到 B 的大集合 {2,3}','A 自己 cur={1}，child size=2 大於 cur size=1。',{node:'A',cur:['1'],child:['2','3'],operation:'receive B set'},{active:['A','B']}),
+    eventFrame(lesson,'swap(cur,child);','Small-to-Large：Swap 大小集合','真正的 swap 讓 cur 指向較大的 {2,3}，child 變成舊的小集合 {1}。這是複雜度保證的核心。',{node:'A',before:['cur{1}','child{2,3}'],after:['cur{2,3}','child{1}'],operation:'swap to keep larger set'},{active:['A','B']}),
+    eventFrame(lesson,'cur->insert(child->begin(),child->end());','把小集合 {1} 搬進大集合','只搬動較小集合元素，A 暫時得到 {1,2,3}。',{node:'A',before:['2','3'],child:['1'],after:['1','2','3'],operation:'merge B result into A'},{active:['A','B']}),
+    eventFrame(lesson,'auto* child=dfs(v,u);','A 再收到 C 的 {1}','C 是 leaf，child={1}。',{node:'A',cur:['1','2','3'],child:['1'],operation:'receive C set'},{active:['A','C']}),
+    eventFrame(lesson,'cur->insert(child->begin(),child->end());','合併 C 後仍是 {1,2,3}','1 已存在，因此 root distinct count 不變。',{node:'A',after:['1','2','3'],operation:'merge C into A'},{active:['A','C']}),
+    eventFrame(lesson,'answer[u]=cur->size();','Root A 的答案 = 3','A 子樹包含三種顏色。因每次只把小集合搬入大集合，每個元素最多被搬 O(log n) 次。',{node:'A',answer:3,complexity:'O(n log n) set moves',operation:'store distinct count'},{accepted:['A','B','C','D','E','F']}),
   ],
 
   'dsu-on-tree':lesson=>[

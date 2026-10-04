@@ -10,6 +10,8 @@ import { centroidLesson, digitLesson } from '../src/studentTreeDpLessons'
 import type { StudentLesson } from '../src/studentTrace'
 
 const ids = ['kmp', 'z-algorithm', 'rolling-hash', 'rabin-karp', 'tarjan-scc', 'bridges', 'articulation-points', 'tree-centroid', 'centroid-decomposition', 'digit-dp']
+assert.equal(lessons.find((item)=>item.id==='kmp')!.complexity,'O(n)','Prefix-table lesson must not claim text-search complexity')
+assert.ok(lessons.find((item)=>item.id==='rabin-karp')!.complexity.includes('O(nm)'),'Exact collision verification needs its worst-case bound')
 for (const id of ids) {
   const lesson = lessons.find((item) => item.id === id)!
   assert.ok(lesson.studentGuide, `${id}: missing authored student guide`)

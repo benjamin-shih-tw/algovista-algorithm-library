@@ -52,6 +52,35 @@ const treeEdges=[
   {from:'A',to:'B'},{from:'A',to:'C'},{from:'B',to:'D'},
   {from:'B',to:'E'},{from:'D',to:'F'},
 ]
+const treeDpView=(step:number):NonNullable<Frame['executionView']>=>{
+  const value:Record<string,string>={A:step>=0?'dp 1':'—',B:'—',C:'—',D:'—',E:'—',F:'—'}
+  if(step>=2) value.B='dp 1'
+  if(step>=4) value.D='dp 1'
+  if(step>=6) value.F='dp 1'
+  if(step>=7) value.D='dp 2'
+  if(step>=8) value.B='dp 3'
+  if(step>=10) value.E='dp 1'
+  if(step>=11) value.B='dp 4'
+  if(step>=12) value.A='dp 5'
+  if(step>=14) value.C='dp 1'
+  if(step>=15) value.A='dp 6'
+  const stacks=[
+    ['A'],['A','B'],['A','B'],['A','B','D'],['A','B','D'],['A','B','D','F'],
+    ['A','B','D','F'],['A','B','D'],['A','B'],['A','B','E'],['A','B','E'],
+    ['A','B'],['A'],['A','C'],['A','C'],['A'],
+  ]
+  const activeEdges=new Set(stacks[Math.min(step,15)].slice(1).map((node,index)=>{
+    const parent=stacks[Math.min(step,15)][index]
+    return parent+node
+  }))
+  return {
+    kind:'network',title:'TREE DP · subtree size · postorder execution',
+    nodes:treePoints.map(p=>({id:p.id,label:p.id,x:p.x*10,y:p.y*4.3,value:value[p.id]})),
+    edges:treeEdges.map(e=>({from:e.from,to:e.to,active:activeEdges.has(e.from+e.to)})),
+    badges:[`call stack = ${stacks[Math.min(step,15)].join(' → ')}`,step===15?'dp[A] = 6 · all subtree sizes complete':'先算 child，return 後才 merge'],
+    path:stacks[Math.min(step,15)],
+  }
+}
 
 const codeOverrides:Record<string,string[]>={
   'digit-dp':[
@@ -69,7 +98,8 @@ const codeOverrides:Record<string,string[]>={
   'tree-dp':[
     'void dfs(int u,int p) {',
     '  dp[u]=1;',
-    '  for (int v:tree[u]) if (v!=p) {',
+    '  for (int v:tree[u]) {',
+    '    if (v==p) continue;',
     '    dfs(v,u);',
     '    dp[u]+=dp[v];',
     '  }',
@@ -137,22 +167,92 @@ const codeOverrides:Record<string,string[]>={
     'for(int h=n/2+1;h<=n;++h) answer+=dp[n][h];',
   ],
 
+  'iterative-segment-tree':[
+    'void build(){',
+    '  for(int i=n-1;i>0;--i)',
+    '    tree[i]=tree[i<<1]+tree[i<<1|1];',
+    '}',
+    'long long query(int l,int r){',
+    '  l+=n;',
+    '  r+=n;',
+    '  long long ans=0;',
+    '  while(l<r){',
+    '    if(l&1){',
+    '      ans+=tree[l];',
+    '      ++l;',
+    '    }',
+    '    if(r&1){',
+    '      --r;',
+    '      ans+=tree[r];',
+    '    }',
+    '    l>>=1;',
+    '    r>>=1;',
+    '  }',
+    '  return ans;',
+    '}',
+  ],
+  'subset-sum':[
+    'vector<char> can(S+1,false);',
+    'can[0]=true;',
+    'for(int x:a){',
+    '  for(int sum=S;sum>=x;--sum){',
+    '    if(!can[sum-x]) continue;',
+    '    can[sum]=true;',
+    '  }',
+    '}',
+    'return can[S];',
+  ],
+  'grid-dp':[
+    'int minPathCost(const vector<vector<int>>& grid){',
+    '  int h=grid.size(), w=grid[0].size();',
+    '  const int INF=1000000000;',
+    '  vector<vector<int>> dp(h,vector<int>(w,INF));',
+    '  dp[0][0]=grid[0][0];',
+    '  for(int r=0;r<h;++r){',
+    '    for(int c=0;c<w;++c){',
+    '      if(r==0 && c==0) continue;',
+    '      if(r){',
+    '        dp[r][c]=min(dp[r][c],dp[r-1][c]+grid[r][c]);',
+    '      }',
+    '      if(c){',
+    '        dp[r][c]=min(dp[r][c],dp[r][c-1]+grid[r][c]);',
+    '      }',
+    '    }',
+    '  }',
+    '  return dp[h-1][w-1];',
+    '}',
+  ],
   'dp-reconstruction':[
     'for(int i=1;i<=n;++i) {',
-    '  dp[i]=dp[i-1]; take[i]=false;',
-    '  if(value[i]+dp[prev[i]]>dp[i]) dp[i]=value[i]+dp[prev[i]],take[i]=true;',
+    '  dp[i]=dp[i-1];',
+    '  take[i]=false;',
+    '  long long candidate=value[i]+dp[prev[i]];',
+    '  if(candidate>dp[i]) {',
+    '    dp[i]=candidate;',
+    '    take[i]=true;',
+    '  }',
     '}',
     'vector<int> chosen;',
-    'for(int i=n;i>0;)',
-    '  if(take[i]) chosen.push_back(i),i=prev[i]; else --i;',
+    'for(int i=n;i>0;){',
+    '  if(take[i]) {',
+    '    chosen.push_back(i);',
+    '    i=prev[i];',
+    '  } else {',
+    '    --i;',
+    '  }',
+    '}',
   ],
 
   'monotone-queue-optimization':[
     'deque<int> dq;',
     'for(int i=0;i<n;++i) {',
-    '  while(!dq.empty() && dq.front()<i-K) dq.pop_front();',
+    '  while(!dq.empty() && dq.front()<i-K) {',
+    '    dq.pop_front();',
+    '  }',
     '  dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);',
-    '  while(!dq.empty() && dp[dq.back()]<=dp[i]) dq.pop_back();',
+    '  while(!dq.empty() && dp[dq.back()]<=dp[i]) {',
+    '    dq.pop_back();',
+    '  }',
     '  dq.push_back(i);',
     '}',
   ],
@@ -231,13 +331,23 @@ const overrides:Record<string,TraceBuilder>={
   ].map((frame,step)=>({...frame,executionView:fenwick2DView(step)})),
 
   'tree-dp':lesson=>[
-    eventFrame(lesson,'dp[u]=1','Root A：每個 Node 先 Count 自己','這個具體 Tree DP 計算 subtree size；葉節點 base 都是 1。',{goal:'subtree size',root:'A',operation:'base state'},{active:['A']}),
-    eventFrame(lesson,'dfs(v,u)','沿 A→B→D→F 深入','先處理 child 再回父節點合併。',{callStack:['A','B','D','F'],operation:'postorder DFS'},{active:['A','B','D','F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','F 返回 D：dp[D]=1+1=2','F 是葉，dp[F]=1；D 合併 child F。',{child:'F',parent:'D',dpF:1,dpD:'1→2',operation:'merge child state'},{active:['D','F'],accepted:['F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','D、E 合併到 B','B 自己 1 + dp[D]2 + dp[E]1 = 4。',{node:'B',children:['D=2','E=1'],dpB:4,operation:'merge B subtree'},{active:['B','D','E'],accepted:['D','E','F']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','C 是 Leaf：dp[C]=1','A 的另一個 child C 完成。',{node:'C',dpC:1,operation:'leaf result'},{active:['C'],accepted:['C']}),
-    eventFrame(lesson,'dp[u]+=dp[v]','Root A 合併 B 與 C','dp[A]=1+4+1=6，等於整棵樹節點數。',{node:'A',children:['B=4','C=1'],dpA:6,operation:'finish root DP'},{active:['A','B','C'],accepted:['A','B','C','D','E','F']}),
-  ],
+    eventFrame(lesson,'dp[u]=1;','進入 A：先設 dp[A]=1','subtree size 的 base contribution 是節點自己，所以 dfs(A,-1) 一進來先執行 dp[A]=1。',{u:'A',dpA:1,operation:'initialize A'},{active:['A']}),
+    eventFrame(lesson,'dfs(v,u);','A 呼叫 Child B','for 看到 B，B 不是 parent，因此真正執行 dfs(B,A)；A 必須等待 B return，不能先加 dp[B]。',{call:'A→B',operation:'descend to B'},{active:['A','B']}),
+    eventFrame(lesson,'dp[u]=1;','進入 B：dp[B]=1','新的 stack frame B 先計入自己。',{u:'B',dpB:1,operation:'initialize B'},{active:['B']}),
+    eventFrame(lesson,'dfs(v,u);','B 呼叫 Child D','B 掃到 D，執行 dfs(D,B)；dp[B] 此時仍是 1。',{call:'B→D',dpB:1,operation:'descend to D'},{active:['B','D']}),
+    eventFrame(lesson,'dp[u]=1;','進入 D：dp[D]=1','D 先計入自己，再繼續找非 parent child。',{u:'D',dpD:1,operation:'initialize D'},{active:['D']}),
+    eventFrame(lesson,'dfs(v,u);','D 呼叫 Child F','F 不是 parent B，所以 D 執行 dfs(F,D)。',{call:'D→F',operation:'descend to F'},{active:['D','F']}),
+    eventFrame(lesson,'dp[u]=1;','F 是 Leaf：dp[F]=1 後 Return','F 的唯一鄰居是 parent D，會被 continue 掉；沒有 child call，也沒有 dp merge，所以直接 return。',{u:'F',dpF:1,leaf:'true',operation:'leaf return'},{active:['F'],accepted:['F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','F Return：D 合併 dp[F]','回到 D 的 dfs(F,D) 下一行，才執行 dp[D]+=dp[F]：1+1=2。',{u:'D',v:'F',formula:'1+1',dpD:2,operation:'merge F into D'},{active:['D','F'],accepted:['F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','D Return：B 合併 dp[D]','D 已完成整個 subtree 並 return；回到 B 後執行一次 dp[B]+=dp[D]：1+2=3。',{u:'B',v:'D',formula:'1+2',dpB:3,operation:'merge D into B'},{active:['B','D'],accepted:['D','F']}),
+    eventFrame(lesson,'dfs(v,u);','B 再呼叫 Child E','B 的下一個非 parent child 是 E。此時 dp[B]=3，先遞迴求 E，再決定要加多少。',{call:'B→E',dpB:3,operation:'descend to E'},{active:['B','E'],accepted:['D','F']}),
+    eventFrame(lesson,'dp[u]=1;','E 是 Leaf：dp[E]=1 後 Return','E 除了 parent B 沒有其他 child，因此 dp[E]=1 就是完整答案。',{u:'E',dpE:1,leaf:'true',operation:'leaf E return'},{active:['E'],accepted:['D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','E Return：B 再合併一次','現在才執行第二次 dp[B]+=dp[v]：3+1=4。這和上一個 D merge 是兩次不同的 Code execution。',{u:'B',v:'E',formula:'3+1',dpB:4,operation:'merge E into B'},{active:['B','E'],accepted:['D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','B Return：A 合併 dp[B]','B 的 children 全處理完，dp[B]=4 後 return；A 接著執行 dp[A]+=4，所以 1→5。',{u:'A',v:'B',formula:'1+4',dpA:5,operation:'merge B into A'},{active:['A','B'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'dfs(v,u);','A 接著呼叫 Child C','A 的 B branch 完整 return 後才輪到 C；執行 dfs(C,A)，此時 dp[A]=5。',{call:'A→C',dpA:5,operation:'descend to C'},{active:['A','C'],accepted:['B','D','E','F']}),
+    eventFrame(lesson,'dp[u]=1;','C 是 Leaf：dp[C]=1 後 Return','C 沒有非 parent child，因此完整 subtree size 就是 1。',{u:'C',dpC:1,leaf:'true',operation:'leaf C return'},{active:['C'],accepted:['B','C','D','E','F']}),
+    eventFrame(lesson,'dp[u]+=dp[v];','C Return：A 得到最終 dp[A]=6','最後一次 merge 執行 dp[A]+=dp[C]：5+1=6。此時所有 child 都完成，Root A 的 subtree size 等於整棵樹 6 個節點。',{u:'A',v:'C',formula:'5+1',dpA:6,result:'A6 B4 C1 D2 E1 F1',operation:'finish root DP'},{active:['A','C'],accepted:['A','B','C','D','E','F']}),
+  ].map((frame,step)=>({...frame,executionView:treeDpView(step)})),
 
   'rerooting-dp':lesson=>[
     eventFrame(lesson,'dfs1(root,-1)','第一遍以 A 為 Root','同一棵 6 點樹，先求 subtree size 與 depth：A0,B1,C1,D2,E2,F3。',{root:'A',depth:'A0 B1 C1 D2 E2 F3',subtree:'A6 B4 C1 D2 E1 F1',operation:'first DFS'},{active:['A','B','C','D','E','F']}),
@@ -270,12 +380,21 @@ const overrides:Record<string,TraceBuilder>={
 
   'iterative-segment-tree':lesson=>[
     eventFrame(lesson,'tree[i]=tree[i<<1]','由 Leaves 向上 Build','a=[2,5,1,4,9,3,7,6] 存在 tree[8..15]；例如 tree[4]=2+5=7，tree[1]=37。',{leaves:['2','5','1','4','9','3','7','6'],root:37,operation:'build flat tree'},{values:[2,5,1,4,9,3,7,6]}),
-    eventFrame(lesson,'long long query','Query 半開區間 [1,6)','初始 l=1+8=9、r=6+8=14、ans=0。',{query:'[1,6)',l:9,r:14,ans:0,operation:'initialize iterative query'},{values:[2,5,1,4,9,3,7,6],low:1,high:5}),
-    eventFrame(lesson,'if(l&1)','l=9 為右 Child：取 tree[9]=5','取完 l++→10；r=14 是偶數，不取。',{l:9,take:'tree[9]=5',ans:'0→5',operation:'consume left boundary'},{active:['1']}),
-    eventFrame(lesson,'l>>=1,r>>=1','兩端上移：l=5,r=7','現在對應更大的區間節點。',{l:'10→5',r:'14→7',ans:5,operation:'move upward'}),
-    eventFrame(lesson,'if(l&1)','l=5 為右 Child：取 tree[5]=5','tree[5] 代表原陣列 [2,4)={1,4}，ans=10。',{take:'[2,4) sum5',ans:'5→10',operation:'take left block'},{active:['2','3']}),
-    eventFrame(lesson,'if(r&1)','r=7 為 Odd：先 --r=6，取 tree[6]=12','tree[6] 代表 [4,6)={9,3}，ans=22。',{take:'[4,6) sum12',ans:'10→22',operation:'take right block'},{active:['4','5']}),
-    eventFrame(lesson,'} return ans','上移後 l=r=3，回傳 22','被選節點 [1,2)、[2,4)、[4,6) 互不重疊且恰覆蓋查詢。',{result:22,cover:['[1,2)','[2,4)','[4,6)'],operation:'return range sum'},{accepted:['1','2','3','4','5']}),
+    eventFrame(lesson,'long long query','Query 半開區間 [1,6)','參數 l=1、r=6；尚未換成葉節點位置。',{query:'[1,6)',l:1,r:6,operation:'query entry'},{values:[2,5,1,4,9,3,7,6],low:1,high:5}),
+    eventFrame(lesson,'l+=n;','左端換成葉節點位置','n=8，所以 l=1+8=9；r 尚為 6。',{l:9,r:6,operation:'offset left boundary'}),
+    eventFrame(lesson,'r+=n;','右端換成葉節點位置','r=6+8=14；右端仍不包含在查詢內。',{l:9,r:14,operation:'offset right boundary'}),
+    eventFrame(lesson,'long long ans=0;','查詢和從 0 開始','尚未取任何區塊，所以 ans=0。',{l:9,r:14,ans:0,operation:'initialize query sum'}),
+    eventFrame(lesson,'ans+=tree[l];','l=9 為右 Child：取 tree[9]=5','條件 l&1 成立，ans=0+5=5；這一步 l 還沒增加。',{l:9,r:14,take:'tree[9]=5',ans:'0→5',operation:'consume left boundary'},{active:['1']}),
+    eventFrame(lesson,'++l;','左端越過已取葉子','l=9→10；r=14 是偶數，不取右端。',{l:10,r:14,ans:5,operation:'advance left boundary'}),
+    eventFrame(lesson,'l>>=1;','左端上移到父層','l=10/2=5；r 仍為 14。',{l:5,r:14,ans:5,operation:'move left upward'}),
+    eventFrame(lesson,'r>>=1;','右端上移到父層','r=14/2=7；現在可檢查較大的區間。',{l:5,r:7,ans:5,operation:'move right upward'}),
+    eventFrame(lesson,'ans+=tree[l];','l=5 為右 Child：取 tree[5]=5','tree[5] 代表原陣列 [2,4)={1,4}，ans=10。',{take:'[2,4) sum5',ans:'5→10',operation:'take left block'},{active:['2','3']}),
+    eventFrame(lesson,'++l;','越過已取左區塊','l=5→6，ans 保持 10。',{l:6,r:7,ans:10,operation:'advance left boundary'}),
+    eventFrame(lesson,'--r;','右端是奇數，先退一格','r=7→6，現在才可取 tree[6]。',{l:6,r:6,ans:10,operation:'decrement right boundary'}),
+    eventFrame(lesson,'ans+=tree[r];','取 tree[6]=12','tree[6] 代表 [4,6)={9,3}，ans=10+12=22。',{l:6,r:6,take:'[4,6) sum12',ans:'10→22',operation:'take right block'},{active:['4','5']}),
+    eventFrame(lesson,'l>>=1;','左端再次上移','l=6/2=3；r 仍為 6。',{l:3,r:6,ans:22,operation:'move left upward'}),
+    eventFrame(lesson,'r>>=1;','右端再次上移','r=6/2=3；l<r 不成立，離開迴圈。',{l:3,r:3,ans:22,operation:'move right upward'}),
+    eventFrame(lesson,'return ans;','兩端相遇，回傳 22','被選節點 [1,2)、[2,4)、[4,6) 互不重疊且恰覆蓋查詢。',{result:22,cover:['[1,2)','[2,4)','[4,6)'],operation:'return range sum'},{accepted:['1','2','3','4','5']}),
   ],
 
   'dynamic-segment-tree':lesson=>[
@@ -335,18 +454,18 @@ const overrides:Record<string,TraceBuilder>={
 
   'subset-sum':lesson=>[
     eventFrame(lesson,'can[0]=true','Target S=11，初始只有 Sum 0 Reachable','a=[3,5,6]。',{a:['3','5','6'],S:11,reachable:['0'],operation:'initialize reachable sums'}),
-    eventFrame(lesson,'for(int sum=S;sum>=x','處理 x=3，反向掃','由 can[0] 產生 can[3]=true；因為反向，這一輪不會再拿剛生成的 3 去做 6。',{x:3,reachable:['0','3'],operation:'take 3 once'}),
-    eventFrame(lesson,'can[sum] = can[sum] || can[sum-x]','處理 x=5','由舊 reachable {0,3} 新增 5 與 8。',{x:5,before:['0','3'],after:['0','3','5','8'],operation:'add shifted states'}),
-    eventFrame(lesson,'for(int sum=S;sum>=x','處理 x=6','從 sum=11 往下掃；can[11] 讀 can[5]=true，所以 11 立刻可達。',{x:6,sum:11,source:5,newReachable:11,operation:'reach target'}),
-    eventFrame(lesson,'can[sum] = can[sum] || can[sum-x]','完成 x=6','另外新增 6、9；最終 reachable={0,3,5,6,8,9,11}。',{reachable:['0','3','5','6','8','9','11'],operation:'finish subset states'}),
-    eventFrame(lesson,'for(int x:a)','Target 11 可達','具體 subset 是 {5,6}；每個元素最多被使用一次。',{target:11,result:'true',subset:['5','6'],operation:'report reachability'}),
+    eventFrame(lesson,'can[sum]=true;','處理 x=3，反向掃','由 can[0] 產生 can[3]=true；因為反向，這一輪不會再拿剛生成的 3 去做 6。',{x:3,reachable:['0','3'],operation:'take 3 once'}),
+    eventFrame(lesson,'can[sum]=true;','處理 x=5','由舊 reachable {0,3} 新增 5 與 8。',{x:5,before:['0','3'],after:['0','3','5','8'],operation:'add shifted states'}),
+    eventFrame(lesson,'can[sum]=true;','處理 x=6','從 sum=11 往下掃；can[11] 讀 can[5]=true，所以 11 立刻可達。',{x:6,sum:11,source:5,newReachable:11,operation:'reach target'}),
+    eventFrame(lesson,'can[sum]=true;','完成 x=6','另外新增 6、9；最終 reachable={0,3,5,6,8,9,11}。',{reachable:['0','3','5','6','8','9','11'],operation:'finish subset states'}),
+    eventFrame(lesson,'return can[S];','Target 11 可達','具體 subset 是 {5,6}；每個元素最多被使用一次。',{target:11,result:'true',subset:['5','6'],operation:'report reachability'}),
   ],
   'grid-dp':lesson=>[
     eventFrame(lesson,'dp[0][0]=grid[0][0]','3×3 Cost Grid','grid=[[1,3,1],[1,5,1],[4,2,1]]，只能向右或向下。',{grid:['1 3 1','1 5 1','4 2 1'],dp00:1,operation:'initialize start'}),
-    eventFrame(lesson,'if(c) dp[r][c]=min','先填第 0 列','row-major 會先算 (0,1)=1+3=4，再算 (0,2)=4+1=5；這一列只能從左邊來。',{row0:['1','4','5'],operation:'fill top row'}),
-    eventFrame(lesson,'if(r) dp[r][c]=min','再算 (1,0)','第 0 列完成後才進入 r=1；(1,0) 只能從上方來，dp[1][0]=1+1=2。',{cell:'(1,0)',value:2,operation:'from top'}),
-    eventFrame(lesson,'if(c) dp[r][c]=min','算中心 (1,1)','從上：4+5=9；從左：2+5=7，因此 dp[1][1]=7。',{cell:'(1,1)',choices:['9','7'],value:7,operation:'choose min predecessor'}),
-    eventFrame(lesson,'if(c) dp[r][c]=min','填完整張表','最終 dp=[[1,4,5],[2,7,6],[6,8,7]]。',{dp:['1 4 5','2 7 6','6 8 7'],operation:'finish grid'}),
+    eventFrame(lesson,'dp[r][c]=min(dp[r][c],dp[r][c-1]+grid[r][c]);','先填第 0 列','row-major 會先算 (0,1)=1+3=4，再算 (0,2)=4+1=5；這一列只能從左邊來。',{row0:['1','4','5'],operation:'fill top row'}),
+    eventFrame(lesson,'dp[r][c]=min(dp[r][c],dp[r-1][c]+grid[r][c]);','再算 (1,0)','第 0 列完成後才進入 r=1；(1,0) 只能從上方來，dp[1][0]=1+1=2。',{cell:'(1,0)',value:2,operation:'from top'}),
+    eventFrame(lesson,'dp[r][c]=min(dp[r][c],dp[r][c-1]+grid[r][c]);','算中心 (1,1)','從上：4+5=9；從左：2+5=7，因此 dp[1][1]=7。',{cell:'(1,1)',choices:['9','7'],value:7,operation:'choose min predecessor'}),
+    eventFrame(lesson,'dp[r][c]=min(dp[r][c],dp[r][c-1]+grid[r][c]);','填完整張表','最終 dp=[[1,4,5],[2,7,6],[6,8,7]]。',{dp:['1 4 5','2 7 6','6 8 7'],operation:'finish grid'}),
     eventFrame(lesson,'return dp[h-1][w-1]','右下角答案 7','路徑 1→3→1→1→1，總成本 7。',{answer:7,path:['(0,0)','(0,1)','(0,2)','(1,2)','(2,2)'],operation:'return'}),
   ].map((frame,step)=>({...frame,executionView:gridDpView(step)})),
 
@@ -387,23 +506,37 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'dp-reconstruction':lesson=>[
-    eventFrame(lesson,'dp[i]=dp[i-1]','Weighted intervals 已按 End 排序','jobs 1..4，value=[4,5,4,7]，prev=[0,0,1,2]。',{values:['4','5','4','7'],prev:['0','0','1','2'],operation:'initialize reconstruction DP'}),
-    eventFrame(lesson,'if(value[i]+dp[prev[i]]','i=1：Take','4+dp0=4 > skip0，所以 dp1=4、take1=true。',{i:1,skip:0,take:4,dp:4,operation:'choose take'}),
-    eventFrame(lesson,'if(value[i]+dp[prev[i]]','i=2：Take','5+dp0=5 > dp1=4，所以 dp2=5。',{i:2,skip:4,take:5,dp:5,operation:'choose take'}),
-    eventFrame(lesson,'if(value[i]+dp[prev[i]]','i=3：Take job3 + job1','4+dp1=8 > dp2=5，因此 dp3=8。',{i:3,skip:5,take:8,dp:8,operation:'choose take'}),
-    eventFrame(lesson,'if(value[i]+dp[prev[i]]','i=4：Take job4 + dp2','7+5=12 >8，所以 dp4=12。',{i:4,skip:8,take:12,dp:12,operation:'choose take'}),
-    eventFrame(lesson,'if(take[i])','回溯 i=4','take4=true，選 job4，跳到 prev4=2。',{i:4,chosen:['4'],next:2,operation:'reconstruct take'}),
-    eventFrame(lesson,'if(take[i])','回溯 i=2','take2=true，選 job2，跳到 0；重建完成。',{chosen:['4','2'],answer:12,operation:'finish reconstruction'}),
+    eventFrame(lesson,'dp[i]=dp[i-1];','i=1：先採 Skip 狀態','jobs value=[4,5,4,7]、prev=[0,0,1,2]。先令 dp1=dp0=0。',{i:1,dp:0,take:'false',operation:'copy skip state'}),
+    eventFrame(lesson,'dp[i]=candidate;','i=1：Candidate 4 更好，dp1=4','candidate=4+dp0=4 >0，因此真正更新 dp1。',{i:1,candidate:4,dp:4,operation:'write dp1'}),
+    eventFrame(lesson,'take[i]=true;','記錄 take1=true','這一行保存重建決策，不和 dp assignment 混在一起。',{i:1,take:'true',operation:'mark take1'}),
+    eventFrame(lesson,'dp[i]=candidate;','i=2：5 > Skip 4，dp2=5','candidate=5+dp0=5。',{i:2,skip:4,candidate:5,dp:5,operation:'write dp2'}),
+    eventFrame(lesson,'take[i]=true;','記錄 take2=true','之後回溯若到 i=2，就會選 job2。',{i:2,take:'true',operation:'mark take2'}),
+    eventFrame(lesson,'dp[i]=candidate;','i=3：4+dp1=8，dp3=8','比 skip dp2=5 好。',{i:3,skip:5,candidate:8,dp:8,operation:'write dp3'}),
+    eventFrame(lesson,'take[i]=true;','記錄 take3=true','job3 的最佳前驅是 prev3=1。',{i:3,take:'true',operation:'mark take3'}),
+    eventFrame(lesson,'dp[i]=candidate;','i=4：7+dp2=12，dp4=12','比 skip dp3=8 好，得到最終最佳值 12。',{i:4,skip:8,candidate:12,dp:12,operation:'write dp4'}),
+    eventFrame(lesson,'take[i]=true;','記錄 take4=true','回溯從 i=4 開始。',{i:4,take:'true',operation:'mark take4'}),
+    eventFrame(lesson,'chosen.push_back(i);','回溯 i=4：選 Job 4','take4=true，所以先把 4 放進 chosen。',{i:4,chosen:['4'],operation:'choose job4'}),
+    eventFrame(lesson,'i=prev[i];','跳到 prev4=2','選 job4 後不能單純 i--，必須跳到與它相容的前驅 2。',{i:'4→2',operation:'jump to predecessor'}),
+    eventFrame(lesson,'chosen.push_back(i);','i=2：再選 Job 2','take2=true，加入 chosen=[4,2]。',{i:2,chosen:['4','2'],operation:'choose job2'}),
+    eventFrame(lesson,'i=prev[i];','prev2=0：重建完成','i 變 0，離開 loop；反轉 chosen 可得到按時間順序的 [2,4]，總值 12。',{i:'2→0',chosen:['2','4'],answer:12,operation:'finish reconstruction'}),
   ],
 
   'monotone-queue-optimization':lesson=>[
-    eventFrame(lesson,'deque<int> dq','K=2，value=[3,-1,4,2,5]','dp[i]=value[i]+max dp[j]，其中 j∈[i-K,i-1]；Deque 保存 dp 遞減的索引。',{K:2,value:['3','-1','4','2','5'],deque:[],operation:'initialize'}),
-    eventFrame(lesson,'dp[i]=value[i]','i=0','dq 空，所以 dp0=3，之後 push 0。',{i:0,dp0:3,deque:['0(3)'],operation:'compute first'}),
-    eventFrame(lesson,'dp[i]=value[i]','i=1','front=0，所以 dp1=-1+3=2；2<3，push 後 [0(3),1(2)]。',{i:1,dp1:2,deque:['0(3)','1(2)'],operation:'extend window'}),
-    eventFrame(lesson,'while(!dq.empty() && dp[dq.back()]<=dp[i])','i=2 得 dp2=7，清掉後方弱候選','4+front3=7；dp1=2、dp0=3 都≤7，因此依序 pop_back。',{i:2,dp2:7,popped:['1','0'],deque:[],operation:'remove dominated'}),
-    eventFrame(lesson,'dq.push_back(i)','Push 2','deque=[2(7)]。',{deque:['2(7)'],operation:'push best'}),
-    eventFrame(lesson,'while(!dq.empty() && dq.front()<i-K)','到 i=5 時會移除過期索引','每步先確保 front 還在長度 K 的合法前驅視窗，再用最大 dp。',{rule:'front >= i-K',operation:'expire old indices'}),
-    eventFrame(lesson,'dq.push_back(i)','整體 O(n)','每個索引最多進出 Deque 各一次。',{complexity:'O(n)',operation:'finish optimized DP'}),
+    eventFrame(lesson,'deque<int> dq;','K=2，value=[3,-1,-2,4,1]','dp[i]=value[i]+max dp[j]，j∈[i-K,i-1]；Deque 依 dp 值遞減保存候選索引。',{K:2,value:['3','-1','-2','4','1'],deque:[],operation:'initialize'}),
+    eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','i=0：dp0=3','dq 空，所以沒有前驅貢獻。',{i:0,dp:3,deque:[],operation:'compute dp0'}),
+    eventFrame(lesson,'dq.push_back(i);','Push 0','deque=[0(3)]。',{deque:['0(3)'],operation:'push 0'}),
+    eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','i=1：dp1=-1+3=2','front=0 是目前合法最大前驅。',{i:1,dp:2,front:'0(3)',operation:'compute dp1'}),
+    eventFrame(lesson,'dq.push_back(i);','Push 1','2<3，不會 pop 0；deque=[0(3),1(2)]。',{deque:['0(3)','1(2)'],operation:'push 1'}),
+    eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','i=2：dp2=-2+3=1','front 仍是 0；deque 尾端值 2、1 保持遞減。',{i:2,dp:1,deque:['0(3)','1(2)'],operation:'compute dp2'}),
+    eventFrame(lesson,'dq.push_back(i);','Push 2','deque=[0(3),1(2),2(1)]。',{deque:['0(3)','1(2)','2(1)'],operation:'push 2'}),
+    eventFrame(lesson,'dq.pop_front();','i=3：Index 0 過期，Pop Front','合法前驅下界是 i-K=1，所以 0<1 必須先移除。',{i:3,expired:'0(3)',deque:['1(2)','2(1)'],operation:'remove expired front'}),
+    eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','用 Front 1 算 dp3=4+2=6','過期清除後，front 才是合法 window 中最大 dp。',{i:3,dp:6,front:'1(2)',operation:'compute dp3'}),
+    eventFrame(lesson,'dq.pop_back();','dp3=6：先 Pop 弱候選 2(1)','新 dp 更大且更晚過期，尾端 2 永遠不會再成為最佳前驅。',{popped:'2(1)',deque:['1(2)'],operation:'remove dominated 2'}),
+    eventFrame(lesson,'dq.pop_back();','再 Pop 1(2)','1 同樣被 dp3=6 支配，deque 變空。',{popped:'1(2)',deque:[],operation:'remove dominated 1'}),
+    eventFrame(lesson,'dq.push_back(i);','Push 3(6)','deque=[3(6)]。',{deque:['3(6)'],operation:'push 3'}),
+    eventFrame(lesson,'dp[i]=value[i]+(dq.empty()?0:dp[dq.front()]);','i=4：dp4=1+6=7','front=3，得到最終 dp4=7。',{i:4,dp:7,front:'3(6)',operation:'compute dp4'}),
+    eventFrame(lesson,'dq.pop_back();','7 支配 6：Pop 3','維持 deque 的 dp 值嚴格遞減。',{popped:'3(6)',deque:[],operation:'remove dominated 3'}),
+    eventFrame(lesson,'dq.push_back(i);','Push 4，完成','deque=[4(7)]；每個 index 最多進出一次，所以總時間 O(n)。',{deque:['4(7)'],answer:7,complexity:'O(n)',operation:'finish optimized DP'}),
   ],
 
   'aliens-optimization':lesson=>[

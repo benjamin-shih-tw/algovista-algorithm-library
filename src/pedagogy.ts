@@ -441,7 +441,8 @@ const prepareReadableTemplate = (lesson: AlgorithmLesson): AlgorithmLesson => {
   }
   const frames = lesson.frames.map((frame) => {
     const codeLines = [...new Set(frame.codeLines.flatMap((line) => lineMap.get(line) ?? []))]
-    const firstMeaningful = codeLines.find((line) => code[line - 1]?.trim() && !/^[{}]+;?$/.test(code[line - 1].trim())) ?? codeLines[0]
+    const anchored = frame.codeAnchor ? codeLines.find((line) => code[line-1]?.trim() === frame.codeAnchor?.trim()) ?? codeLines.find((line) => code[line-1]?.includes(frame.codeAnchor!)) : undefined
+    const firstMeaningful = anchored ?? codeLines.find((line) => code[line - 1]?.trim() && !/^[{}]+;?$/.test(code[line - 1].trim())) ?? codeLines[0]
     return { ...frame, codeLines, codeLine: firstMeaningful ? code[firstMeaningful - 1].trim() : frame.codeLine }
   })
   return { ...lesson, code, frames }
@@ -542,7 +543,8 @@ const normalizeFrameCodeOwnership = (lesson: AlgorithmLesson) => lesson.frames.m
     .filter((number) => number >= 1 && number <= lesson.code.length)
     .sort((a, b) => a - b)
 
-  const semanticPrimary = codeLines
+  const authoredPrimary = frame.codeAnchor ? codeLines.find((number) => lesson.code[number-1]?.trim() === frame.codeLine.trim() && lesson.code[number-1]?.includes(frame.codeAnchor!)) : undefined
+  const semanticPrimary = authoredPrimary ?? codeLines
     .map((number) => ({ number, score: primaryCodeScore(lesson, frame, number) }))
     .sort((a, b) => b.score - a.score || a.number - b.number)[0]?.number
 
