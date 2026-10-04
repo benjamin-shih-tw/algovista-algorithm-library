@@ -24,6 +24,10 @@ for (const id of ids) {
   }
 }
 console.log(`Student teaching contracts: ${ids.length}/${ids.length}`)
+for (const frame of [kmpLesson().frames[0], kmpLesson().frames.at(-1)!]) {
+  const view=frame.executionView!
+  assert.ok(view.kind==='table'&&view.rows.every((row)=>row[3]==='—'),'KMP must not display a comparison pointer before it exists or after the loop ends')
+}
 
 const last = (lesson: StudentLesson) => lesson.frames.at(-1)!.state!
 const words = (max: number) => Array.from({length: 2 ** (max + 1) - 1}, (_, index) => (index + 1).toString(2).slice(1).replaceAll('0','a').replaceAll('1','b'))
