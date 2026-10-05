@@ -26,9 +26,9 @@ export const eventFrame = (
     title,
     explanation,
     codeLine: lesson.code[number - 1].trim(),
-    codeAnchor: needle,
+    codeAnchor: sourceOccurrence > 0 ? `${needle}@@${sourceOccurrence}` : needle,
     codeLines: [number],
-    state,
+    state: sourceOccurrence > 0 ? {...state, sourceOccurrence} : state,
     ...frameExtra,
   }
 }
