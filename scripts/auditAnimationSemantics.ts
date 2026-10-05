@@ -11,8 +11,8 @@ for (const id of ['expression-evaluation', 'shunting-yard']) {
   const parser = lesson(id)
   const push = parser.frames.find((frame) => frame.state?.operation === 'push left paren')!
   const pushLine = push.codeLines.find((line) => parser.code[line - 1]?.trim() === push.codeLine)!
-  if (push.codeLine !== 'ops.push_back(t);' || !parser.code.slice(Math.max(0, pushLine - 3), pushLine - 1).some((line) => line.includes('if(t=="(")'))) {
-    errors.push(`${id}: left parenthesis push highlights the operator branch instead of the parenthesis branch`)
+  if (push.codeLine !== 'ops.push_back("(");' || !parser.code.slice(Math.max(0, pushLine - 3), pushLine - 1).some((line) => line.includes('if(t=="(")'))) {
+    errors.push(`${id}: left parenthesis push is not owned by the literal parenthesis branch`)
   }
   const pop = parser.frames.find((frame) => frame.state?.operation === 'discard left paren')!
   const popLine = pop.codeLines.find((line) => parser.code[line - 1]?.trim() === pop.codeLine)!
@@ -20,6 +20,7 @@ for (const id of ['expression-evaluation', 'shunting-yard']) {
     errors.push(`${id}: discard-parenthesis highlight does not belong to the closing-parenthesis branch`)
   }
 }
+
 const snapshot = (id: string) => segment.frames.find((frame) => frame.segmentStep?.id === id)?.segmentNodeValues
 const expectSum = (step: string, node: string, expected: number | undefined) => {
   const actual = snapshot(step)?.[node]
@@ -281,16 +282,22 @@ if (
 }
 const shunting = lesson('shunting-yard')
 const shuntingRows = shunting.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
+const shuntByOp = (operation:string) => shunting.frames.find((frame)=>frame.state?.operation===operation)
 if (
-  shunting.frames.length !== 14 ||
+  shunting.frames.length !== 17 ||
   shuntingRows.some((rows) => !rows || rows.map((row) => row[1]).join(',') !== '3,+,4,*,(,2,-,1,)') ||
-  shunting.frames[9].executionView?.kind !== 'table' || !hasBadge(shunting.frames[9], 'output = [3,4,2,1,-]') ||
-  shunting.frames[12].executionView?.kind !== 'table' || !hasBadge(shunting.frames[12], 'output = [3,4,2,1,-,*,+]') ||
+  !hasBadge(shuntByOp('emit minus from stack')!, 'output = [3,4,2,1,-]') ||
+  shuntByOp('emit minus from stack')?.state?.ops?.join(',') !== '+,*,(,-' ||
+  shuntByOp('pop emitted minus')?.state?.ops?.join(',') !== '+,*,(' ||
+  shuntByOp('discard left paren')?.state?.ops?.join(',') !== '+,*' ||
+  shuntByOp('pop flushed plus')?.state?.ops?.length !== 0 ||
+  !hasBadge(shuntByOp('pop flushed plus')!, 'output = [3,4,2,1,-,*,+]') ||
   shunting.frames.at(-1)?.state?.result !== '3 4 2 1 - * +' ||
   !shunting.code.some((line) => line.includes('vector<string> toPostfix(')) ||
-  !shunting.frames[9].codeLines.some((line)=>shunting.code[line-1]?.trim()==='output.push_back(ops.back());')
+  !shuntByOp('emit minus from stack')?.codeLines.some((line)=>shunting.code[line-1]?.trim()==='output.push_back(ops.back());') ||
+  !shuntByOp('pop emitted minus')?.codeLines.some((line)=>shunting.code[line-1]?.trim()==='ops.pop_back();')
 ) {
-  errors.push('shunting-yard: parentheses, operator stack, postfix output, or code ownership disagree')
+  errors.push('shunting-yard: atomic emit/pop order, parentheses, postfix output, or code ownership disagree')
 }
 const monotonicStack = lesson('monotonic-stack')
 const monotonicStackRows = monotonicStack.frames.map((frame) => frame.executionView?.kind === 'table' ? frame.executionView.rows : undefined)
