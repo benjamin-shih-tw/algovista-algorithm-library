@@ -20,6 +20,7 @@ export const eventFrame = (
   state: Record<string, string | number | string[]>,
   extra: FrameExtra = {},
 ): Frame => {
+  const hasExplicitOccurrence = Object.prototype.hasOwnProperty.call(extra, 'sourceOccurrence')
   const { sourceOccurrence = 0, ...frameExtra } = extra
   const number = lineNumber(lesson, needle, sourceOccurrence)
   return {
@@ -28,7 +29,7 @@ export const eventFrame = (
     codeLine: lesson.code[number - 1].trim(),
     codeAnchor: sourceOccurrence > 0 ? `${needle}@@${sourceOccurrence}` : needle,
     codeLines: [number],
-    state: sourceOccurrence > 0 ? {...state, sourceOccurrence} : state,
+    state: hasExplicitOccurrence ? {...state, sourceOccurrence} : state,
     ...frameExtra,
   }
 }
