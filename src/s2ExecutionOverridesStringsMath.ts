@@ -168,7 +168,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'a=a*a%mod;','最後再平方 Base：16→1','16² mod17=1；雖然之後不再使用，這仍是 while body 的真實下一行。',{before:16,after:1,e:1,operation:'final square'}),
     eventFrame(lesson,'e>>=1;','Exponent 1→0','e 變 0，while 結束。',{before:1,after:0,operation:'finish exponent scan'}),
     eventFrame(lesson,'return result;','回傳 12','13 的四個 binary bits 已全部處理，總迭代數 O(log 13)。',{result:12,operation:'return power'}),
-  ]
+  ],
 
   'prime-sieve':(lesson)=>[
     eventFrame(lesson,'vector<bool> prime','n=20，先假設全部可能是 Prime','接著把 0、1 設為 false。',{n:20,candidates:'2..20',operation:'initialize sieve'}),
