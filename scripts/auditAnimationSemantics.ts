@@ -537,8 +537,10 @@ for (const item of lessons) {
     const needle=frame.codeLine?.trim()
     if(!needle) continue
     const matches=item.code.filter((line)=>line.trim()===needle).length
-    if(matches>1) {
-      errors.push(`${item.id} frame ${step + 1}: primary code line is ambiguous because "${needle}" occurs ${matches} times`)
+    const authoredWithAnchor=Boolean(frame.codeAnchor)
+    const occurrence=frame.state?.sourceOccurrence
+    if(matches>1 && authoredWithAnchor && occurrence===undefined) {
+      errors.push(`${item.id} frame ${step + 1}: auto-located code line is ambiguous because "${needle}" occurs ${matches} times; set sourceOccurrence`)
     }
   }
 }
