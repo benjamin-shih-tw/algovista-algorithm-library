@@ -409,7 +409,7 @@ const overrides: Record<string, TraceBuilder> = {
     eventFrame(lesson,'ops.push_back(t);','讀 +：Push Ops','目前沒有更高或同優先序 operator 需要先結算。',{token:'+',values:['3'],ops:['+'],operation:'push plus'}),
     eventFrame(lesson,'values.push_back(stoll(t));','讀 4：Push Values','values=[3,4]。',{token:'4',values:['3','4'],ops:['+'],operation:'push number 4'}),
     eventFrame(lesson,'ops.push_back(t);','讀 *：直接 Push','* 優先序高於目前 top +，所以不 reduce +。',{token:'*',values:['3','4'],ops:['+','*'],operation:'push multiply'}),
-    eventFrame(lesson,'if(t=="(")','讀 (：Push Barrier','左括號阻止外層 operator 在括號內完成前被 reduce。',{token:'(',values:['3','4'],ops:['+','*','('],operation:'push left paren'},{codeAnchor:'ops.push_back(t);'}),
+    eventFrame(lesson,'ops.push_back("(");','讀 (：Push Barrier','左括號阻止外層 operator 在括號內完成前被 reduce。',{token:'(',values:['3','4'],ops:['+','*','('],operation:'push left paren'}),
     eventFrame(lesson,'values.push_back(stoll(t));','讀 2：Push Values','values=[3,4,2]。',{token:'2',values:['3','4','2'],ops:['+','*','('],operation:'push number 2'}),
     eventFrame(lesson,'ops.push_back(t);','讀 -：Push Ops','因為 top 是 (，precedence while 不會越過 barrier。',{token:'-',values:['3','4','2'],ops:['+','*','(','-'],operation:'push minus'}),
     eventFrame(lesson,'values.push_back(stoll(t));','讀 1：Push Values','values=[3,4,2,1]。',{token:'1',values:['3','4','2','1'],ops:['+','*','(','-'],operation:'push number 1'}),
