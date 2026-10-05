@@ -247,7 +247,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'output.push_back(ops.back());','再輸出 +','把最後的 + append，postfix 已是 3 4 2 1 - * +。',{moved:'+',output:['3','4','2','1','-','*','+'],ops:['+'],operation:'emit plus during flush'},{sourceOccurrence:2}),
     eventFrame(lesson,'ops.pop_back();','Pop +','ops 變空，final flush 完成。',{output:['3','4','2','1','-','*','+'],ops:[],operation:'pop flushed plus'},{sourceOccurrence:3}),
     eventFrame(lesson,'return output;','Postfix 完成','結果 3 4 2 1 - * + 對應 3 + 4 * (2 - 1)。',{output:['3','4','2','1','-','*','+'],ops:[],result:'3 4 2 1 - * +',operation:'return postfix'}),
-  ].map((frame,step)=>({...frame,executionView:shuntingView(frame,step)}))
+  ].map((frame,step)=>({...frame,executionView:shuntingView(frame,step)})),
 
   'fft':lesson=>[
     eventFrame(lesson,'fft(vector','輸入係數 [1,2,3,4]','n=4。FFT 先把偶數 index 與奇數 index 分成兩個 n/2 子問題。',{input:['1','2','3','4'],n:4,operation:'initialize FFT'}),
