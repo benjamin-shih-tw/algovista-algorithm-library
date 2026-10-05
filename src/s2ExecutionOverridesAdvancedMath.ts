@@ -106,7 +106,8 @@ const codeOverrides:Record<string,string[]>={
     '  auto f=[&](long long x){ return (mulMod(x,x,n)+1)%n; };',
     '  long long x=2,y=2,d=1;',
     '  while(d==1){',
-    '    x=f(x); y=f(f(y));',
+    '    x=f(x);',
+    '    y=f(f(y));',
     '    d=gcd(abs(x-y),n);',
     '  }',
     '  return d==n?FAIL:d;',
@@ -216,12 +217,13 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'pollard-rho':lesson=>[
-    eventFrame(lesson,'rho(long long n)','分解 n=91，取 f(x)=x²+1 mod91','初始 x=y=2、d=1。',{n:91,x:2,y:2,d:1,operation:'initialize rho walk'}),
-    eventFrame(lesson,'x=f(x); y=f(f(y))','第一輪 Floyd Step','x=f(2)=5；y=f(f(2))=f(5)=26。',{x:5,y:26,operation:'advance tortoise hare'}),
-    eventFrame(lesson,'d=gcd','計算 gcd(|5-26|,91)','gcd(21,91)=7。',{difference:21,d:7,operation:'gcd collision'}),
-    eventFrame(lesson,'while(d==1)','d 已不是 1，停止','7 也不等於 91，所以是非平凡因數。',{d:7,operation:'stop walk'}),
-    eventFrame(lesson,'return d==n?FAIL:d','回傳 7','另一因數是 91/7=13。',{factor:7,cofactor:13,operation:'return factor'}),
-  ],
+    eventFrame(lesson,'rho(long long n)','分解 n=91，F(x)=x²+1 mod 91','初始 tortoise x=2、hare y=2、d=1。',{n:91,x:2,y:2,d:1,operation:'initialize rho walk'}),
+    eventFrame(lesson,'x=f(x);','Tortoise 走一步：x=5','f(2)=5。這一行只更新 x。',{before:2,after:5,operation:'advance tortoise'}),
+    eventFrame(lesson,'y=f(f(y));','Hare 走兩步：y=26','先 f(2)=5，再 f(5)=26；這一行只更新 y。',{before:2,intermediate:5,after:26,operation:'advance hare'}),
+    eventFrame(lesson,'d=gcd(abs(x-y),n);','檢查差值與 n 的 GCD','|5-26|=21，gcd(21,91)=7。',{difference:21,d:7,operation:'compute collision gcd'}),
+    eventFrame(lesson,'while(d==1){','d=7：離開迴圈','d 已不是 1，而且 7≠91，所以找到非平凡因數，不需要再走下一輪。',{d:7,decision:'stop',operation:'finish rho loop'}),
+    eventFrame(lesson,'return d==n?FAIL:d;','回傳 Factor 7','91=7×13，因此這次 rho walk 成功分裂 n。',{factor:7,cofactor:13,operation:'return factor'}),
+  ]
 
   'baby-step-giant-step':lesson=>[
     eventFrame(lesson,'M=ceil','解 2^x ≡ 5 (mod 13)','M=ceil(sqrt(13))=4，寫 x=iM+j。',{a:2,b:5,m:13,M:4,operation:'choose block size'}),
