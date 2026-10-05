@@ -532,6 +532,17 @@ if (
 }
 
 
+for (const item of lessons) {
+  for (const [step, frame] of item.frames.entries()) {
+    const needle=frame.codeLine?.trim()
+    if(!needle) continue
+    const matches=item.code.filter((line)=>line.trim()===needle).length
+    if(matches>1) {
+      errors.push(`${item.id} frame ${step + 1}: primary code line is ambiguous because "${needle}" occurs ${matches} times`)
+    }
+  }
+}
+
 const mutationOperation = /(write|push|pop|merge|relax|add |add$|remove|color|mark|emit|append|store|attach|grow|insert|delete|swap|pull|apply|update (?:left|right|root|cell|state)|compress|relink|redirect|reduce|discard)/i
 for (const item of lessons) {
   for (const [step, frame] of item.frames.entries()) {
