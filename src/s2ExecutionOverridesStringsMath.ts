@@ -4,6 +4,36 @@ import { eventFrame } from './traceAuthoring'
 type TraceBuilder=(lesson:AlgorithmLesson)=>Frame[]
 
 const codeOverrides:Record<string,string[]>={
+  'fast-exponentiation':[
+    'long long modPow(long long a,long long e,long long mod){',
+    '  long long result=1%mod;',
+    '  a%=mod;',
+    '  while(e>0){',
+    '    if(e&1) result=result*a%mod;',
+    '    a=a*a%mod;',
+    '    e>>=1;',
+    '  }',
+    '  return result;',
+    '}',
+  ],
+  'modular-inverse':[
+    'long long extendedGcd(long long a,long long b,long long& x,long long& y){',
+    '  if(b==0){ x=1; y=0; return a; }',
+    '  long long x1,y1;',
+    '  long long g=extendedGcd(b,a%b,x1,y1);',
+    '  x=y1;',
+    '  y=x1-(a/b)*y1;',
+    '  return g;',
+    '}',
+    'long long modularInverse(long long a,long long m){',
+    '  long long x,y;',
+    '  long long g=extendedGcd(a,m,x,y);',
+    '  if(g!=1) return -1;',
+    '  x%=m;',
+    '  if(x<0) x+=m;',
+    '  return x;',
+    '}',
+  ],
   'z-algorithm':[
     'vector<int> zFunction(const string& s){',
     '  int n=s.size();',
@@ -116,22 +146,29 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'modular-inverse':(lesson)=>[
-    eventFrame(lesson,'extendedGcd(a,m)','求 17⁻¹ mod 43','Extended GCD 給 gcd(17,43)=1，且可得到 17·(-5)+43·2=1；等價係數也可正規化。',{a:17,m:43,g:1,rawX:-5,operation:'extended gcd'}),
-    eventFrame(lesson,'if(g!=1)','g=1：Inverse 存在','只有互質時 ax≡1 mod m 才有解。',{g:1,decision:'inverse exists',operation:'check gcd'}),
-    eventFrame(lesson,'x%=m; if(x<0)x+=m','正規化 -5 到 38','-5 mod 43 正規化為 38。',{before:-5,after:38,mod:43,operation:'normalize residue'}),
-    eventFrame(lesson,'return x','驗證 17·38 ≡ 1','17·38=646=43·15+1，所以 inverse=38。',{inverse:38,check:'646 mod43=1',operation:'return inverse'}),
-  ],
+    eventFrame(lesson,'long long g=extendedGcd(a,m,x,y);','求 17⁻¹ mod 43','Extended GCD 回傳 g=1，並給一組係數 x=-5、y=2，使 17·(-5)+43·2=1。',{a:17,m:43,g:1,x:-5,y:2,operation:'compute extended gcd'}),
+    eventFrame(lesson,'if(g!=1) return -1;','GCD=1：Inverse 存在','只有 gcd(a,m)=1 時，ax≡1 (mod m) 才有唯一逆元。',{g:1,decision:'continue',operation:'check invertibility'}),
+    eventFrame(lesson,'x%=m;','先做 C++ Remainder：x 仍為 -5','C++ 的負數 % 保留負號，所以 -5 % 43 = -5；此時還不是標準代表元。',{before:-5,after:-5,mod:43,operation:'reduce inverse coefficient'}),
+    eventFrame(lesson,'if(x<0) x+=m;','負值加一次 Mod：-5→38','因 -43 < -5 < 0，加 43 後得到 [0,42] 內的 38。',{before:-5,after:38,mod:43,operation:'normalize inverse residue'}),
+    eventFrame(lesson,'return x;','回傳 38','17·38=646=43·15+1，因此 17·38≡1 (mod 43)。',{inverse:38,check:'646 mod 43 = 1',operation:'return inverse'}),
+  ]
 
   'fast-exponentiation':(lesson)=>[
-    eventFrame(lesson,'long long result=1','計算 3¹³ mod 17','初始 result=1,a=3,e=13（二進位 1101）。',{result:1,a:3,e:13,bits:'1101',operation:'initialize binary power'}),
-    eventFrame(lesson,'if (e&1) result=result*a%mod','e=13 為 Odd：result=3','最低位 1，因此把目前 a=3 乘進 result。',{e:13,result:'1→3',a:3,operation:'consume set bit'}),
-    eventFrame(lesson,'a=a*a%mod; e>>=1','平方 a，e 右移','a=9、e=6。',{a:'3→9',e:'13→6',operation:'square and shift'}),
-    eventFrame(lesson,'a=a*a%mod; e>>=1','e=6 為 Even，只平方','不改 result；a=9² mod17=13，e=3。',{result:3,a:'9→13',e:'6→3',operation:'skip zero bit'}),
-    eventFrame(lesson,'if (e&1) result=result*a%mod','e=3：result=5','3·13 mod17=5。',{result:'3→5',a:13,e:3,operation:'consume set bit'}),
-    eventFrame(lesson,'a=a*a%mod; e>>=1','平方到 a=16，e=1','13² mod17=16。',{a:'13→16',e:'3→1',operation:'square and shift'}),
-    eventFrame(lesson,'if (e&1) result=result*a%mod','最後一 Bit：result=12','5·16 mod17=12。',{result:'5→12',e:1,operation:'consume final bit'}),
-    eventFrame(lesson,'} return result','e=0，回傳 12','總共只處理 O(log 13) 個 bit。',{result:12,operation:'return power'}),
-  ],
+    eventFrame(lesson,'long long result=1%mod;','計算 3¹³ mod 17','result=1，a=3，e=13=1101₂。每輪處理 e 的最低位。',{result:1,a:3,e:13,bits:'1101',operation:'initialize binary power'}),
+    eventFrame(lesson,'if(e&1) result=result*a%mod;','e=13 Odd：Result 1→3','最低位是 1，所以把目前 a=3 乘進 result。',{e:13,a:3,result:'1→3',operation:'consume bit 0'}),
+    eventFrame(lesson,'a=a*a%mod;','平方 Base：3→9','準備下一個 bit 使用的 a²。',{before:3,after:9,e:13,operation:'square base after bit0'}),
+    eventFrame(lesson,'e>>=1;','Exponent 13→6','右移一位等同丟掉剛處理的最低位。',{before:13,after:6,operation:'shift exponent after bit0'}),
+    eventFrame(lesson,'if(e&1) result=result*a%mod;','e=6 Even：不執行乘 Result','最低位是 0，因此 if body 被跳過，result 保持 3。',{e:6,a:9,result:3,decision:'skip multiply',operation:'skip zero bit'}),
+    eventFrame(lesson,'a=a*a%mod;','平方 Base：9→13','9² mod17=13。',{before:9,after:13,e:6,operation:'square base after bit1'}),
+    eventFrame(lesson,'e>>=1;','Exponent 6→3','進入下一個最低位。',{before:6,after:3,operation:'shift exponent after bit1'}),
+    eventFrame(lesson,'if(e&1) result=result*a%mod;','e=3 Odd：Result 3→5','3·13 mod17=5。',{e:3,a:13,result:'3→5',operation:'consume bit2'}),
+    eventFrame(lesson,'a=a*a%mod;','平方 Base：13→16','13² mod17=16。',{before:13,after:16,e:3,operation:'square base after bit2'}),
+    eventFrame(lesson,'e>>=1;','Exponent 3→1','剩最後一個 set bit。',{before:3,after:1,operation:'shift exponent after bit2'}),
+    eventFrame(lesson,'if(e&1) result=result*a%mod;','e=1 Odd：Result 5→12','5·16 mod17=12。',{e:1,a:16,result:'5→12',operation:'consume final bit'}),
+    eventFrame(lesson,'a=a*a%mod;','最後再平方 Base：16→1','16² mod17=1；雖然之後不再使用，這仍是 while body 的真實下一行。',{before:16,after:1,e:1,operation:'final square'}),
+    eventFrame(lesson,'e>>=1;','Exponent 1→0','e 變 0，while 結束。',{before:1,after:0,operation:'finish exponent scan'}),
+    eventFrame(lesson,'return result;','回傳 12','13 的四個 binary bits 已全部處理，總迭代數 O(log 13)。',{result:12,operation:'return power'}),
+  ]
 
   'prime-sieve':(lesson)=>[
     eventFrame(lesson,'vector<bool> prime','n=20，先假設全部可能是 Prime','接著把 0、1 設為 false。',{n:20,candidates:'2..20',operation:'initialize sieve'}),
