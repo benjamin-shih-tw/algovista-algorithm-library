@@ -494,7 +494,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'prev2=prev1;','i=7：Prev2 ← 舊 Prev1','prev2 由 5 變 8；prev1 仍保持 8。',{i:7,prev2:'5→8',prev1:8,cur:13,operation:'shift older Fibonacci state'}),
     eventFrame(lesson,'prev1=cur;','i=7：Prev1 ← Cur = 13','完成本輪後，prev1 就是 F7=13。',{i:7,prev2:8,prev1:'8→13',operation:'commit F7'}),
     eventFrame(lesson,'return n?prev1:prev2;','回傳 F(7)=13','六輪各自只做一次相加與兩次 rolling assignment；時間 O(n)、空間 O(1)。',{result:13,operation:'return Fibonacci'}),
-  ]
+  ],
 
   'unbounded-knapsack':lesson=>[
     eventFrame(lesson,'dp[0]=0','W=7，Exact-Capacity DP','items=(3,5),(4,6)，dp[0]=0，其餘 -INF；同一物品可重複使用。',{W:7,items:['(3,5)','(4,6)'],dp:['0','-∞','-∞','-∞','-∞','-∞','-∞','-∞'],operation:'initialize unbounded knapsack'}),
