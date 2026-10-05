@@ -229,7 +229,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'add(u);','在 A：加入節點 A 自己','A 的 color 也是 1，所以 distinct set 不變。',{node:'A',color:1,colors:['1','2','3'],operation:'add A itself'},{active:['A']}),
     eventFrame(lesson,'answer[u]=current();','寫 Answer[A]=3','A 子樹含三種顏色；同理可得 A3,B2,C1,D1,E1,F1。',{node:'A',answer:3,answers:['A3','B2','C1','D1','E1','F1'],operation:'store root answer'},{accepted:['A','B','C','D','E','F']}),
     eventFrame(lesson,'if(!keep) removeSubtree(u);','Keep 規則決定是否清除','只有作為 light child 被呼叫且 keep=false 的子樹會在回傳前清掉；heavy 資料一路保留，避免重複工作。',{rule:'clear only when keep=false',complexity:'O(n log n)',operation:'explain cleanup rule'},{accepted:['A','B','C','D','E','F']}),
-  ]
+  ],
 
   'virtual-tree':lesson=>[
     eventFrame(lesson,'sort(key.begin()','Key Vertices = {F,E,C}','原樹 tin 順序為 A0,B1,D2,F3,E4,C5，因此 key 排成 F,E,C。',{key:['F','E','C'],tin:['F3','E4','C5'],operation:'sort by Euler tin'}),
