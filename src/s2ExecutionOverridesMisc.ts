@@ -273,7 +273,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'a[k]=even[k]+w*odd[k];','寫 a[1]=-2-2i','-2+i·(-2)=-2-2i。',{k:1,result:'-2-2i',operation:'write upper butterfly k1'}),
     eventFrame(lesson,'a[k+n/2]=even[k]-w*odd[k];','寫 a[3]=-2+2i','-2-i·(-2)=-2+2i。',{k:1,result:'-2+2i',operation:'write lower butterfly k1'}),
     eventFrame(lesson,'a[k+n/2]=even[k]-w*odd[k];','DFT 完成','最終 [10,-2-2i,-2,-2+2i]。',{result:['10','-2-2i','-2','-2+2i'],operation:'finish FFT'}),
-  ]
+  ],
 
   'ntt':lesson=>[
     eventFrame(lesson,'ntt4','在 mod 17 做長度 4 NTT，輸入 [1,2,3,4]','4 是 mod17 的四次原根：4²=16=-1、4⁴=1。',{mod:17,root:4,input:['1','2','3','4'],operation:'initialize NTT'}),
