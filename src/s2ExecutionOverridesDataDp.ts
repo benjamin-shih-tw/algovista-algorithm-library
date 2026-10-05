@@ -167,6 +167,17 @@ const codeOverrides:Record<string,string[]>={
     'for(int h=n/2+1;h<=n;++h) answer+=dp[n][h];',
   ],
 
+  'fibonacci-dp':[
+    'long long fibonacci(int n){',
+    '  long long prev2=0,prev1=1;',
+    '  for(int i=2;i<=n;++i){',
+    '    long long cur=prev1+prev2;',
+    '    prev2=prev1;',
+    '    prev1=cur;',
+    '  }',
+    '  return n?prev1:prev2;',
+    '}',
+  ],
   'cartesian-tree':[
     'struct CartesianTreeResult { vector<int> left,right; int root; };',
     'CartesianTreeResult buildCartesianTree(const vector<int>& a){',
@@ -463,13 +474,27 @@ const overrides:Record<string,TraceBuilder>={
   ]
 
   'fibonacci-dp':lesson=>[
-    eventFrame(lesson,'long long prev2=0,prev1=1','計算 F(7)：初值 F0=0,F1=1','只保留前兩項即可。',{n:7,prev2:0,prev1:1,operation:'initialize rolling states'}),
-    eventFrame(lesson,'long long cur=prev1+prev2','i=2：cur=1','1+0=1，接著 prev2=1,prev1=1。',{i:2,cur:1,next:['prev2=1','prev1=1'],operation:'compute F2'}),
-    eventFrame(lesson,'long long cur=prev1+prev2','i=3：cur=2','由前兩個 rolling state 相加得到 F3=1+1=2，下一輪會把這個 2 往前推成新的 prev1。',{i:3,cur:2,operation:'compute F3'}),
-    eventFrame(lesson,'prev2=prev1; prev1=cur','i=4,5 依序得到 3、5','每輪先算 cur，再把 rolling window 向前推。',{steps:['F4=3','F5=5'],prev2:3,prev1:5,operation:'roll states'}),
-    eventFrame(lesson,'long long cur=prev1+prev2','i=6 得 8；i=7 得 13','最後 prev1=13。',{steps:['F6=8','F7=13'],operation:'finish recurrence'}),
-    eventFrame(lesson,'return n?prev1:prev2','回傳 13','每個 Fibonacci 狀態只算一次，O(n) time / O(1) space。',{result:13,operation:'return Fibonacci'}),
-  ],
+    eventFrame(lesson,'long long prev2=0,prev1=1;','計算 F(7)：初值 F0=0、F1=1','prev2=F0=0，prev1=F1=1。',{n:7,prev2:0,prev1:1,operation:'initialize Fibonacci states'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=2：計算 Cur=1','cur=prev1+prev2=1+0=1；此時 rolling state 還沒移動。',{i:2,prev2:0,prev1:1,cur:1,operation:'compute F2'}),
+    eventFrame(lesson,'prev2=prev1;','i=2：Prev2 ← 舊 Prev1','prev2 由 0 變 1；prev1 仍保持 1。',{i:2,prev2:'0→1',prev1:1,cur:1,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=2：Prev1 ← Cur = 1','完成本輪後，prev1 就是 F2=1。',{i:2,prev2:1,prev1:'1→1',operation:'commit F2'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=3：計算 Cur=2','cur=prev1+prev2=1+1=2；此時 rolling state 還沒移動。',{i:3,prev2:1,prev1:1,cur:2,operation:'compute F3'}),
+    eventFrame(lesson,'prev2=prev1;','i=3：Prev2 ← 舊 Prev1','prev2 由 1 變 1；prev1 仍保持 1。',{i:3,prev2:'1→1',prev1:1,cur:2,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=3：Prev1 ← Cur = 2','完成本輪後，prev1 就是 F3=2。',{i:3,prev2:1,prev1:'1→2',operation:'commit F3'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=4：計算 Cur=3','cur=prev1+prev2=2+1=3；此時 rolling state 還沒移動。',{i:4,prev2:1,prev1:2,cur:3,operation:'compute F4'}),
+    eventFrame(lesson,'prev2=prev1;','i=4：Prev2 ← 舊 Prev1','prev2 由 1 變 2；prev1 仍保持 2。',{i:4,prev2:'1→2',prev1:2,cur:3,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=4：Prev1 ← Cur = 3','完成本輪後，prev1 就是 F4=3。',{i:4,prev2:2,prev1:'2→3',operation:'commit F4'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=5：計算 Cur=5','cur=prev1+prev2=3+2=5；此時 rolling state 還沒移動。',{i:5,prev2:2,prev1:3,cur:5,operation:'compute F5'}),
+    eventFrame(lesson,'prev2=prev1;','i=5：Prev2 ← 舊 Prev1','prev2 由 2 變 3；prev1 仍保持 3。',{i:5,prev2:'2→3',prev1:3,cur:5,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=5：Prev1 ← Cur = 5','完成本輪後，prev1 就是 F5=5。',{i:5,prev2:3,prev1:'3→5',operation:'commit F5'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=6：計算 Cur=8','cur=prev1+prev2=5+3=8；此時 rolling state 還沒移動。',{i:6,prev2:3,prev1:5,cur:8,operation:'compute F6'}),
+    eventFrame(lesson,'prev2=prev1;','i=6：Prev2 ← 舊 Prev1','prev2 由 3 變 5；prev1 仍保持 5。',{i:6,prev2:'3→5',prev1:5,cur:8,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=6：Prev1 ← Cur = 8','完成本輪後，prev1 就是 F6=8。',{i:6,prev2:5,prev1:'5→8',operation:'commit F6'}),
+    eventFrame(lesson,'long long cur=prev1+prev2;','i=7：計算 Cur=13','cur=prev1+prev2=8+5=13；此時 rolling state 還沒移動。',{i:7,prev2:5,prev1:8,cur:13,operation:'compute F7'}),
+    eventFrame(lesson,'prev2=prev1;','i=7：Prev2 ← 舊 Prev1','prev2 由 5 變 8；prev1 仍保持 8。',{i:7,prev2:'5→8',prev1:8,cur:13,operation:'shift older Fibonacci state'}),
+    eventFrame(lesson,'prev1=cur;','i=7：Prev1 ← Cur = 13','完成本輪後，prev1 就是 F7=13。',{i:7,prev2:8,prev1:'8→13',operation:'commit F7'}),
+    eventFrame(lesson,'return n?prev1:prev2;','回傳 F(7)=13','六輪各自只做一次相加與兩次 rolling assignment；時間 O(n)、空間 O(1)。',{result:13,operation:'return Fibonacci'}),
+  ]
 
   'unbounded-knapsack':lesson=>[
     eventFrame(lesson,'dp[0]=0','W=7，Exact-Capacity DP','items=(3,5),(4,6)，dp[0]=0，其餘 -INF；同一物品可重複使用。',{W:7,items:['(3,5)','(4,6)'],dp:['0','-∞','-∞','-∞','-∞','-∞','-∞','-∞'],operation:'initialize unbounded knapsack'}),
