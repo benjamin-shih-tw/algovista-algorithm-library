@@ -471,7 +471,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'left[i]=last;','設定 Left[3]=2','被 pop 的節點 2 接成 3 的左子樹；這一步與上一個 right assignment 分開。',{i:3,left3:2,operation:'attach popped subtree left'},{active:['2','3']}),
     eventFrame(lesson,'st.push_back(i);','Push 3(2)','stack=[1(1),3(2)]，右脊再次遞增。',{i:3,stack:['1(1)','3(2)'],operation:'push node3'},{active:['1','3']}),
     eventFrame(lesson,'return {left,right,root};','Cartesian Tree 完成','root=1(value1)，left[1]=0，right[1]=3，left[3]=2。中序仍是 0,1,2,3，且 parent value ≤ child value。',{root:'1(value1)',edges:['1→0 left','1→3 right','3→2 left'],operation:'return Cartesian tree'},{accepted:['0','1','2','3']}),
-  ]
+  ],
 
   'fibonacci-dp':lesson=>[
     eventFrame(lesson,'long long prev2=0,prev1=1;','計算 F(7)：初值 F0=0、F1=1','prev2=F0=0，prev1=F1=1。',{n:7,prev2:0,prev1:1,operation:'initialize Fibonacci states'}),
