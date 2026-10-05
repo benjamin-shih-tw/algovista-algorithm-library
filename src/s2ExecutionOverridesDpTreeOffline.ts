@@ -43,6 +43,17 @@ const treeEdges=[
 ]
 
 const codeOverrides:Record<string,string[]>={
+  'dsu-on-tree':[
+    'dfsSize(u,p);',
+    'solve(u,p,keep){',
+    '  for(v:lightChildren(u)) solve(v,u,false);',
+    '  if(heavy[u]!=-1) solve(heavy[u],u,true);',
+    '  for(v:lightChildren(u)) addSubtree(v);',
+    '  add(u);',
+    '  answer[u]=current();',
+    '  if(!keep) removeSubtree(u);',
+    '}',
+  ],
   'small-to-large':[
     'set<int>* dfs(int u,int p){',
     '  auto* cur=new set<int>{color[u]};',
@@ -206,13 +217,17 @@ const overrides:Record<string,TraceBuilder>={
   ],
 
   'dsu-on-tree':lesson=>[
-    eventFrame(lesson,'dfsSize(u,p)','先找 Heavy Child','subtree sizes：A6,B4,C1,D2,E1,F1；heavy[A]=B、heavy[B]=D、heavy[D]=F。',{subtree:'A6 B4 C1 D2 E1 F1',heavy:['A→B','B→D','D→F'],operation:'precompute heavy children'}),
-    eventFrame(lesson,'solve(v,u,false)','先處理 A 的 Light Child C，不保留','C answer=1（color1），因 keep=false，算完資料立即清除。',{node:'C',answer:1,kept:'false',operation:'solve light child'},{active:['C']}),
-    eventFrame(lesson,'solve(heavy[u],u,true)','處理 Heavy Child B 並保留','B 內部會保留 D→F 的 heavy 資料，避免重新加入最大子樹。',{node:'B',keep:'true',operation:'keep heavy subtree'},{active:['B','D','F']}),
-    eventFrame(lesson,'addSubtree(v); add(u); answer[u]=current()','在 B 加回 Light Child E，再加入 B','保留的 D/F colors={3}；加 E color2、B color2，得到 {2,3}，answer[B]=2。',{node:'B',keptColors:['3'],added:['E:2','B:2'],colors:['2','3'],answer:2,operation:'assemble B state'}),
-    eventFrame(lesson,'addSubtree(v); add(u); answer[u]=current()','回到 A，加回 C 再加入 A','Heavy B 資料 {2,3} 保留；加 C color1、A color1，得到 {1,2,3}。',{node:'A',colors:['1','2','3'],answer:3,operation:'assemble root state'}),
-    eventFrame(lesson,'if(!keep) removeSubtree','最終 Answers','subtree distinct colors：A3,B2,C1,D1,E1,F1。每個節點只會跨 light edge 被重加 O(log n) 次。',{answers:['A3','B2','C1','D1','E1','F1'],operation:'finish DSU-on-tree'}),
-  ],
+    eventFrame(lesson,'dfsSize(u,p);','先算 Subtree Size 與 Heavy Child','subtree sizes：A6,B4,C1,D2,E1,F1；因此 heavy[A]=B、heavy[B]=D、heavy[D]=F。',{subtree:'A6 B4 C1 D2 E1 F1',heavy:['A→B','B→D','D→F'],operation:'precompute heavy children'}),
+    eventFrame(lesson,'for(v:lightChildren(u)) solve(v,u,false);','A 先處理 Light Child C','C 的答案是 1；因 keep=false，算完後把 C 的資料清掉，不污染之後保留的 heavy 狀態。',{node:'C',answer:1,keep:'false',operation:'solve light child'},{active:['C']}),
+    eventFrame(lesson,'if(heavy[u]!=-1) solve(heavy[u],u,true);','再處理 Heavy Child B 並 Keep','B 內部會保留 heavy chain B→D→F 的資料，因此回到 A 時這部分不用重建。',{node:'B',keep:'true',heavyChain:['B','D','F'],operation:'solve kept heavy child'},{active:['B','D','F']}),
+    eventFrame(lesson,'for(v:lightChildren(u)) addSubtree(v);','在 B：加回 Light Child E','保留的 D/F 目前只有 color3；addSubtree(E) 加入 color2，資料變成 {2,3}。',{node:'B',before:['3'],added:'E:2',after:['2','3'],operation:'add B light subtree'},{active:['B','E']}),
+    eventFrame(lesson,'add(u);','在 B：加入節點 B 自己','B 的 color 也是 2，加入後 distinct set 仍是 {2,3}。',{node:'B',color:2,colors:['2','3'],operation:'add B itself'},{active:['B']}),
+    eventFrame(lesson,'answer[u]=current();','寫 Answer[B]=2','current() 現在代表 B 整棵子樹的 distinct colors 數量 2。',{node:'B',answer:2,operation:'store B answer'},{active:['B','D','E','F']}),
+    eventFrame(lesson,'for(v:lightChildren(u)) addSubtree(v);','回到 A：加回 Light Child C','Heavy B 的 {2,3} 保留著；將 C 的 color1 加回後得到 {1,2,3}。',{node:'A',before:['2','3'],added:'C:1',after:['1','2','3'],operation:'add A light subtree'},{active:['A','C']}),
+    eventFrame(lesson,'add(u);','在 A：加入節點 A 自己','A 的 color 也是 1，所以 distinct set 不變。',{node:'A',color:1,colors:['1','2','3'],operation:'add A itself'},{active:['A']}),
+    eventFrame(lesson,'answer[u]=current();','寫 Answer[A]=3','A 子樹含三種顏色；同理可得 A3,B2,C1,D1,E1,F1。',{node:'A',answer:3,answers:['A3','B2','C1','D1','E1','F1'],operation:'store root answer'},{accepted:['A','B','C','D','E','F']}),
+    eventFrame(lesson,'if(!keep) removeSubtree(u);','Keep 規則決定是否清除','只有作為 light child 被呼叫且 keep=false 的子樹會在回傳前清掉；heavy 資料一路保留，避免重複工作。',{rule:'clear only when keep=false',complexity:'O(n log n)',operation:'explain cleanup rule'},{accepted:['A','B','C','D','E','F']}),
+  ]
 
   'virtual-tree':lesson=>[
     eventFrame(lesson,'sort(key.begin()','Key Vertices = {F,E,C}','原樹 tin 順序為 A0,B1,D2,F3,E4,C5，因此 key 排成 F,E,C。',{key:['F','E','C'],tin:['F3','E4','C5'],operation:'sort by Euler tin'}),
