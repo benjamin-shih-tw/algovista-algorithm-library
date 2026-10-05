@@ -151,7 +151,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'x%=m;','先做 C++ Remainder：x 仍為 -5','C++ 的負數 % 保留負號，所以 -5 % 43 = -5；此時還不是標準代表元。',{before:-5,after:-5,mod:43,operation:'reduce inverse coefficient'}),
     eventFrame(lesson,'if(x<0) x+=m;','負值加一次 Mod：-5→38','因 -43 < -5 < 0，加 43 後得到 [0,42] 內的 38。',{before:-5,after:38,mod:43,operation:'normalize inverse residue'}),
     eventFrame(lesson,'return x;','回傳 38','17·38=646=43·15+1，因此 17·38≡1 (mod 43)。',{inverse:38,check:'646 mod 43 = 1',operation:'return inverse'}),
-  ]
+  ],
 
   'fast-exponentiation':(lesson)=>[
     eventFrame(lesson,'long long result=1%mod;','計算 3¹³ mod 17','result=1，a=3，e=13=1101₂。每輪處理 e 的最低位。',{result:1,a:3,e:13,bits:'1101',operation:'initialize binary power'}),
