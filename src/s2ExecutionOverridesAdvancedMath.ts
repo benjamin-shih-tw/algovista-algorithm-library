@@ -223,7 +223,7 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'d=gcd(abs(x-y),n);','檢查差值與 n 的 GCD','|5-26|=21，gcd(21,91)=7。',{difference:21,d:7,operation:'compute collision gcd'}),
     eventFrame(lesson,'while(d==1){','d=7：離開迴圈','d 已不是 1，而且 7≠91，所以找到非平凡因數，不需要再走下一輪。',{d:7,decision:'stop',operation:'finish rho loop'}),
     eventFrame(lesson,'return d==n?FAIL:d;','回傳 Factor 7','91=7×13，因此這次 rho walk 成功分裂 n。',{factor:7,cofactor:13,operation:'return factor'}),
-  ]
+  ],
 
   'baby-step-giant-step':lesson=>[
     eventFrame(lesson,'M=ceil','解 2^x ≡ 5 (mod 13)','M=ceil(sqrt(13))=4，寫 x=iM+j。',{a:2,b:5,m:13,M:4,operation:'choose block size'}),
