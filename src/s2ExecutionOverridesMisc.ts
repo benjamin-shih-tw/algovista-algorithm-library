@@ -41,29 +41,15 @@ const expressionView=(step:number):NonNullable<Frame['executionView']>=>{
     badges:['values = ['+snap.values.join(', ')+']','ops = ['+snap.ops.join(', ')+']',...(step>=13?['result = 7']:[])],
   }
 }
-const shuntingSnapshots=[
-  {output:[],ops:[]},
-  {output:['3'],ops:[]},
-  {output:['3'],ops:['+']},
-  {output:['3','4'],ops:['+']},
-  {output:['3','4'],ops:['+','*']},
-  {output:['3','4'],ops:['+','*','(']},
-  {output:['3','4','2'],ops:['+','*','(']},
-  {output:['3','4','2'],ops:['+','*','(','-']},
-  {output:['3','4','2','1'],ops:['+','*','(','-']},
-  {output:['3','4','2','1','-'],ops:['+','*','(']},
-  {output:['3','4','2','1','-'],ops:['+','*']},
-  {output:['3','4','2','1','-','*'],ops:['+']},
-  {output:['3','4','2','1','-','*','+'],ops:[]},
-  {output:['3','4','2','1','-','*','+'],ops:[]},
-]
-const shuntingView=(step:number):NonNullable<Frame['executionView']>=>{
-  const snap=shuntingSnapshots[Math.min(step,shuntingSnapshots.length-1)]
+const shuntingView=(frame:Frame,step:number):NonNullable<Frame['executionView']>=>{
+  const output=Array.isArray(frame.state?.output)?frame.state.output:[]
+  const ops=Array.isArray(frame.state?.ops)?frame.state.ops:[]
+  const readCount=Math.min(step,9)
   return {kind:'table',title:'SHUNTING YARD · 3 + 4 * (2 - 1)',
     columns:['token index','token','status'],
-    rows:parserTokens.map((token,index)=>[String(index),token,index<Math.min(step,9)?'已讀':index===Math.min(step,8)?'目前':'待讀']),
+    rows:parserTokens.map((token,index)=>[String(index),token,index<readCount?'已讀':index===Math.min(readCount,8)?'目前':'待讀']),
     activeCells:step>=1&&step<=9?[(Math.min(step-1,8))+',1']:[],
-    badges:['output = ['+snap.output.join(', ')+']','ops = ['+snap.ops.join(', ')+']',...(step>=13?['postfix = 3 4 2 1 - * +']:[])],
+    badges:['output = ['+output.join(', ')+']','ops = ['+ops.join(', ')+']',...(frame.state?.result?['postfix = '+String(frame.state.result)]:[])],
   }
 }
 
@@ -249,16 +235,19 @@ const overrides:Record<string,TraceBuilder>={
     eventFrame(lesson,'ops.push_back(t);','讀 +：Push Ops','沒有需要先輸出的 operator，因此 ops=[+]。',{token:'+',output:['3'],ops:['+'],operation:'push plus'}),
     eventFrame(lesson,'output.push_back(t);','讀 4：直接輸出','output=[3,4]。',{token:'4',output:['3','4'],ops:['+'],operation:'emit 4'}),
     eventFrame(lesson,'ops.push_back(t);','讀 *：+ 優先序較低，* 直接 Push','precedence(+)<precedence(*)，因此不 pop +；ops=[+,*]。',{token:'*',output:['3','4'],ops:['+','*'],operation:'push multiply'}),
-    eventFrame(lesson,'if(t=="(")','讀 (：Push Barrier','左括號只負責限制 operator pop 範圍，不會出現在 postfix output。',{token:'(',output:['3','4'],ops:['+','*','('],operation:'push left paren'},{codeAnchor:'ops.push_back(t);'}),
+    eventFrame(lesson,'ops.push_back("(");','讀 (：Push Barrier','左括號只限制 operator pop 範圍，不會出現在 postfix output。',{token:'(',output:['3','4'],ops:['+','*','('],operation:'push left paren'}),
     eventFrame(lesson,'output.push_back(t);','讀 2：直接輸出','output=[3,4,2]。',{token:'2',output:['3','4','2'],ops:['+','*','('],operation:'emit 2'}),
     eventFrame(lesson,'ops.push_back(t);','讀 -：Top 是 (，所以直接 Push','左括號阻止外層 *、+ 被 pop；ops=[+,*,(,-]。',{token:'-',output:['3','4','2'],ops:['+','*','(','-'],operation:'push minus'}),
     eventFrame(lesson,'output.push_back(t);','讀 1：直接輸出','output=[3,4,2,1]。',{token:'1',output:['3','4','2','1'],ops:['+','*','(','-'],operation:'emit 1'}),
-    eventFrame(lesson,'output.push_back(ops.back());','讀 )：先把 - 移到 Output','右括號要求輸出直到左括號；因此 - 被 append 到 output，形成 [3,4,2,1,-]。',{token:')',moved:'-',output:['3','4','2','1','-'],ops:['+','*','('],operation:'flush inside parens'}),
-    eventFrame(lesson,'ops.pop_back();','丟棄左括號本身','top 現在是 (；它只負責 grouping，不屬於 postfix，所以直接 pop 而不輸出。',{output:['3','4','2','1','-'],ops:['+','*'],operation:'discard left paren'},{sourceOccurrence:1}),
-    eventFrame(lesson,'output.push_back(ops.back());','輸入結束：先 Flush *','stack top 是 *，先輸出得到 [3,4,2,1,-,*]。',{moved:'*',output:['3','4','2','1','-','*'],ops:['+'],operation:'flush multiply'},{sourceOccurrence:2}),
-    eventFrame(lesson,'output.push_back(ops.back());','再 Flush +','最後把 + 輸出，得到完整 postfix [3,4,2,1,-,*,+]。',{moved:'+',output:['3','4','2','1','-','*','+'],ops:[],operation:'flush plus'},{sourceOccurrence:2}),
-    eventFrame(lesson,'return output;','Postfix 完成','結果 3 4 2 1 - * + 對應 3 + 4 * (2 - 1)。括號消失，但原優先序與 grouping 已寫入 token 順序。',{result:'3 4 2 1 - * +',operation:'return postfix'}),
-  ].map((frame,step)=>({...frame,executionView:shuntingView(step)})),
+    eventFrame(lesson,'output.push_back(ops.back());','讀 )：先輸出 -','右括號要求先把 top operator - append 到 output；此刻 - 還留在 ops，下一格才真正 pop。',{token:')',moved:'-',output:['3','4','2','1','-'],ops:['+','*','(','-'],operation:'emit minus from stack'},{sourceOccurrence:0}),
+    eventFrame(lesson,'ops.pop_back();','Pop -','現在才把剛輸出的 - 從 operator stack 移除。',{output:['3','4','2','1','-'],ops:['+','*','('],operation:'pop emitted minus'},{sourceOccurrence:0}),
+    eventFrame(lesson,'ops.pop_back();','丟棄左括號','top 現在是 (；它只負責 grouping，所以 pop 而不輸出。',{output:['3','4','2','1','-'],ops:['+','*'],operation:'discard left paren'},{sourceOccurrence:1}),
+    eventFrame(lesson,'output.push_back(ops.back());','輸入結束：輸出 *','final flush 的 top 是 *，先 append 到 output；下一格才 pop。',{moved:'*',output:['3','4','2','1','-','*'],ops:['+','*'],operation:'emit multiply during flush'},{sourceOccurrence:2}),
+    eventFrame(lesson,'ops.pop_back();','Pop *','operator stack 由 [+,*] 變成 [+]。',{output:['3','4','2','1','-','*'],ops:['+'],operation:'pop flushed multiply'},{sourceOccurrence:3}),
+    eventFrame(lesson,'output.push_back(ops.back());','再輸出 +','把最後的 + append，postfix 已是 3 4 2 1 - * +。',{moved:'+',output:['3','4','2','1','-','*','+'],ops:['+'],operation:'emit plus during flush'},{sourceOccurrence:2}),
+    eventFrame(lesson,'ops.pop_back();','Pop +','ops 變空，final flush 完成。',{output:['3','4','2','1','-','*','+'],ops:[],operation:'pop flushed plus'},{sourceOccurrence:3}),
+    eventFrame(lesson,'return output;','Postfix 完成','結果 3 4 2 1 - * + 對應 3 + 4 * (2 - 1)。',{output:['3','4','2','1','-','*','+'],ops:[],result:'3 4 2 1 - * +',operation:'return postfix'}),
+  ].map((frame,step)=>({...frame,executionView:shuntingView(frame,step)}))
 
   'fft':lesson=>[
     eventFrame(lesson,'fft(vector','輸入係數 [1,2,3,4]','n=4。FFT 先把偶數 index 與奇數 index 分成兩個 n/2 子問題。',{input:['1','2','3','4'],n:4,operation:'initialize FFT'}),
